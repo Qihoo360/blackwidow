@@ -33,3 +33,4 @@
 
 # Others
 tags
+src/build_version.cc
