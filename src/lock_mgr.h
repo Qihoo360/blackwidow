@@ -3,9 +3,11 @@
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 
-#pragma once
+#ifndef SRC_LOCK_MGR_H_
+#define SRC_LOCK_MGR_H_
 
 #include <string>
+#include <memory>
 
 #include "src/mutex.h"
 
@@ -29,7 +31,6 @@ class LockMgr {
   void UnLock(const std::string& key);
 
  private:
-
   // Default number of lock map stripes
   const size_t default_num_stripes_;
 
@@ -54,3 +55,4 @@ class LockMgr {
 };
 
 }  //  namespace blackwidow
+#endif  // SRC_LOCK_MGR_H_

@@ -3,7 +3,8 @@
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 
-#pragma once
+#ifndef SRC_MUTEX_H_
+#define SRC_MUTEX_H_
 
 #include <memory>
 
@@ -82,3 +83,4 @@ class MutexFactory {
 };
 
 }  // namespace blackwidow
+#endif  // SRC_MUTEX_H_
