@@ -5,21 +5,29 @@
 
 #include "src/redis_string.h"
 
+#include <memory>
+
+#include "src/string_filter.h"
+
 namespace blackwidow {
 
-Status RedisString::Open() {
-  return rocksdb::DB::Open(options_, db_path_, &db_);
+Status RedisString::Open(const rocksdb::Options& options,
+    const std::string& db_path) {
+  rocksdb::Options ops(options);
+  ops.compaction_filter_factory = std::make_shared<StringFilterFactory>(
+      &converter_);
+  return rocksdb::DB::Open(ops, db_path, &db_);
 }
 
 Status RedisString::Set(const std::string& key, const std::string& value) {
   std::string value_with_ts;
-  transformer_->AppendTimestamp(value, 1, &value_with_ts);
+  converter_.AppendTimestamp(value, 0, &value_with_ts);
   return db_->Put(default_write_options_, key, value_with_ts);
 }
 
 Status RedisString::Get(const std::string& key, std::string* value) {
   Status s = db_->Get(default_read_options_, key, value);
-  if (s.ok() && transformer_->IsStaleAndStripTimestamp(value)) {
+  if (s.ok() && converter_.IsStaleAndStripTimestamp(value)) {
     return Status::NotFound("Stale");
   }
   return s;

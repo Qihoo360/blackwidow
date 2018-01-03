@@ -10,23 +10,15 @@
 
 #include "rocksdb/db.h"
 #include "rocksdb/status.h"
-#include "rocksdb/slice.h"
-#include "rocksdb/compaction_filter.h"
-#include "src/transformer.h"
+#include "src/string_converter.h"
 
 namespace blackwidow {
 using Status = rocksdb::Status;
-using Slice = rocksdb::Slice;
 
 class RedisString {
  public:
-  RedisString(const std::string& db_path, const rocksdb::Options& options,
-        Transformer* transformer,
-        rocksdb::CompactionFilterFactory* factory)
-    : db_path_(db_path + "string"),
-      options_(options),
-      transformer_(transformer),
-      factory_(factory),
+  explicit RedisString(rocksdb::Env* env)
+    : converter_(env),
       db_(nullptr) {
     default_compact_range_options_.exclusive_manual_compaction = false;
     default_compact_range_options_.change_level = true;
@@ -36,21 +28,14 @@ class RedisString {
     delete db_;
   }
 
-  const rocksdb::DB* db() {
-    return db_;
-  }
-
-  Status Open();
+  Status Open(const rocksdb::Options& options, const std::string& db_path);
   Status Set(const std::string& key, const std::string& value);
   Status Get(const std::string& key, std::string* value);
   Status CompactRange(const rocksdb::Slice* begin,
       const rocksdb::Slice* end);
 
  private:
-  std::string db_path_;
-  rocksdb::Options options_;
-  Transformer* transformer_;
-  rocksdb::CompactionFilterFactory* factory_;
+  StringConverter converter_;
   rocksdb::DB* db_;
   rocksdb::WriteOptions default_write_options_;
   rocksdb::ReadOptions default_read_options_;

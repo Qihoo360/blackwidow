@@ -3,8 +3,8 @@
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 
-#ifndef SRC_TRANSFORMER_H_
-#define SRC_TRANSFORMER_H_
+#ifndef SRC_STRING_CONVERTER_H_
+#define SRC_STRING_CONVERTER_H_
 
 #include <string>
 
@@ -14,12 +14,12 @@
 
 namespace blackwidow {
 using Slice = rocksdb::Slice;
-class Transformer {
+class StringConverter {
  public:
-  explicit Transformer(rocksdb::Env* env) : env_(env) {
+  explicit StringConverter(rocksdb::Env* env) : env_(env) {
   }
 
-  ~Transformer() = default;
+  ~StringConverter() = default;
 
   void AppendTimestamp(const std::string& value, int32_t ttl,
         std::string* value_with_ts) {
@@ -72,4 +72,4 @@ class Transformer {
 };
 
 }  //  namespace blackwidow
-#endif  // SRC_TRANSFORMER_H_
+#endif  // SRC_STRING_CONVERTER_H_

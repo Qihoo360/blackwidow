@@ -1,10 +1,10 @@
 CXX=g++
-LDFLAGS= -lpthread -lrt
+LDFLAGS= -lpthread -lrt -lsnappy -lz -lbz2
 CXXFLAGS=-O2 -std=c++11 -fno-builtin-memcmp -msse -msse4.2
 
 .PHONY: clean all
 
-all: lock_mgr 
+all: string_example
 
 ifndef BLACKWIDOW_PATH
   $(warning Warning: missing blackwidow path, using default)
@@ -25,9 +25,9 @@ CXXFLAGS+= -I$(BLACKWIDOW_INCLUDE_DIR) -I$(ROCKSDB_INCLUDE_DIR)
 DEP_LIBS = $(BLACKWIDOW_LIBRARY) $(ROCKSDB_LIBRARY)
 LDFLAGS := $(DEP_LIBS) $(LDFLAGS)
 
-lock_mgr: lock_mgr.cc
+string_example: string_example.cc
 	$(CXX) $(CXXFLAGS) $^ -o$@ $(LDFLAGS)
 
 clean:
 	find . -name "*.[oda]" -exec rm -f {} \;
-	rm -rf ./lock_mgr
+	rm -rf ./string_example
