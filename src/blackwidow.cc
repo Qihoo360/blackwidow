@@ -17,6 +17,10 @@ BlackWidow::~BlackWidow() {
   delete string_db_;
 }
 
+Status BlackWidow::Compact() {
+  return string_db_->CompactRange(NULL, NULL);
+}
+
 static std::string AppendSubDirectory(const std::string& db_path,
     const std::string& sub_db) {
   if (db_path.back() == '/') {
@@ -39,6 +43,10 @@ Status BlackWidow::Set(const std::string& key, const std::string& value) {
 
 Status BlackWidow::Get(const std::string& key, std::string* value) {
   return string_db_->Get(key, value);
+}
+
+Status BlackWidow::Expire(const std::string& key, int32_t ttl) {
+  return string_db_->Expire(key, ttl);
 }
 
 }  //  namespace blackwidow

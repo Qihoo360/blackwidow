@@ -87,11 +87,15 @@ size_t LockMap::GetStripe(const std::string& key) const {
 }
 
 Status LockMgr::TryLock(const std::string& key) {
+#ifdef LOCKLESS
+  return Status::OK();
+#else
   size_t stripe_num = lock_map_->GetStripe(key);
   assert(lock_map_->lock_map_stripes_.size() > stripe_num);
   LockMapStripe* stripe = lock_map_->lock_map_stripes_.at(stripe_num);
 
   return Acquire(stripe, key);
+#endif
 }
 
 // Helper function for TryLock().
@@ -154,6 +158,8 @@ Status LockMgr::AcquireLocked(LockMapStripe* stripe,
 }
 
 void LockMgr::UnLockKey(const std::string& key, LockMapStripe* stripe) {
+#ifdef LOCKLESS
+#else
   auto stripe_iter = stripe->keys.find(key);
   if (stripe_iter != stripe->keys.end()) {
     // Found the key locked.  unlock it.
@@ -166,6 +172,7 @@ void LockMgr::UnLockKey(const std::string& key, LockMapStripe* stripe) {
   } else {
     // This key is either not locked or locked by someone else.
   }
+#endif
 }
 
 void LockMgr::UnLock(const std::string& key) {

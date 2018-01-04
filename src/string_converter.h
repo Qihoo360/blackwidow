@@ -35,19 +35,11 @@ class StringConverter {
     value_with_ts->append(ts_string, kTSLength);
   }
 
-  bool IsStaleAndStripTimestamp(std::string* value_with_ts) {
+  bool StripTimestamp(std::string* value_with_ts) {
     if (value_with_ts->size() < kTSLength) {
       return false;
     }
-    int32_t timestamp = DecodeFixed32(value_with_ts->data() +
-                  value_with_ts->size() - kTSLength);
-    int64_t curtime;
-    env_->GetCurrentTime(&curtime);
-    if (timestamp == 0 || timestamp > curtime) {
-      value_with_ts->erase(value_with_ts->size() - kTSLength, kTSLength);
-      return false;
-    }
-    value_with_ts->clear();
+    value_with_ts->erase(value_with_ts->size() - kTSLength, kTSLength);
     return true;
   }
 
@@ -57,9 +49,12 @@ class StringConverter {
     }
     int32_t timestamp = DecodeFixed32(value_with_ts.data() +
                   value_with_ts.size() - kTSLength);
+    if (timestamp == 0) {
+      return false;
+    }
     int64_t curtime;
     env_->GetCurrentTime(&curtime);
-    return timestamp < curtime;
+    return (timestamp < curtime);
   }
 
   rocksdb::Env* env_;

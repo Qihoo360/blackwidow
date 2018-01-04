@@ -3,8 +3,8 @@
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 
-#ifndef INCLUDE_BLACKWIDOW_H_
-#define INCLUDE_BLACKWIDOW_H_
+#ifndef INCLUDE_BLACKWIDOW_BLACKWIDOW_H_
+#define INCLUDE_BLACKWIDOW_BLACKWIDOW_H_
 
 #include <string>
 
@@ -18,16 +18,20 @@ using Status = rocksdb::Status;
 class RedisString;
 class BlackWidow {
  public:
-  explicit BlackWidow();
+  BlackWidow();
   ~BlackWidow();
+
+  // Just For Test, will be removed later;
+  Status Compact();
 
   Status Open(const Options& options, const std::string& db_path);
   Status Set(const std::string& key, const std::string& value);
   Status Get(const std::string& key, std::string* value);
+  Status Expire(const std::string& key, int32_t ttl);
 
  private:
   RedisString* string_db_;
 };
 
 }  //  namespace blackwidow
-#endif  //  INCLUDE_BLACKWIDOW_H_
+#endif  //  INCLUDE_BLACKWIDOW_BLACKWIDOW_H_
