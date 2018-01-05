@@ -5,20 +5,20 @@
 
 #include "blackwidow/blackwidow.h"
 
-#include "src/redis_string.h"
+#include "src/redis_strings.h"
 
 namespace blackwidow {
 
 BlackWidow::BlackWidow() :
-    string_db_(nullptr) {
+    strings_db_(nullptr) {
 }
 
 BlackWidow::~BlackWidow() {
-  delete string_db_;
+  delete strings_db_;
 }
 
 Status BlackWidow::Compact() {
-  return string_db_->CompactRange(NULL, NULL);
+  return strings_db_->CompactRange(NULL, NULL);
 }
 
 static std::string AppendSubDirectory(const std::string& db_path,
@@ -32,21 +32,21 @@ static std::string AppendSubDirectory(const std::string& db_path,
 
 Status BlackWidow::Open(const rocksdb::Options& options,
     const std::string& db_path) {
-  string_db_ = new RedisString(rocksdb::Env::Default());
-  Status s = string_db_->Open(options, AppendSubDirectory(db_path, "string"));
+  strings_db_ = new RedisStrings(rocksdb::Env::Default());
+  Status s = strings_db_->Open(options, AppendSubDirectory(db_path, "string"));
   return s;
 }
 
 Status BlackWidow::Set(const std::string& key, const std::string& value) {
-  return string_db_->Set(key, value);
+  return strings_db_->Set(key, value);
 }
 
 Status BlackWidow::Get(const std::string& key, std::string* value) {
-  return string_db_->Get(key, value);
+  return strings_db_->Get(key, value);
 }
 
 Status BlackWidow::Expire(const std::string& key, int32_t ttl) {
-  return string_db_->Expire(key, ttl);
+  return strings_db_->Expire(key, ttl);
 }
 
 }  //  namespace blackwidow

@@ -3,7 +3,7 @@
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 
-#include "src/redis_string.h"
+#include "src/redis_strings.h"
 
 #include <memory>
 
@@ -12,7 +12,7 @@
 
 namespace blackwidow {
 
-Status RedisString::Open(const rocksdb::Options& options,
+Status RedisStrings::Open(const rocksdb::Options& options,
     const std::string& db_path) {
   rocksdb::Options ops(options);
   ops.compaction_filter_factory = std::make_shared<StringFilterFactory>(
@@ -20,14 +20,14 @@ Status RedisString::Open(const rocksdb::Options& options,
   return rocksdb::DB::Open(ops, db_path, &db_);
 }
 
-Status RedisString::Set(const std::string& key, const std::string& value) {
+Status RedisStrings::Set(const std::string& key, const std::string& value) {
   std::string value_with_ts;
   converter_.AppendTimestamp(value, 0, &value_with_ts);
   ScopeRecordLock l(lock_mgr_, key);
   return db_->Put(default_write_options_, key, value_with_ts);
 }
 
-Status RedisString::Get(const std::string& key, std::string* value) {
+Status RedisStrings::Get(const std::string& key, std::string* value) {
   Status s = db_->Get(default_read_options_, key, value);
   if (s.ok()) {
     if (converter_.IsStale(*value)) {
@@ -40,7 +40,7 @@ Status RedisString::Get(const std::string& key, std::string* value) {
   return s;
 }
 
-Status RedisString::Expire(const std::string& key, int32_t ttl) {
+Status RedisStrings::Expire(const std::string& key, int32_t ttl) {
   std::string value_with_ts;
   ScopeRecordLock l(lock_mgr_, key);
   Status s = db_->Get(default_read_options_, key, &value_with_ts);
@@ -63,7 +63,7 @@ Status RedisString::Expire(const std::string& key, int32_t ttl) {
   return s;
 }
 
-Status RedisString::CompactRange(const rocksdb::Slice* begin,
+Status RedisStrings::CompactRange(const rocksdb::Slice* begin,
     const rocksdb::Slice* end) {
   return db_->CompactRange(default_compact_range_options_, begin, end);
 }

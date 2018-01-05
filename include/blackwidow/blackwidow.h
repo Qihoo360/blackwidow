@@ -15,7 +15,7 @@ namespace blackwidow {
 using Options = rocksdb::Options;
 using Status = rocksdb::Status;
 
-class RedisString;
+class RedisStrings;
 class BlackWidow {
  public:
   BlackWidow();
@@ -30,7 +30,7 @@ class BlackWidow {
   Status Expire(const std::string& key, int32_t ttl);
 
  private:
-  RedisString* string_db_;
+  RedisStrings* strings_db_;
 };
 
 }  //  namespace blackwidow

@@ -4,7 +4,7 @@ CXXFLAGS=-O2 -std=c++11 -fno-builtin-memcmp -msse -msse4.2
 
 .PHONY: clean all
 
-all: string_example
+all: strings_example
 
 ifndef BLACKWIDOW_PATH
   $(warning Warning: missing blackwidow path, using default)
@@ -25,9 +25,9 @@ CXXFLAGS+= -I$(BLACKWIDOW_INCLUDE_DIR) -I$(ROCKSDB_INCLUDE_DIR)
 DEP_LIBS = $(BLACKWIDOW_LIBRARY) $(ROCKSDB_LIBRARY)
 LDFLAGS := $(DEP_LIBS) $(LDFLAGS)
 
-string_example: string_example.cc
+strings_example: strings_example.cc
 	$(CXX) $(CXXFLAGS) $^ -o$@ $(LDFLAGS)
 
 clean:
 	find . -name "*.[oda]" -exec rm -f {} \;
-	rm -rf ./string_example
+	rm -rf ./strings_example

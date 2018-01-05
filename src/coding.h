@@ -10,6 +10,7 @@
 #ifndef BLACKWIDOW_PLATFORM_IS_LITTLE_ENDIAN
 #define BLACKWIDOW_PLATFORM_IS_LITTLE_ENDIAN (__BYTE_ORDER == __LITTLE_ENDIAN)
 #endif
+#include <string.h>
 
 namespace blackwidow {
   static const bool kLittleEndian = BLACKWIDOW_PLATFORM_IS_LITTLE_ENDIAN;
