@@ -6,8 +6,6 @@
 #ifndef SRC_SCOPE_RECORD_LOCK_H_
 #define SRC_SCOPE_RECORD_LOCK_H_
 
-#include <string>
-
 #include "src/lock_mgr.h"
 
 namespace blackwidow {

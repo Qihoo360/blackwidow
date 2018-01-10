@@ -9,7 +9,7 @@
 #include <string>
 #include <memory>
 
-#include "src/value_format.h"
+#include "src/strings_value_format.h"
 #include "rocksdb/compaction_filter.h"
 
 namespace blackwidow {
