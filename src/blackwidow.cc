@@ -32,20 +32,20 @@ static std::string AppendSubDirectory(const std::string& db_path,
 
 Status BlackWidow::Open(const rocksdb::Options& options,
     const std::string& db_path) {
-  strings_db_ = new RedisStrings(rocksdb::Env::Default());
-  Status s = strings_db_->Open(options, AppendSubDirectory(db_path, "string"));
+  strings_db_ = new RedisStrings();
+  Status s = strings_db_->Open(options, AppendSubDirectory(db_path, "strings"));
   return s;
 }
 
-Status BlackWidow::Set(const std::string& key, const std::string& value) {
+Status BlackWidow::Set(const Slice& key, const Slice& value) {
   return strings_db_->Set(key, value);
 }
 
-Status BlackWidow::Get(const std::string& key, std::string* value) {
+Status BlackWidow::Get(const Slice& key, std::string* value) {
   return strings_db_->Get(key, value);
 }
 
-Status BlackWidow::Expire(const std::string& key, int32_t ttl) {
+Status BlackWidow::Expire(const Slice& key, int32_t ttl) {
   return strings_db_->Expire(key, ttl);
 }
 

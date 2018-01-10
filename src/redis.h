@@ -11,11 +11,13 @@
 
 #include "rocksdb/db.h"
 #include "rocksdb/status.h"
+#include "rocksdb/slice.h"
 #include "src/lock_mgr.h"
 #include "src/mutex_impl.h"
 
 namespace blackwidow {
 using Status = rocksdb::Status;
+using Slice = rocksdb::Slice;
 
 class Redis {
  public:
@@ -31,11 +33,14 @@ class Redis {
     delete lock_mgr_;
   }
 
+  // Common Commands
   virtual Status Open(const rocksdb::Options& options,
       const std::string& db_path) = 0;
-  virtual Status Expire(const std::string& key, int32_t ttl) = 0;
   virtual Status CompactRange(const rocksdb::Slice* begin,
       const rocksdb::Slice* end) = 0;
+
+  // Keys Commands
+  virtual Status Expire(const Slice& key, int32_t ttl) = 0;
 
  protected:
   LockMgr* lock_mgr_;

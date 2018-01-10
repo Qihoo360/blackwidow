@@ -13,16 +13,16 @@
 namespace blackwidow {
 class ScopeRecordLock {
  public:
-  ScopeRecordLock(LockMgr* lock_mgr, const std::string& key) :
+  ScopeRecordLock(LockMgr* lock_mgr, const Slice& key) :
     lock_mgr_(lock_mgr), key_(key) {
-    lock_mgr_->TryLock(key_);
+    lock_mgr_->TryLock(key_.ToString());
   }
   ~ScopeRecordLock() {
-    lock_mgr_->UnLock(key_);
+    lock_mgr_->UnLock(key_.ToString());
   }
  private:
   LockMgr* const lock_mgr_;
-  std::string key_;
+  Slice key_;
   ScopeRecordLock(const ScopeRecordLock&);
   void operator=(const ScopeRecordLock&);
 };

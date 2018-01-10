@@ -10,10 +10,12 @@
 
 #include "rocksdb/status.h"
 #include "rocksdb/options.h"
+#include "rocksdb/slice.h"
 
 namespace blackwidow {
 using Options = rocksdb::Options;
 using Status = rocksdb::Status;
+using Slice = rocksdb::Slice;
 
 class RedisStrings;
 class BlackWidow {
@@ -25,9 +27,13 @@ class BlackWidow {
   Status Compact();
 
   Status Open(const Options& options, const std::string& db_path);
-  Status Set(const std::string& key, const std::string& value);
-  Status Get(const std::string& key, std::string* value);
-  Status Expire(const std::string& key, int32_t ttl);
+
+  // Strings Commands
+  Status Set(const Slice& key, const Slice& value);
+  Status Get(const Slice& key, std::string* value);
+
+  // Keys Commands
+  Status Expire(const Slice& key, int32_t ttl);
 
  private:
   RedisStrings* strings_db_;

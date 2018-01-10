@@ -9,30 +9,27 @@
 #include <string>
 #include <memory>
 
-#include "src/string_converter.h"
 #include "src/redis.h"
 
 namespace blackwidow {
 
 class RedisStrings : public Redis {
  public:
-  explicit RedisStrings(rocksdb::Env* env)
-    : converter_(env) {
-  }
-
+  RedisStrings() = default;
   ~RedisStrings() = default;
 
-  Status Set(const std::string& key, const std::string& value);
-  Status Get(const std::string& key, std::string* value);
+  // Strings Commands
+  Status Set(const Slice& key, const Slice& value);
+  Status Get(const Slice& key, std::string* value);
 
+  // Common Commands
   virtual Status Open(const rocksdb::Options& options,
       const std::string& db_path) override;
-  virtual Status Expire(const std::string& key, int32_t ttl) override;
   virtual Status CompactRange(const rocksdb::Slice* begin,
       const rocksdb::Slice* end) override;
 
- private:
-  StringConverter converter_;
+  // Keys Commands
+  virtual Status Expire(const Slice& key, int32_t ttl) override;
 };
 
 }  //  namespace blackwidow

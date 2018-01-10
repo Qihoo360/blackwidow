@@ -7,7 +7,7 @@
 
 #include <memory>
 
-#include "src/string_filter.h"
+#include "src/strings_filter.h"
 #include "src/scope_record_lock.h"
 
 namespace blackwidow {
@@ -15,47 +15,43 @@ namespace blackwidow {
 Status RedisStrings::Open(const rocksdb::Options& options,
     const std::string& db_path) {
   rocksdb::Options ops(options);
-  ops.compaction_filter_factory = std::make_shared<StringFilterFactory>(
-      &converter_);
+  ops.compaction_filter_factory = std::make_shared<StringsFilterFactory>();
   return rocksdb::DB::Open(ops, db_path, &db_);
 }
 
-Status RedisStrings::Set(const std::string& key, const std::string& value) {
-  std::string value_with_ts;
-  converter_.AppendTimestamp(value, 0, &value_with_ts);
+Status RedisStrings::Set(const Slice& key, const Slice& value) {
+  InternalStringsValue internal_value(value);
   ScopeRecordLock l(lock_mgr_, key);
-  return db_->Put(default_write_options_, key, value_with_ts);
+  return db_->Put(default_write_options_, key, internal_value.Encode());
 }
 
-Status RedisStrings::Get(const std::string& key, std::string* value) {
+Status RedisStrings::Get(const Slice& key, std::string* value) {
   Status s = db_->Get(default_read_options_, key, value);
   if (s.ok()) {
-    if (converter_.IsStale(*value)) {
+    ParsedInternalStringsValue internal_value(value);
+    if (internal_value.IsStale()) {
       value->clear();
       return Status::NotFound("Stale");
     } else {
-      converter_.StripTimestamp(value);
+      internal_value.StripSuffix();
     }
   }
   return s;
 }
 
-Status RedisStrings::Expire(const std::string& key, int32_t ttl) {
-  std::string value_with_ts;
+Status RedisStrings::Expire(const Slice& key, int32_t ttl) {
+  std::string value;
   ScopeRecordLock l(lock_mgr_, key);
-  Status s = db_->Get(default_read_options_, key, &value_with_ts);
+  Status s = db_->Get(default_read_options_, key, &value);
   if (s.ok()) {
-    if (converter_.IsStale(value_with_ts)) {
-      value_with_ts.clear();
+    ParsedInternalStringsValue parsed(&value);
+    if (parsed.IsStale()) {
       return Status::NotFound("Stale");
-    } else {
-      converter_.StripTimestamp(&value_with_ts);
     }
 
     if (ttl > 0) {
-      std::string value_with_new_ts;
-      converter_.AppendTimestamp(value_with_ts, ttl, &value_with_new_ts);
-      return db_->Put(default_write_options_, key, value_with_new_ts);
+      parsed.SetRelativeTimestamp(ttl);
+      return db_->Put(default_write_options_, key, value);
     } else {
       return db_->Delete(default_write_options_, key);
     }

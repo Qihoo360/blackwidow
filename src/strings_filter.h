@@ -3,48 +3,41 @@
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 
-#ifndef SRC_STRING_FILTER_H_
-#define SRC_STRING_FILTER_H_
+#ifndef SRC_STRINGS_FILTER_H_
+#define SRC_STRINGS_FILTER_H_
 
 #include <string>
 #include <memory>
 
-#include "src/string_converter.h"
+#include "src/value_format.h"
 #include "rocksdb/compaction_filter.h"
 
 namespace blackwidow {
 
-class StringFilter : public rocksdb::CompactionFilter {
+class StringsFilter : public rocksdb::CompactionFilter {
  public:
-  explicit StringFilter(StringConverter* converter)
-    : converter_(converter) {
-  }
+  StringsFilter() = default;
   virtual bool Filter(int level, const rocksdb::Slice& key,
                       const rocksdb::Slice& value,
                       std::string* new_value, bool* value_changed) const
       override {
-    return converter_->IsStale(value);
+    ParsedInternalStringsValue parsed(value);
+    return parsed.IsStale();
   }
 
-  virtual const char* Name() const override { return "StringFilter"; }
- private:
-  StringConverter* converter_;
+  virtual const char* Name() const override { return "StringsFilter"; }
 };
 
-class StringFilterFactory : public rocksdb::CompactionFilterFactory {
+class StringsFilterFactory : public rocksdb::CompactionFilterFactory {
  public:
-  explicit StringFilterFactory(StringConverter* converter)
-    : converter_(converter) {
-  }
+  StringsFilterFactory() = default;
   virtual std::unique_ptr<rocksdb::CompactionFilter> CreateCompactionFilter(
       const rocksdb::CompactionFilter::Context& context) override {
     return std::unique_ptr<rocksdb::CompactionFilter>(
-        new StringFilter(converter_));
+        new StringsFilter());
   }
-  virtual const char* Name() const override { return "StringFilterFactory"; }
- private:
-  StringConverter* converter_;
+  virtual const char* Name() const override { return "StringsFilterFactory"; }
 };
 
 }  //  namespace blackwidow
-#endif  // SRC_STRING_FILTER_H_
+#endif  // SRC_STRINGS_FILTER_H_
