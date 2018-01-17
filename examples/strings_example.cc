@@ -49,5 +49,16 @@ int main() {
   s = db.Compact();
   printf("Compact return: %s\n", s.ToString().c_str());
 
+  s = db.Setex("TEST_KEY", "TEST_VALUE", 1);
+  printf("Setex return: %s\n", s.ToString().c_str());
+  std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+  s = db.Get("TEST_KEY", &value);
+  printf("Get return: %s, value: %s\n", s.ToString().c_str(), value.c_str());
+
+  s = db.Set("TEST_KEY", "TEST_VALUE");
+  int32_t len = 0;
+  s = db.Strlen("TEST_KEY", &len);
+  printf("Strlen return: %s, strlen: %d\n", s.ToString().c_str(), len);
+
   return 0;
 }

@@ -33,6 +33,8 @@ class BlackWidow {
   Status Get(const Slice& key, std::string* value);
   Status Setnx(const Slice& key, const Slice& value, int32_t* ret);
   Status Append(const Slice& key, const Slice& value, int32_t* ret);
+  Status Setex(const Slice& key, const Slice& value, int32_t ttl);
+  Status Strlen(const Slice& key, int32_t* len);
 
   // Keys Commands
   Status Expire(const Slice& key, int32_t ttl);

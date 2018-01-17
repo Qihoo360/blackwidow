@@ -23,6 +23,8 @@ class RedisStrings : public Redis {
   Status Get(const Slice& key, std::string* value);
   Status Setnx(const Slice& key, const Slice& value, int32_t* ret);
   Status Append(const Slice& key, const Slice& value, int32_t* ret);
+  Status Setex(const Slice& key, const Slice& value, int32_t ttl);
+  Status Strlen(const Slice& key, int32_t *len);
 
   // Common Commands
   virtual Status Open(const rocksdb::Options& options,
