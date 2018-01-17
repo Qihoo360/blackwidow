@@ -21,6 +21,8 @@ class RedisStrings : public Redis {
   // Strings Commands
   Status Set(const Slice& key, const Slice& value);
   Status Get(const Slice& key, std::string* value);
+  Status Setnx(const Slice& key, const Slice& value, int32_t* ret);
+  Status Append(const Slice& key, const Slice& value, int32_t* ret);
 
   // Common Commands
   virtual Status Open(const rocksdb::Options& options,
