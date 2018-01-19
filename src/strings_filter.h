@@ -21,8 +21,8 @@ class StringsFilter : public rocksdb::CompactionFilter {
                       const rocksdb::Slice& value,
                       std::string* new_value, bool* value_changed) const
       override {
-    ParsedInternalStringsValue parsed(value);
-    return parsed.IsStale();
+    ParsedStringsValue parsed_strings_value(value);
+    return parsed_strings_value.IsStale();
   }
 
   virtual const char* Name() const override { return "StringsFilter"; }

@@ -6,6 +6,7 @@
 #include "blackwidow/blackwidow.h"
 
 #include "src/redis_strings.h"
+#include "src/redis_hashes.h"
 
 namespace blackwidow {
 
@@ -18,7 +19,11 @@ BlackWidow::~BlackWidow() {
 }
 
 Status BlackWidow::Compact() {
-  return strings_db_->CompactRange(NULL, NULL);
+  Status s = strings_db_->CompactRange(NULL, NULL);
+  if (!s.ok()) {
+    return s;
+  }
+  return hashes_db_->CompactRange(NULL, NULL);
 }
 
 static std::string AppendSubDirectory(const std::string& db_path,
@@ -34,9 +39,12 @@ Status BlackWidow::Open(const rocksdb::Options& options,
     const std::string& db_path) {
   strings_db_ = new RedisStrings();
   Status s = strings_db_->Open(options, AppendSubDirectory(db_path, "strings"));
+  hashes_db_ = new RedisHashes();
+  s = hashes_db_->Open(options, AppendSubDirectory(db_path, "hashes"));
   return s;
 }
 
+// Strings Commands
 Status BlackWidow::Set(const Slice& key, const Slice& value) {
   return strings_db_->Set(key, value);
 }
@@ -53,10 +61,6 @@ Status BlackWidow::Append(const Slice& key, const Slice& value, int32_t* ret) {
   return strings_db_->Append(key, value, ret);
 }
 
-Status BlackWidow::Expire(const Slice& key, int32_t ttl) {
-  return strings_db_->Expire(key, ttl);
-}
-
 Status BlackWidow::Setex(const Slice& key, const Slice& value, int32_t ttl) {
   return strings_db_->Setex(key, value, ttl);
 }
@@ -64,5 +68,27 @@ Status BlackWidow::Setex(const Slice& key, const Slice& value, int32_t ttl) {
 Status BlackWidow::Strlen(const Slice& key, int32_t* len) {
   return strings_db_->Strlen(key, len);
 }
+
+// Hashes Commands
+Status BlackWidow::HSet(const Slice& key, const Slice& field,
+    const Slice& value, int32_t* res) {
+  return hashes_db_->HSet(key, field, value, res);
+}
+
+Status BlackWidow::HGet(const Slice& key, const Slice& field,
+    std::string* value) {
+  return hashes_db_->HGet(key, field, value);
+}
+
+// Keys Commands
+Status BlackWidow::Expire(const Slice& key, int32_t ttl) {
+  Status s = strings_db_->Expire(key, ttl);
+  if (!s.ok() && !s.IsNotFound()) {
+    return s;
+  }
+  s = hashes_db_->Expire(key, ttl);
+  return s;
+}
+
 
 }  //  namespace blackwidow

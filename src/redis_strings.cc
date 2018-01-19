@@ -20,20 +20,20 @@ Status RedisStrings::Open(const rocksdb::Options& options,
 }
 
 Status RedisStrings::Set(const Slice& key, const Slice& value) {
-  InternalStringsValue internal_value(value);
+  StringsValue strings_value(value);
   ScopeRecordLock l(lock_mgr_, key);
-  return db_->Put(default_write_options_, key, internal_value.Encode());
+  return db_->Put(default_write_options_, key, strings_value.Encode());
 }
 
 Status RedisStrings::Get(const Slice& key, std::string* value) {
   Status s = db_->Get(default_read_options_, key, value);
   if (s.ok()) {
-    ParsedInternalStringsValue internal_value(value);
-    if (internal_value.IsStale()) {
+    ParsedStringsValue parsed_strings_value(value);
+    if (parsed_strings_value.IsStale()) {
       value->clear();
       return Status::NotFound("Stale");
     } else {
-      internal_value.StripSuffix();
+      parsed_strings_value.StripSuffix();
     }
   }
   return s;
@@ -45,17 +45,17 @@ Status RedisStrings::Setnx(const Slice& key, const Slice& value, int32_t* ret) {
   ScopeRecordLock l(lock_mgr_, key);
   Status s = db_->Get(default_read_options_, key, &old_value);
   if (s.ok()) {
-    ParsedInternalStringsValue internal_value(&old_value);
-    if (internal_value.IsStale()) {
-      InternalStringsValue new_value(value);
-      s = db_->Put(default_write_options_, key, new_value.Encode());
+    ParsedStringsValue parsed_strings_value(&old_value);
+    if (parsed_strings_value.IsStale()) {
+      StringsValue new_strings_value(value);
+      s = db_->Put(default_write_options_, key, new_strings_value.Encode());
       if (s.ok()) {
         *ret = 1;
       }
     }
   } else if (s.IsNotFound()) {
-    InternalStringsValue new_value(value);
-    s = db_->Put(default_write_options_, key, new_value.Encode());
+    StringsValue new_strings_value(value);
+    s = db_->Put(default_write_options_, key, new_strings_value.Encode());
     if (s.ok()) {
       *ret = 1;
     }
@@ -70,22 +70,22 @@ Status RedisStrings::Append(const Slice& key, const Slice& value,
   ScopeRecordLock l(lock_mgr_, key);
   Status s = db_->Get(default_read_options_, key, &old_value);
   if (s.ok()) {
-    ParsedInternalStringsValue internal_value(&old_value);
-    if (internal_value.IsStale()) {
+    ParsedStringsValue parsed_strings_value(&old_value);
+    if (parsed_strings_value.IsStale()) {
       *ret = value.size();
-      InternalStringsValue new_value(value);
-      return db_->Put(default_write_options_, key, new_value.Encode());
+      StringsValue new_strings_value(value);
+      return db_->Put(default_write_options_, key, new_strings_value.Encode());
     } else {
-      internal_value.StripSuffix();
+      parsed_strings_value.StripSuffix();
       *ret = old_value.size() + value.size();
       old_value += value.data();
-      InternalStringsValue new_value(old_value);
-      return db_->Put(default_write_options_, key, new_value.Encode());
+      StringsValue new_strings_value(old_value);
+      return db_->Put(default_write_options_, key, new_strings_value.Encode());
     }
   } else if (s.IsNotFound()) {
     *ret = value.size();
-    InternalStringsValue internal_value(value);
-    return db_->Put(default_write_options_, key, internal_value.Encode());
+    StringsValue strings_value(value);
+    return db_->Put(default_write_options_, key, strings_value.Encode());
   }
   return s;
 }
@@ -95,13 +95,13 @@ Status RedisStrings::Expire(const Slice& key, int32_t ttl) {
   ScopeRecordLock l(lock_mgr_, key);
   Status s = db_->Get(default_read_options_, key, &value);
   if (s.ok()) {
-    ParsedInternalStringsValue parsed(&value);
-    if (parsed.IsStale()) {
+    ParsedStringsValue parsed_strings_value(&value);
+    if (parsed_strings_value.IsStale()) {
       return Status::NotFound("Stale");
     }
 
     if (ttl > 0) {
-      parsed.SetRelativeTimestamp(ttl);
+      parsed_strings_value.SetRelativeTimestamp(ttl);
       return db_->Put(default_write_options_, key, value);
     } else {
       return db_->Delete(default_write_options_, key);
@@ -110,18 +110,13 @@ Status RedisStrings::Expire(const Slice& key, int32_t ttl) {
   return s;
 }
 
-Status RedisStrings::CompactRange(const rocksdb::Slice* begin,
-    const rocksdb::Slice* end) {
-  return db_->CompactRange(default_compact_range_options_, begin, end);
-}
-
 Status RedisStrings::Setex(const Slice& key, const Slice& value, int32_t ttl) {
   // the ttl argument must greater than zero, to be compatible with redis
   assert(ttl > 0);
-  InternalStringsValue internal_value(value);
-  internal_value.SetRelativeTimestamp(ttl);
+  StringsValue strings_value(value);
+  strings_value.SetRelativeTimestamp(ttl);
   ScopeRecordLock l(lock_mgr_, key);
-  return db_->Put(default_write_options_, key, internal_value.Encode());
+  return db_->Put(default_write_options_, key, strings_value.Encode());
 }
 
 Status RedisStrings::Strlen(const Slice& key, int32_t *len) {
@@ -133,6 +128,11 @@ Status RedisStrings::Strlen(const Slice& key, int32_t *len) {
     *len = 0;
   }
   return s;
+}
+
+Status RedisStrings::CompactRange(const rocksdb::Slice* begin,
+    const rocksdb::Slice* end) {
+  return db_->CompactRange(default_compact_range_options_, begin, end);
 }
 
 }  //  namespace blackwidow

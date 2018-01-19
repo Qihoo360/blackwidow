@@ -21,6 +21,22 @@ RedisHashes::~RedisHashes() {
 
 Status RedisHashes::Open(const rocksdb::Options& options,
     const std::string& db_path) {
+  rocksdb::Options ops(options);
+  Status s = rocksdb::DB::Open(ops, db_path, &db_);
+  if (s.ok()) {
+    // create column family
+    rocksdb::ColumnFamilyHandle* cf;
+    s = db_->CreateColumnFamily(rocksdb::ColumnFamilyOptions(),
+        "data_cf", &cf);
+    if (!s.ok()) {
+      return s;
+    }
+    // close DB
+    delete cf;
+    delete db_;
+  }
+
+  // Open
   rocksdb::DBOptions db_ops(options);
   rocksdb::ColumnFamilyOptions meta_cf_ops(options);
   rocksdb::ColumnFamilyOptions data_cf_ops(options);
@@ -53,7 +69,7 @@ Status RedisHashes::HSet(const Slice& key, const Slice& field,
   if (s.ok()) {
     ParsedHashesMetaValue parsed(&meta_value);
     if (parsed.IsStale()) {
-      parsed.UpdateVersion();
+      version = parsed.UpdateVersion();
       parsed.set_count(1);
       batch.Put(handles_[0], key, meta_value);
       HashesDataKey data_key(key, version, field);
@@ -80,7 +96,7 @@ Status RedisHashes::HSet(const Slice& key, const Slice& field,
     char str[4];
     EncodeFixed32(str, 1);
     HashesMetaValue meta_value(std::string(str, sizeof(int32_t)));
-    meta_value.UpdateVersion();
+    version = meta_value.UpdateVersion();
     batch.Put(handles_[0], key, meta_value.Encode());
     HashesDataKey data_key(key, version, field);
     batch.Put(handles_[1], data_key.Encode(), value);
@@ -111,7 +127,7 @@ Status RedisHashes::HGet(const Slice& key, const Slice& field,
       s = db_->Get(read_options, handles_[1], data_key.Encode(), value);
     }
   } else if (s.IsNotFound()) {
-    return Status::NotFound("Stale");
+    return Status::NotFound();
   }
 
   return s;
@@ -139,7 +155,13 @@ Status RedisHashes::Expire(const Slice& key, int32_t ttl) {
 
 Status RedisHashes::CompactRange(const rocksdb::Slice* begin,
     const rocksdb::Slice* end) {
-  return db_->CompactRange(default_compact_range_options_, begin, end);
+  Status s = db_->CompactRange(default_compact_range_options_,
+      handles_[0], begin, end);
+  if (!s.ok()) {
+    return s;
+  }
+  return db_->CompactRange(default_compact_range_options_,
+      handles_[1], begin, end);
 }
 
 }  //  namespace blackwidow

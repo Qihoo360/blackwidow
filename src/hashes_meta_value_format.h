@@ -23,6 +23,7 @@ class HashesMetaValue : public InternalValue {
     memcpy(dst, user_value_.data(), usize);
     dst += usize;
     EncodeFixed32(dst, version_);
+    dst += sizeof(int32_t);
     EncodeFixed32(dst, timestamp_);
     return usize + 2 * sizeof(int32_t);
   }
@@ -30,7 +31,11 @@ class HashesMetaValue : public InternalValue {
   int32_t UpdateVersion() {
     int64_t unix_time;
     rocksdb::Env::Default()->GetCurrentTime(&unix_time);
-    version_ = static_cast<int32_t>(unix_time);
+    if (version_ >= static_cast<int32_t>(unix_time)) {
+      version_++;
+    } else {
+      version_ = static_cast<int32_t>(unix_time);
+    }
     return version_;
   }
 };
@@ -43,6 +48,8 @@ class ParsedHashesMetaValue : public ParsedInternalValue {
     if (internal_value_str->size() >= kHashesMetaValueSuffixLength) {
       user_value_ = Slice(internal_value_str->data(),
           internal_value_str->size() - kHashesMetaValueSuffixLength);
+      version_ = DecodeFixed32(internal_value_str->data() +
+            internal_value_str->size() - sizeof(int32_t) * 2);
       timestamp_ = DecodeFixed32(internal_value_str->data() +
             internal_value_str->size() - sizeof(int32_t));
     }
@@ -55,6 +62,8 @@ class ParsedHashesMetaValue : public ParsedInternalValue {
     if (internal_value_slice.size() >= kHashesMetaValueSuffixLength) {
       user_value_ = Slice(internal_value_slice.data(),
           internal_value_slice.size() - kHashesMetaValueSuffixLength);
+      version_ = DecodeFixed32(internal_value_slice.data() +
+            internal_value_slice.size() - sizeof(int32_t) * 2);
       timestamp_ = DecodeFixed32(internal_value_slice.data() +
             internal_value_slice.size() - sizeof(int32_t));
     }
@@ -72,7 +81,7 @@ class ParsedHashesMetaValue : public ParsedInternalValue {
     if (value_ != nullptr) {
       char* dst = const_cast<char*>(value_->data()) + value_->size() -
         kHashesMetaValueSuffixLength;
-      EncodeFixed32(dst, timestamp_);
+      EncodeFixed32(dst, version_);
     }
   }
 
@@ -108,7 +117,11 @@ class ParsedHashesMetaValue : public ParsedInternalValue {
   int32_t UpdateVersion() {
     int64_t unix_time;
     rocksdb::Env::Default()->GetCurrentTime(&unix_time);
-    version_ = static_cast<int32_t>(unix_time);
+    if (version_ >= static_cast<int32_t>(unix_time)) {
+      version_++;
+    } else {
+      version_ = static_cast<int32_t>(unix_time);
+    }
     SetVersionToValue();
     return version_;
   }

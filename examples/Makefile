@@ -4,7 +4,7 @@ CXXFLAGS=-O2 -std=c++11 -fno-builtin-memcmp -msse -msse4.2
 
 .PHONY: clean all
 
-all: strings_example
+all: strings_example hashes_example
 
 ifndef BLACKWIDOW_PATH
   $(warning Warning: missing blackwidow path, using default)
@@ -28,6 +28,9 @@ LDFLAGS := $(DEP_LIBS) $(LDFLAGS)
 strings_example: strings_example.cc
 	$(CXX) $(CXXFLAGS) $^ -o$@ $(LDFLAGS)
 
+hashes_example: hashes_example.cc
+	$(CXX) $(CXXFLAGS) $^ -o$@ $(LDFLAGS)
+
 clean:
 	find . -name "*.[oda]" -exec rm -f {} \;
-	rm -rf ./strings_example
+	rm -rf ./strings_example ./hashes_example

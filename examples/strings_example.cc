@@ -30,13 +30,15 @@ int main() {
   // Setnx
   int32_t ret;
   s = db.Setnx("TEST_KEY", "TEST_VALUE", &ret);
-  printf("Setnx return: %s, value: %s, ret: %d\n", s.ToString().c_str(), value.c_str(), ret);
+  printf("Setnx return: %s, value: %s, ret: %d\n",
+      s.ToString().c_str(), value.c_str(), ret);
 
   // Append
   std::string append_value;
   s = db.Append("TEST_KEY", "APPEND_VALUE", &ret);
   s = db.Get("TEST_KEY", &append_value);
-  printf("Append return: %s, value: %s, ret: %d\n", s.ToString().c_str(), append_value.c_str(), ret);
+  printf("Append return: %s, value: %s, ret: %d\n",
+      s.ToString().c_str(), append_value.c_str(), ret);
 
   // Expire
   s = db.Expire("TEST_KEY", 1);

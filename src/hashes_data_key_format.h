@@ -94,7 +94,5 @@ class ParsedHashesDataKey {
   Slice field_;
 };
 
-
-
 }  //  namespace blackwidow
 #endif  // SRC_HASHES_DATA_KEY_FORMAT_H_

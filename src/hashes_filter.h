@@ -24,15 +24,24 @@ class HashesMetaFilter : public rocksdb::CompactionFilter {
                       std::string* new_value, bool* value_changed) const
       override {
     ParsedHashesMetaValue parsed_meta_value(value);
+    printf("MetaFilter, key: %s, ts: %d, ver: %d\n",
+        key.ToString().c_str(), parsed_meta_value.timestamp(),
+        parsed_meta_value.version());
     int64_t unix_time;
     rocksdb::Env::Default()->GetCurrentTime(&unix_time);
+    int32_t cur_time = static_cast<int32_t>(unix_time);
     if (parsed_meta_value.timestamp() != 0 &&
-        parsed_meta_value.timestamp() < static_cast<int32_t>(unix_time)) {
+        parsed_meta_value.timestamp() < cur_time &&
+        parsed_meta_value.version() < cur_time) {
+      printf("Drop[1]\n");
       return true;
     }
-    if (parsed_meta_value.count() == 0) {
+    if (parsed_meta_value.count() == 0 &&
+        parsed_meta_value.version() < cur_time) {
+      printf("Drop[2]\n");
       return true;
     }
+    printf("Reserve\n");
     return false;
   }
 
@@ -56,34 +65,56 @@ class HashesDataFilter : public rocksdb::CompactionFilter {
  public:
   HashesDataFilter(rocksdb::DB* db,
       std::vector<rocksdb::ColumnFamilyHandle*>* handles_ptr)
-      : db_(db), cf_handles_ptr_(handles_ptr) {
+      : db_(db), cf_handles_ptr_(handles_ptr), meta_not_found_(false) {
   }
   virtual bool Filter(int level, const rocksdb::Slice& key,
                       const rocksdb::Slice& value,
                       std::string* new_value, bool* value_changed) const
       override {
     ParsedHashesDataKey parsed_data_key(key);
+    printf("DataFilter, key: %s, field: %s, ver: %d\n",
+        parsed_data_key.key().ToString().c_str(),
+        parsed_data_key.field().ToString().c_str(),
+        parsed_data_key.version());
     if (parsed_data_key.key().ToString() != cur_key_) {
+      printf("prev_key: %s, update, ", cur_key_.c_str());
       cur_key_ = parsed_data_key.key().ToString();
       std::string meta_value;
       Status s = db_->Get(default_read_options_, (*cf_handles_ptr_)[0],
           cur_key_, &meta_value);
       if (s.ok()) {
+        meta_not_found_ = false;
         ParsedHashesMetaValue parsed_meta_value(&meta_value);
         cur_meta_version_ = parsed_meta_value.version();
         cur_meta_timestamp_ = parsed_meta_value.timestamp();
+        printf("cur_meta_ver: %d, cur_meta_ts: %d, ", cur_meta_version_,
+            cur_meta_timestamp_);
+        printf("meta_not_found: %d\n", meta_not_found_);
       } else if (s.IsNotFound()) {
-        return true;
+        meta_not_found_ = true;
+        printf("meta_not_found: %d\n", meta_not_found_);
       } else {
+        printf("Reserve[1]\n");
         return false;
       }
+    }
+
+    if (meta_not_found_) {
+      printf("Drop[1]\n");
+      return true;
     }
 
     int64_t unix_time;
     rocksdb::Env::Default()->GetCurrentTime(&unix_time);
     if (cur_meta_timestamp_ != 0 &&
         cur_meta_timestamp_ < static_cast<int32_t>(unix_time)) {
+      printf("Drop[2]\n");
       return true;
+    }
+    if (cur_meta_version_ > parsed_data_key.version()) {
+      printf("Drop[3]\n");
+    } else {
+      printf("Reserve[2]\n");
     }
     return cur_meta_version_ > parsed_data_key.version();
   }
@@ -95,6 +126,7 @@ class HashesDataFilter : public rocksdb::CompactionFilter {
   std::vector<rocksdb::ColumnFamilyHandle*>* cf_handles_ptr_;
   rocksdb::ReadOptions default_read_options_;
   mutable std::string cur_key_;
+  mutable bool meta_not_found_;
   mutable int32_t cur_meta_version_;
   mutable int32_t cur_meta_timestamp_;
 };

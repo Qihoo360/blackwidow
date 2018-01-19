@@ -12,9 +12,9 @@
 
 namespace blackwidow {
 
-class InternalStringsValue : public InternalValue {
+class StringsValue : public InternalValue {
  public:
-  explicit InternalStringsValue(const Slice& user_value) :
+  explicit StringsValue(const Slice& user_value) :
     InternalValue(user_value) {
   }
   virtual size_t AppendTimestampAndVersion() override {
@@ -27,10 +27,10 @@ class InternalStringsValue : public InternalValue {
   }
 };
 
-class ParsedInternalStringsValue : public ParsedInternalValue {
+class ParsedStringsValue : public ParsedInternalValue {
  public:
   // Use this constructor after rocksdb::DB::Get();
-  explicit ParsedInternalStringsValue(std::string* internal_value_str) :
+  explicit ParsedStringsValue(std::string* internal_value_str) :
     ParsedInternalValue(internal_value_str) {
     if (internal_value_str->size() >= kStringsValueSuffixLength) {
       user_value_ = Slice(internal_value_str->data(),
@@ -41,7 +41,7 @@ class ParsedInternalStringsValue : public ParsedInternalValue {
   }
 
   // Use this constructor in rocksdb::CompactionFilter::Filter();
-  explicit ParsedInternalStringsValue(const Slice& internal_value_slice) :
+  explicit ParsedStringsValue(const Slice& internal_value_slice) :
     ParsedInternalValue(internal_value_slice) {
     if (internal_value_slice.size() >= kStringsValueSuffixLength) {
       user_value_ = Slice(internal_value_slice.data(),
