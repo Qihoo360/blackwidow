@@ -41,6 +41,7 @@ class Redis {
 
   // Keys Commands
   virtual Status Expire(const Slice& key, int32_t ttl) = 0;
+  virtual Status Delete(const Slice& key) = 0;
 
  protected:
   LockMgr* lock_mgr_;

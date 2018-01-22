@@ -90,6 +90,26 @@ Status RedisStrings::Append(const Slice& key, const Slice& value,
   return s;
 }
 
+Status RedisStrings::Setex(const Slice& key, const Slice& value, int32_t ttl) {
+  // the ttl argument must greater than zero, to be compatible with redis
+  assert(ttl > 0);
+  StringsValue strings_value(value);
+  strings_value.SetRelativeTimestamp(ttl);
+  ScopeRecordLock l(lock_mgr_, key);
+  return db_->Put(default_write_options_, key, strings_value.Encode());
+}
+
+Status RedisStrings::Strlen(const Slice& key, int32_t *len) {
+  std::string value;
+  Status s = Get(key, &value);
+  if (s.ok()) {
+    *len = value.size();
+  } else {
+    *len = 0;
+  }
+  return s;
+}
+
 Status RedisStrings::Expire(const Slice& key, int32_t ttl) {
   std::string value;
   ScopeRecordLock l(lock_mgr_, key);
@@ -110,22 +130,16 @@ Status RedisStrings::Expire(const Slice& key, int32_t ttl) {
   return s;
 }
 
-Status RedisStrings::Setex(const Slice& key, const Slice& value, int32_t ttl) {
-  // the ttl argument must greater than zero, to be compatible with redis
-  assert(ttl > 0);
-  StringsValue strings_value(value);
-  strings_value.SetRelativeTimestamp(ttl);
-  ScopeRecordLock l(lock_mgr_, key);
-  return db_->Put(default_write_options_, key, strings_value.Encode());
-}
-
-Status RedisStrings::Strlen(const Slice& key, int32_t *len) {
+Status RedisStrings::Delete(const Slice& key) {
   std::string value;
-  Status s = Get(key, &value);
+  ScopeRecordLock l(lock_mgr_, key);
+  Status s = db_->Get(default_read_options_, key, &value);
   if (s.ok()) {
-    *len = value.size();
-  } else {
-    *len = 0;
+    ParsedStringsValue parsed_strings_value(&value);
+    if (parsed_strings_value.IsStale()) {
+      return Status::NotFound("Stale");
+    }
+    return db_->Delete(default_write_options_, key);
   }
   return s;
 }

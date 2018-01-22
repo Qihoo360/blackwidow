@@ -11,6 +11,7 @@
 
 #include "src/strings_value_format.h"
 #include "rocksdb/compaction_filter.h"
+#include "src/debug.h"
 
 namespace blackwidow {
 

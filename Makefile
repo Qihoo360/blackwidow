@@ -103,11 +103,12 @@ LIBOBJECTS = $(LIB_SOURCES:.cc=.o)
 # if user didn't config LIBNAME, set the default
 ifeq ($(LIBNAME),)
 # we should only run blackwidow in production with DEBUG_LEVEL 0
-ifeq ($(DEBUG_LEVEL),0)
-        LIBNAME=libblackwidow
-else
-        LIBNAME=libblackwidow_debug
-endif
+LIBNAME=libblackwidow
+#ifeq ($(DEBUG_LEVEL),0)
+#        LIBNAME=libblackwidow
+#else
+#        LIBNAME=libblackwidow_debug
+#endif
 endif
 LIBOUTPUT = ./lib
 dummy := $(shell mkdir -p $(LIBOUTPUT))

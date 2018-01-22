@@ -153,6 +153,22 @@ Status RedisHashes::Expire(const Slice& key, int32_t ttl) {
   return s;
 }
 
+Status RedisHashes::Delete(const Slice& key) {
+  std::string meta_value;
+  ScopeRecordLock l(lock_mgr_, key);
+  Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
+  if (s.ok()) {
+    ParsedHashesMetaValue parsed(&meta_value);
+    parsed.set_count(0);
+    parsed.UpdateVersion();
+    s = db_->Put(default_write_options_, handles_[0], key, meta_value);
+    if (s.ok() && parsed.IsStale()) {
+      return Status::NotFound("Stale");
+    }
+  }
+  return s;
+}
+
 Status RedisHashes::CompactRange(const rocksdb::Slice* begin,
     const rocksdb::Slice* end) {
   Status s = db_->CompactRange(default_compact_range_options_,

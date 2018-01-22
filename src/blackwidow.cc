@@ -11,11 +11,13 @@
 namespace blackwidow {
 
 BlackWidow::BlackWidow() :
-    strings_db_(nullptr) {
+    strings_db_(nullptr),
+    hashes_db_(nullptr) {
 }
 
 BlackWidow::~BlackWidow() {
   delete strings_db_;
+  delete hashes_db_;
 }
 
 Status BlackWidow::Compact() {
@@ -90,5 +92,13 @@ Status BlackWidow::Expire(const Slice& key, int32_t ttl) {
   return s;
 }
 
+Status BlackWidow::Delete(const Slice& key) {
+  Status s = strings_db_->Delete(key);
+  if (!s.ok() && !s.IsNotFound()) {
+    return s;
+  }
+  s = hashes_db_->Delete(key);
+  return s;
+}
 
 }  //  namespace blackwidow

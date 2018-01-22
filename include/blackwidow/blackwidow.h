@@ -44,6 +44,7 @@ class BlackWidow {
 
   // Keys Commands
   Status Expire(const Slice& key, int32_t ttl);
+  Status Delete(const Slice& key);
 
  private:
   RedisStrings* strings_db_;

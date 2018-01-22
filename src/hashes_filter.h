@@ -12,6 +12,7 @@
 
 #include "src/hashes_meta_value_format.h"
 #include "src/hashes_data_key_format.h"
+#include "src/debug.h"
 #include "rocksdb/compaction_filter.h"
 
 namespace blackwidow {
@@ -24,24 +25,26 @@ class HashesMetaFilter : public rocksdb::CompactionFilter {
                       std::string* new_value, bool* value_changed) const
       override {
     ParsedHashesMetaValue parsed_meta_value(value);
-    printf("MetaFilter, key: %s, ts: %d, ver: %d\n",
-        key.ToString().c_str(), parsed_meta_value.timestamp(),
-        parsed_meta_value.version());
     int64_t unix_time;
     rocksdb::Env::Default()->GetCurrentTime(&unix_time);
     int32_t cur_time = static_cast<int32_t>(unix_time);
+    Trace("==================================================================");
+    Trace("[MetaFilter], key: %s, timestamp: %d, cur_time: %d, version: %d",
+        key.ToString().c_str(), parsed_meta_value.timestamp(),
+        cur_time, parsed_meta_value.version());
     if (parsed_meta_value.timestamp() != 0 &&
         parsed_meta_value.timestamp() < cur_time &&
         parsed_meta_value.version() < cur_time) {
-      printf("Drop[1]\n");
+      Trace("Drop[Stale & version < cur_time]");
       return true;
     }
     if (parsed_meta_value.count() == 0 &&
         parsed_meta_value.version() < cur_time) {
-      printf("Drop[2]\n");
+      Trace("Drop[Empty & version < cur_time]");
       return true;
     }
-    printf("Reserve\n");
+    Trace("Reserve");
+    Trace("==================================================================");
     return false;
   }
 
@@ -72,12 +75,16 @@ class HashesDataFilter : public rocksdb::CompactionFilter {
                       std::string* new_value, bool* value_changed) const
       override {
     ParsedHashesDataKey parsed_data_key(key);
-    printf("DataFilter, key: %s, field: %s, ver: %d\n",
+
+    Trace("------------------------------------------------------------------");
+    Trace("[DataFilter], key: %s, field: %s, version: %d",
         parsed_data_key.key().ToString().c_str(),
         parsed_data_key.field().ToString().c_str(),
         parsed_data_key.version());
+
     if (parsed_data_key.key().ToString() != cur_key_) {
-      printf("prev_key: %s, update, ", cur_key_.c_str());
+      Trace("+++++++++++++++++++++++++++++++++++++++++++++++++++");
+      Trace("!!!===>Prev Key: %s", cur_key_.c_str());
       cur_key_ = parsed_data_key.key().ToString();
       std::string meta_value;
       Status s = db_->Get(default_read_options_, (*cf_handles_ptr_)[0],
@@ -87,20 +94,28 @@ class HashesDataFilter : public rocksdb::CompactionFilter {
         ParsedHashesMetaValue parsed_meta_value(&meta_value);
         cur_meta_version_ = parsed_meta_value.version();
         cur_meta_timestamp_ = parsed_meta_value.timestamp();
-        printf("cur_meta_ver: %d, cur_meta_ts: %d, ", cur_meta_version_,
-            cur_meta_timestamp_);
-        printf("meta_not_found: %d\n", meta_not_found_);
+        Trace("Update cur_key to "
+            "[%s, cur_meta_version: %d, cur_meta_timestamp: %d]",
+            cur_key_.c_str(),
+            cur_meta_version_, cur_meta_timestamp_);
+        Trace("+++++++++++++++++++++++++++++++++++++++++++++++++++");
       } else if (s.IsNotFound()) {
         meta_not_found_ = true;
-        printf("meta_not_found: %d\n", meta_not_found_);
+        Trace("Update cur_key to "
+            "[%s, but meta_key not found]",
+            cur_key_.c_str());
+        Trace("+++++++++++++++++++++++++++++++++++++++++++++++++++");
       } else {
-        printf("Reserve[1]\n");
+        Trace("Update cur_key to "
+            "[%s, but Get meta_key FAILED] | Reserve",
+            cur_key_.c_str());
+        Trace("+++++++++++++++++++++++++++++++++++++++++++++++++++");
         return false;
       }
     }
 
     if (meta_not_found_) {
-      printf("Drop[1]\n");
+      Trace("Drop[Meta key not exist]");
       return true;
     }
 
@@ -108,14 +123,18 @@ class HashesDataFilter : public rocksdb::CompactionFilter {
     rocksdb::Env::Default()->GetCurrentTime(&unix_time);
     if (cur_meta_timestamp_ != 0 &&
         cur_meta_timestamp_ < static_cast<int32_t>(unix_time)) {
-      printf("Drop[2]\n");
+      Trace("Drop[cur_meta_timestamp < cur_time(%d)]",
+          static_cast<int32_t>(unix_time));
       return true;
     }
+#ifndef NDEBUG
     if (cur_meta_version_ > parsed_data_key.version()) {
-      printf("Drop[3]\n");
+      Trace("Drop[field_version < cur_time_version]");
     } else {
-      printf("Reserve[2]\n");
+      Trace("Reserve[field_version == cur_meta_version]");
     }
+    Trace("------------------------------------------------------------------");
+#endif
     return cur_meta_version_ > parsed_data_key.version();
   }
 

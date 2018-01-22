@@ -33,6 +33,7 @@ class RedisStrings : public Redis {
 
   // Keys Commands
   virtual Status Expire(const Slice& key, int32_t ttl) override;
+  virtual Status Delete(const Slice& key) override;
 };
 
 }  //  namespace blackwidow
