@@ -59,8 +59,22 @@ Status BlackWidow::Setnx(const Slice& key, const Slice& value, int32_t* ret) {
   return strings_db_->Setnx(key, value, ret);
 }
 
+Status BlackWidow::Setrange(const Slice& key, int32_t offset,
+                            const Slice& value, int32_t* ret) {
+  return strings_db_->Setrange(key, offset, value, ret);
+}
+
 Status BlackWidow::Append(const Slice& key, const Slice& value, int32_t* ret) {
   return strings_db_->Append(key, value, ret);
+}
+
+Status BlackWidow::BitCount(const Slice& key, int32_t start_offset, int32_t end_offset,
+                            int32_t *ret, bool have_range) {
+  return strings_db_->BitCount(key, start_offset, end_offset, ret, have_range);
+}
+
+Status BlackWidow::Decrby(const Slice& key, int64_t value, int64_t* ret) {
+  return strings_db_->Decrby(key, value, ret);
 }
 
 Status BlackWidow::Setex(const Slice& key, const Slice& value, int32_t ttl) {

@@ -30,15 +30,32 @@ int main() {
   // Setnx
   int32_t ret;
   s = db.Setnx("TEST_KEY", "TEST_VALUE", &ret);
-  printf("Setnx return: %s, value: %s, ret: %d\n",
-      s.ToString().c_str(), value.c_str(), ret);
+  printf("Setnx return: %s, value: %s, ret: %d\n", s.ToString().c_str(), value.c_str(), ret);
+
+  // Setrange
+  s = db.Setrange("TEST_KEY", 10, "APPEND_VALUE", &ret);
+  printf("Setrange return: %s, ret: %d\n", s.ToString().c_str(), ret);
 
   // Append
   std::string append_value;
+  s = db.Set("TEST_KEY", "TEST_VALUE");
   s = db.Append("TEST_KEY", "APPEND_VALUE", &ret);
   s = db.Get("TEST_KEY", &append_value);
-  printf("Append return: %s, value: %s, ret: %d\n",
-      s.ToString().c_str(), append_value.c_str(), ret);
+  printf("Append return: %s, value: %s, ret: %d\n", s.ToString().c_str(), append_value.c_str(), ret);
+
+  // BitCount
+  s = db.BitCount("TEST_KEY", 0, -1, &ret, false);
+  printf("BitCount return: %s, ret: %d\n", s.ToString().c_str(), ret);
+
+  // BitCount
+  s = db.BitCount("TEST_KEY", 0, -1, &ret, true);
+  printf("BitCount return: %s, ret: %d\n", s.ToString().c_str(), ret);
+
+  // Decrby
+  int64_t decrby_ret;
+  s = db.Set("TEST_KEY", "12345");
+  s = db.Decrby("TEST_KEY", 5, &decrby_ret);
+  printf("Decrby return: %s, ret: %d\n", s.ToString().c_str(), decrby_ret);
 
   // Expire
   s = db.Expire("TEST_KEY", 1);
