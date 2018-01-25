@@ -1,10 +1,11 @@
 CXX=g++
 LDFLAGS= -lpthread -lrt -lsnappy -lz -lbz2
 CXXFLAGS=-O2 -std=c++11 -fno-builtin-memcmp -msse -msse4.2
+PROCESSOR_NUMS= 24
 
 .PHONY: clean all
 
-all: strings_example hashes_example
+all: ROCKSDB strings_example hashes_example
 
 ifndef BLACKWIDOW_PATH
   $(warning Warning: missing blackwidow path, using default)
@@ -24,6 +25,9 @@ CXXFLAGS+= -I$(BLACKWIDOW_INCLUDE_DIR) -I$(ROCKSDB_INCLUDE_DIR)
 
 DEP_LIBS = $(BLACKWIDOW_LIBRARY) $(ROCKSDB_LIBRARY)
 LDFLAGS := $(DEP_LIBS) $(LDFLAGS)
+
+ROCKSDB:
+	$(AM_V_at)make -j $(PROCESSOR_NUMS) -C $(ROCKSDB_PATH)/ static_lib DISABLE_JEMALLOC=1
 
 strings_example: strings_example.cc
 	$(CXX) $(CXXFLAGS) $^ -o$@ $(LDFLAGS)

@@ -122,6 +122,9 @@ static_lib: $(LIBRARY)
 
 dbg: $(LIBRARY)
 
+test:
+	cd ./tests; make;
+
 $(LIBRARY): $(LIBOBJECTS)
 	$(AM_V_AR)rm -f $@
 	$(AM_V_at)$(AR) $(ARFLAGS) $@ $(LIBOBJECTS)

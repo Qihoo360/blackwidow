@@ -1,10 +1,9 @@
 CXX=g++
 LDFLAGS= -lpthread -lrt -lsnappy -lz -lbz2
 CXXFLAGS=-O2 -std=c++11 -fno-builtin-memcmp -msse -msse4.2
+PROCESSOR_NUMS= 24
 
 .PHONY: clean all
-
-all: lock_mgr gtest_strings
 
 ifndef BLACKWIDOW_PATH
   $(warning Warning: missing blackwidow path, using default)
@@ -31,6 +30,17 @@ CXXFLAGS+= -I$(BLACKWIDOW_PATH) -I$(BLACKWIDOW_INCLUDE_DIR) -I$(ROCKSDB_INCLUDE_
 
 DEP_LIBS = $(BLACKWIDOW_LIBRARY) $(ROCKSDB_LIBRARY) $(GOOGLETEST_LIBRARY)
 LDFLAGS := $(DEP_LIBS) $(LDFLAGS)
+
+all: GOOGLETEST ROCKSDB lock_mgr gtest_strings
+	mkdir db
+	./gtest_strings
+	rm -rf db
+
+GOOGLETEST:
+	cd $(GOOGLETEST_PATH); if [ ! -f ./Makefile ]; then  cmake .; fi; make;
+
+ROCKSDB:
+	$(AM_V_at)make -j $(PROCESSOR_NUMS) -C $(ROCKSDB_PATH)/ static_lib DISABLE_JEMALLOC=1
 
 lock_mgr: lock_mgr.cc
 	$(CXX) $(CXXFLAGS) $^ -o$@ $(LDFLAGS)
