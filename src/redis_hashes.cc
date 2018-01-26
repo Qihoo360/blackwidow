@@ -133,6 +133,11 @@ Status RedisHashes::HGet(const Slice& key, const Slice& field,
   return s;
 }
 
+Status RedisHashes::HExists(const Slice& key, const Slice& field) {
+  std::string value;
+  return HGet(key, field, &value);
+}
+
 Status RedisHashes::Expire(const Slice& key, int32_t ttl) {
   std::string meta_value;
   ScopeRecordLock l(lock_mgr_, key);

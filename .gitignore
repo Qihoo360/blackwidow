@@ -47,4 +47,5 @@ benchmark/blackwidow_bench
 # Tests
 tests/db
 tests/gtest_strings
+tests/gtest_hashes
 tests/lock_mgr

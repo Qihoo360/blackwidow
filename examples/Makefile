@@ -9,7 +9,7 @@ all: ROCKSDB strings_example hashes_example
 
 ifndef BLACKWIDOW_PATH
   $(warning Warning: missing blackwidow path, using default)
-  BLACKWIDOW_PATH=../
+  BLACKWIDOW_PATH=..
 endif
 BLACKWIDOW_INCLUDE_DIR=$(BLACKWIDOW_PATH)/include
 BLACKWIDOW_LIBRARY=$(BLACKWIDOW_PATH)/lib/libblackwidow.a
@@ -30,10 +30,10 @@ ROCKSDB:
 	$(AM_V_at)make -j $(PROCESSOR_NUMS) -C $(ROCKSDB_PATH)/ static_lib DISABLE_JEMALLOC=1
 
 strings_example: strings_example.cc
-	$(CXX) $(CXXFLAGS) $^ -o$@ $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 
 hashes_example: hashes_example.cc
-	$(CXX) $(CXXFLAGS) $^ -o$@ $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 
 clean:
 	find . -name "*.[oda]" -exec rm -f {} \;

@@ -11,6 +11,7 @@
 
 #include "src/strings_filter.h"
 #include "src/scope_record_lock.h"
+#include "src/scope_snapshot.h"
 
 namespace blackwidow {
 
@@ -39,6 +40,73 @@ Status RedisStrings::Get(const Slice& key, std::string* value) {
     }
   }
   return s;
+}
+
+Status RedisStrings::MSet(const std::vector<BlackWidow::KeyValue>& kvs) {
+  std::string pre_key, cur_key;
+  std::vector<BlackWidow::KeyValue> tmp_kvs(kvs);
+  std::sort(tmp_kvs.begin(), tmp_kvs.end());
+
+  pre_key.clear();
+  if (!tmp_kvs.empty()
+    && tmp_kvs[0].key.empty()) {
+    lock_mgr_->TryLock(pre_key);
+  }
+
+  for (const auto& kv : tmp_kvs) {
+    cur_key = kv.key.ToString();
+    if (pre_key != cur_key) {
+      lock_mgr_->TryLock(cur_key);
+      pre_key = cur_key;
+    }
+  }
+
+  rocksdb::WriteBatch batch;
+  for (const auto& kv : tmp_kvs) {
+    StringsValue strings_value(kv.value);
+    batch.Put(kv.key, strings_value.Encode());
+  }
+  Status s = db_->Write(default_write_options_, &batch);
+
+  pre_key.clear();
+  if (!tmp_kvs.empty()
+    && tmp_kvs[0].key.empty()) {
+    lock_mgr_->UnLock(pre_key);
+  }
+
+  for (const auto& kv : tmp_kvs) {
+    cur_key = kv.key.ToString();
+    if (pre_key != cur_key) {
+      lock_mgr_->UnLock(cur_key);
+      pre_key = cur_key;
+    }
+  }
+  return s;
+}
+
+Status RedisStrings::MGet(const std::vector<Slice>& keys,
+                          std::vector<std::string>* values) {
+  Status s;
+  std::string value;
+  rocksdb::ReadOptions read_options;
+  const rocksdb::Snapshot* snapshot;
+  ScopeSnapshot ss(db_, &snapshot);
+  read_options.snapshot = snapshot;
+  for (const auto& key : keys) {
+    s = db_->Get(read_options, key, &value);
+    if (s.ok()) {
+      ParsedStringsValue parsed_strings_value(&value);
+      if (parsed_strings_value.IsStale()) {
+        value.clear();
+      } else {
+        parsed_strings_value.StripSuffix();
+      }
+    } else {
+      value.clear();
+    }
+    values->push_back(value);
+  }
+  return Status::OK();
 }
 
 Status RedisStrings::Setnx(const Slice& key, const Slice& value, int32_t* ret) {
@@ -140,7 +208,23 @@ Status RedisStrings::Append(const Slice& key, const Slice& value,
 
 int GetBitCount(const unsigned char* value, int64_t bytes) {
   int bit_num = 0;
-  static const unsigned char bitsinbyte[256] = {0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4,1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,6,3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,4,5,5,6,5,6,6,7,5,6,6,7,6,7,7,8};
+  static const unsigned char bitsinbyte[256] =
+    {0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
+     1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+     1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+     2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+     1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+     2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+     2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+     3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+     1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+     2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+     2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+     3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+     2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+     3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+     3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+     4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8};
   for (int i = 0; i < bytes; i++) {
     bit_num += bitsinbyte[static_cast<unsigned int>(value[i])];
   }
@@ -158,7 +242,8 @@ Status RedisStrings::BitCount(const Slice& key,
     if (parsed_strings_value.IsStale()) {
       return Status::NotFound("Stale");
     } else {
-      const unsigned char* bit_value = reinterpret_cast<const unsigned char*>(value.data());
+      const unsigned char* bit_value =
+        reinterpret_cast<const unsigned char*>(value.data());
       int64_t value_length = value.length();
       if (have_range) {
         if (start_offset < 0) {
@@ -232,8 +317,9 @@ Status RedisStrings::Decrby(const Slice& key, int64_t value, int64_t* ret) {
 }
 
 Status RedisStrings::Setex(const Slice& key, const Slice& value, int32_t ttl) {
-  // the ttl argument must greater than zero, to be compatible with redis
-  assert(ttl > 0);
+  if (ttl <= 0) {
+    return Status::InvalidArgument("invalid expire time");
+  }
   StringsValue strings_value(value);
   strings_value.SetRelativeTimestamp(ttl);
   ScopeRecordLock l(lock_mgr_, key);

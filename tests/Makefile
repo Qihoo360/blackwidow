@@ -7,7 +7,7 @@ PROCESSOR_NUMS= 24
 
 ifndef BLACKWIDOW_PATH
   $(warning Warning: missing blackwidow path, using default)
-  BLACKWIDOW_PATH=../
+  BLACKWIDOW_PATH=..
 endif
 BLACKWIDOW_INCLUDE_DIR=$(BLACKWIDOW_PATH)/include
 BLACKWIDOW_LIBRARY=$(BLACKWIDOW_PATH)/lib/libblackwidow.a
@@ -21,7 +21,7 @@ ROCKSDB_LIBRARY=$(ROCKSDB_PATH)/librocksdb.a
 
 ifndef GOOGLETEST_PATH
   $(warning Warning: missing googletest path, using default)
-	GOOGLETEST_PATH=../deps/googletest/googletest/
+	GOOGLETEST_PATH=../deps/googletest/googletest
 endif
 GOOGLETEST_INCLUDE_DIR=$(GOOGLETEST_PATH)/include
 GOOGLETEST_LIBRARY=$(GOOGLETEST_PATH)/libgtest.a
@@ -31,9 +31,10 @@ CXXFLAGS+= -I$(BLACKWIDOW_PATH) -I$(BLACKWIDOW_INCLUDE_DIR) -I$(ROCKSDB_INCLUDE_
 DEP_LIBS = $(BLACKWIDOW_LIBRARY) $(ROCKSDB_LIBRARY) $(GOOGLETEST_LIBRARY)
 LDFLAGS := $(DEP_LIBS) $(LDFLAGS)
 
-all: GOOGLETEST ROCKSDB lock_mgr gtest_strings
+all: GOOGLETEST ROCKSDB lock_mgr gtest_strings gtest_hashes
 	mkdir db
 	./gtest_strings
+	./gtest_hashes
 	rm -rf db
 
 GOOGLETEST:
@@ -43,11 +44,14 @@ ROCKSDB:
 	$(AM_V_at)make -j $(PROCESSOR_NUMS) -C $(ROCKSDB_PATH)/ static_lib DISABLE_JEMALLOC=1
 
 lock_mgr: lock_mgr.cc
-	$(CXX) $(CXXFLAGS) $^ -o$@ $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 
 gtest_strings: gtest_strings.cc
-	$(CXX) $(CXXFLAGS) $^ -o$@ $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
+
+gtest_hashes: gtest_hashes.cc
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 
 clean:
 	find . -name "*.[oda]" -exec rm -f {} \;
-	rm -rf ./lock_mgr ./gtest_strings
+	rm -rf ./lock_mgr ./gtest_strings ./gtest_hashes

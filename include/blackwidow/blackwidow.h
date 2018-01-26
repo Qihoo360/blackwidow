@@ -30,8 +30,30 @@ class BlackWidow {
   Status Open(const Options& options, const std::string& db_path);
 
   // Strings Commands
+  struct KeyValue {
+    Slice key;
+    Slice value;
+    bool operator < (const KeyValue& kv) const {
+      return key.compare(kv.key) < 0;
+    }
+  };
+
+  // Set key to hold the string value. if key
+  // already holds a value, it is overwritten
   Status Set(const Slice& key, const Slice& value);
+
+  // Get the value of key. If the key does not exist
+  // the special value nil is returned
   Status Get(const Slice& key, std::string* value);
+
+  // Sets the given keys to their respective values
+  // MSET replaces existing values with new values
+  Status MSet(const std::vector<BlackWidow::KeyValue>& kvs);
+
+  // Returns the values of all specified keys. For every key
+  // that does not hold a string value or does not exist, the
+  // special value nil is returned
+  Status MGet(const std::vector<Slice>& keys, std::vector<std::string>* values);
 
   // Set key to hold string value if key does not exist
   // return 1 if the key was set
@@ -61,12 +83,29 @@ class BlackWidow {
   // Set key to hold the string value and set key to timeout after a given
   // number of seconds
   Status Setex(const Slice& key, const Slice& value, int32_t ttl);
+
+  // Returns the length of the string value stored at key. An error
+  // is returned when key holds a non-string value.
   Status Strlen(const Slice& key, int32_t* len);
 
+
   // Hashes Commands
+
+  // Sets field in the hash stored at key to value. If key does not exist, a new
+  // key holding a hash is created. If field already exists in the hash, it is
+  // overwritten.
   Status HSet(const Slice& key, const Slice& field, const Slice& value,
               int32_t* res);
+
+  // Returns the value associated with field in the hash stored at key.
+  // the value associated with field, or nil when field is not present in the
+  // hash or key does not exist.
   Status HGet(const Slice& key, const Slice& field, std::string* value);
+
+  // Returns if field is an existing field in the hash stored at key.
+  // Return Status::Ok() if the hash contains field.
+  // Return Status::NotFound() if the hash does not contain field, or key does not exist.
+  Status HExists(const Slice& key, const Slice& field);
 
   // Keys Commands
   Status Expire(const Slice& key, int32_t ttl);

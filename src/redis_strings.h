@@ -7,8 +7,11 @@
 #define SRC_REDIS_STRINGS_H_
 
 #include <string>
+#include <vector>
+#include <algorithm>
 
 #include "src/redis.h"
+#include "blackwidow/blackwidow.h"
 
 namespace blackwidow {
 
@@ -20,6 +23,8 @@ class RedisStrings : public Redis {
   // Strings Commands
   Status Set(const Slice& key, const Slice& value);
   Status Get(const Slice& key, std::string* value);
+  Status MSet(const std::vector<BlackWidow::KeyValue>& kvs);
+  Status MGet(const std::vector<Slice>& keys, std::vector<std::string>* values);
   Status Setnx(const Slice& key, const Slice& value, int32_t* ret);
   Status Setrange(const Slice& key, int32_t offset,
                   const Slice& value, int32_t* ret);

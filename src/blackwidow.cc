@@ -55,6 +55,15 @@ Status BlackWidow::Get(const Slice& key, std::string* value) {
   return strings_db_->Get(key, value);
 }
 
+Status BlackWidow::MSet(const std::vector<BlackWidow::KeyValue>& kvs) {
+  return strings_db_->MSet(kvs);
+}
+
+Status BlackWidow::MGet(const std::vector<Slice>& keys,
+                        std::vector<std::string>* values) {
+  return strings_db_->MGet(keys, values);
+}
+
 Status BlackWidow::Setnx(const Slice& key, const Slice& value, int32_t* ret) {
   return strings_db_->Setnx(key, value, ret);
 }
@@ -68,8 +77,8 @@ Status BlackWidow::Append(const Slice& key, const Slice& value, int32_t* ret) {
   return strings_db_->Append(key, value, ret);
 }
 
-Status BlackWidow::BitCount(const Slice& key, int32_t start_offset, int32_t end_offset,
-                            int32_t *ret, bool have_range) {
+Status BlackWidow::BitCount(const Slice& key, int32_t start_offset,
+                            int32_t end_offset, int32_t *ret, bool have_range) {
   return strings_db_->BitCount(key, start_offset, end_offset, ret, have_range);
 }
 
@@ -94,6 +103,10 @@ Status BlackWidow::HSet(const Slice& key, const Slice& field,
 Status BlackWidow::HGet(const Slice& key, const Slice& field,
     std::string* value) {
   return hashes_db_->HGet(key, field, value);
+}
+
+Status BlackWidow::HExists(const Slice& key, const Slice& field) {
+  return hashes_db_->HExists(key, field);
 }
 
 // Keys Commands

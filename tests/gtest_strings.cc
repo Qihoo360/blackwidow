@@ -39,6 +39,33 @@ TEST_F(StringsTest, GetTest) {
   ASSERT_STREQ(value.c_str(), "TEST_VALUE");
 }
 
+// MSet
+TEST_F(StringsTest, MSetTest) {
+  std::vector<blackwidow::BlackWidow::KeyValue> kvs;
+  kvs.push_back({"", "MSET_EMPTY_VALUE"});
+  kvs.push_back({"MSET_TEST_KEY1", "MSET_TEST_VALUE1"});
+  kvs.push_back({"MSET_TEST_KEY2", "MSET_TEST_VALUE2"});
+  kvs.push_back({"MSET_TEST_KEY3", "MSET_TEST_VALUE3"});
+  kvs.push_back({"MSET_TEST_KEY3", "MSET_TEST_VALUE3"});
+  s = db.MSet(kvs);
+  ASSERT_TRUE(s.ok());
+}
+
+// MGet
+TEST_F(StringsTest, MGetTest) {
+  std::vector<std::string> values;
+  std::vector<rocksdb::Slice> keys {"", "MSET_TEST_KEY1",
+    "MSET_TEST_KEY2", "MSET_TEST_KEY3", "MSET_TEST_KEY_NOT_EXIST"};
+  s = db.MGet(keys, &values);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(values.size(), 5);
+  ASSERT_EQ(values[0], "MSET_EMPTY_VALUE");
+  ASSERT_EQ(values[1], "MSET_TEST_VALUE1");
+  ASSERT_EQ(values[2], "MSET_TEST_VALUE2");
+  ASSERT_EQ(values[3], "MSET_TEST_VALUE3");
+  ASSERT_EQ(values[4], "");
+}
+
 // Setnx
 TEST_F(StringsTest, SetnxTest) {
   // If the key was not set, return 0
@@ -134,6 +161,52 @@ TEST_F(StringsTest, DecrbyTest) {
   // Less than the minimum number -9223372036854775808
   s = db.Decrby("DECRBY_KEY", 9223372036854775807, &ret);
   ASSERT_TRUE(s.IsInvalidArgument());
+}
+
+// Setex
+TEST_F(StringsTest, SetexTest) {
+  std::string value;
+  s = db.Setex("SETEX_KEY", "SETEX_VALUE", 1);
+  ASSERT_TRUE(s.ok());
+
+  // The key is not timeout
+  s = db.Get("SETEX_KEY", &value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(value, "SETEX_VALUE");
+
+  // The key is timeout
+  std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+  s = db.Get("SETEX_KEY", &value);
+  ASSERT_TRUE(s.IsNotFound());
+
+  // If the ttl equal 0
+  s = db.Setex("SETEX_KEY", "SETEX_VALUE", 0);
+  ASSERT_TRUE(s.IsInvalidArgument());
+
+  // The ttl is negative
+  s = db.Setex("SETEX_KEY", "SETEX_VALUE", -1);
+  ASSERT_TRUE(s.IsInvalidArgument());
+}
+
+// Strlen
+TEST_F(StringsTest, StrlenTest) {
+  int32_t strlen;
+  // The value is empty
+  s = db.Set("STRLEN_EMPTY_KEY", "");
+  ASSERT_TRUE(s.ok());
+  s = db.Strlen("STRLEN_EMPTY_KEY", &strlen);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(strlen, 0);
+
+  // The key is not exist
+  s = db.Strlen("STRLEN_NOT_EXIST_KEY", &strlen);
+  ASSERT_EQ(strlen, 0);
+
+  s = db.Set("STRLEN_KEY", "STRLEN_VALUE");
+  ASSERT_TRUE(s.ok());
+  s = db.Strlen("STRLEN_KEY", &strlen);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(strlen, 12);
 }
 
 int main(int argc, char** argv) {
