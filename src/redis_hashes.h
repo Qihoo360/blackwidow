@@ -32,7 +32,7 @@ class RedisHashes : public Redis {
 
   // Keys Commands
   virtual Status Expire(const Slice& key, int32_t ttl) override;
-  virtual Status Delete(const Slice& key) override;
+  virtual Status Del(const Slice& key) override;
  private:
   std::vector<rocksdb::ColumnFamilyHandle*> handles_;
 };

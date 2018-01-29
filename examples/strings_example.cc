@@ -7,6 +7,8 @@
 
 #include "blackwidow/blackwidow.h"
 
+using namespace blackwidow;
+
 int main() {
   blackwidow::Options options;
   options.create_if_missing = true;
@@ -60,10 +62,12 @@ int main() {
   printf("Decrby return: %s, ret: %d\n", s.ToString().c_str(), decrby_ret);
 
   // Expire
-  s = db.Expire("TEST_KEY", 1);
-  printf("Expire return: %s\n", s.ToString().c_str());
+  std::vector<BlackWidow::KeyStatus> key_status;
+  s = db.Set("EXPIRE_KEY", "EXPIREVALUE");
+  printf("Set return: %s\n", s.ToString().c_str());
+  db.Expire("EXPIRE_KEY", 1, &key_status);
   std::this_thread::sleep_for(std::chrono::milliseconds(2500));
-  s = db.Get("TEST_KEY", &value);
+  s = db.Get("EXPIRE_KEY", &value);
   printf("Get return: %s, value: %s\n", s.ToString().c_str(), value.c_str());
 
   // Compact
@@ -84,7 +88,7 @@ int main() {
   printf("Strlen return: %s, strlen: %d\n", s.ToString().c_str(), len);
 
   // MSet
-  std::vector<blackwidow::BlackWidow::KeyValue> kvs;
+  std::vector<BlackWidow::KeyValue> kvs;
   kvs.push_back({"TEST_KEY1", "TEST_VALUE1"});
   kvs.push_back({"TEST_KEY2", "TEST_VALUE2"});
   s = db.MSet(kvs);

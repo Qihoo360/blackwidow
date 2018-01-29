@@ -108,8 +108,23 @@ class BlackWidow {
   Status HExists(const Slice& key, const Slice& field);
 
   // Keys Commands
-  Status Expire(const Slice& key, int32_t ttl);
-  Status Delete(const Slice& key);
+  enum DataType{
+    STRINGS,
+    HASHES,
+    LISTS,
+    SETS,
+    ZSETS
+  };
+
+  // Set a timeout on key
+  // return -1 operation exception errors happen in database
+  // return >=0 success
+  int Expire(const Slice& key, int32_t ttl, std::map<DataType, Status>* type_status);
+
+  // Removes the specified keys
+  // return -1 operation exception errors happen in database
+  // return >=0 the number of keys that were removed
+  int Del(const std::vector<Slice>& keys, std::map<DataType, Status>* type_status);
 
  private:
   RedisStrings* strings_db_;

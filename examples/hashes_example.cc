@@ -7,6 +7,8 @@
 
 #include "blackwidow/blackwidow.h"
 
+using namespace blackwidow;
+
 int main() {
   blackwidow::Options options;
   options.create_if_missing = true;
@@ -48,7 +50,8 @@ int main() {
   printf("Compact return: %s\n", s.ToString().c_str());
 
   // Expire
-  s = db.Expire("TEST_KEY1", 1);
+  std::vector<BlackWidow::KeyStatus> key_status;
+  db.Expire("TEST_KEY1", 1, &key_status);
   printf("Expire return: %s\n", s.ToString().c_str());
   std::this_thread::sleep_for(std::chrono::milliseconds(2500));
   s = db.HGet("TEST_KEY1", "TEST_FIELD1", &value);

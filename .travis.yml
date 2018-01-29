@@ -5,6 +5,10 @@ language: cpp
 os:
   - linux
 
+addons:
+  apt:
+    packages: ['libsnappy-dev']
+
 compiler:
   - gcc
 

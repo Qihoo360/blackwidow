@@ -1,9 +1,12 @@
 CXX=g++
 LDFLAGS= -lpthread -lrt -lsnappy -lz -lbz2
 CXXFLAGS=-O2 -std=c++11 -fno-builtin-memcmp -msse -msse4.2
-PROCESSOR_NUMS= 24
 
 .PHONY: clean all
+
+ifndef PROCESSOR_NUMS
+  PROCESSOR_NUMS=24
+endif
 
 ifndef BLACKWIDOW_PATH
   $(warning Warning: missing blackwidow path, using default)

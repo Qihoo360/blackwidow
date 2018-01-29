@@ -123,7 +123,7 @@ static_lib: $(LIBRARY)
 dbg: $(LIBRARY)
 
 test:
-	cd ./tests; make;
+	cd ./tests; make PROCESSOR_NUMS=2;
 
 $(LIBRARY): $(LIBOBJECTS)
 	$(AM_V_AR)rm -f $@

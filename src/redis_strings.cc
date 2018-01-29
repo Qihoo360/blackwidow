@@ -48,8 +48,8 @@ Status RedisStrings::MSet(const std::vector<BlackWidow::KeyValue>& kvs) {
   std::sort(tmp_kvs.begin(), tmp_kvs.end());
 
   pre_key.clear();
-  if (!tmp_kvs.empty()
-    && tmp_kvs[0].key.empty()) {
+  if (!tmp_kvs.empty() &&
+      tmp_kvs[0].key.empty()) {
     lock_mgr_->TryLock(pre_key);
   }
 
@@ -69,8 +69,8 @@ Status RedisStrings::MSet(const std::vector<BlackWidow::KeyValue>& kvs) {
   Status s = db_->Write(default_write_options_, &batch);
 
   pre_key.clear();
-  if (!tmp_kvs.empty()
-    && tmp_kvs[0].key.empty()) {
+  if (!tmp_kvs.empty() &&
+      tmp_kvs[0].key.empty()) {
     lock_mgr_->UnLock(pre_key);
   }
 
@@ -356,7 +356,7 @@ Status RedisStrings::Expire(const Slice& key, int32_t ttl) {
   return s;
 }
 
-Status RedisStrings::Delete(const Slice& key) {
+Status RedisStrings::Del(const Slice& key) {
   std::string value;
   ScopeRecordLock l(lock_mgr_, key);
   Status s = db_->Get(default_read_options_, key, &value);

@@ -9,6 +9,8 @@
 
 #include "blackwidow/blackwidow.h"
 
+using namespace blackwidow;
+
 class StringsTest : public ::testing::Test {
  public:
   StringsTest() {
@@ -41,7 +43,7 @@ TEST_F(StringsTest, GetTest) {
 
 // MSet
 TEST_F(StringsTest, MSetTest) {
-  std::vector<blackwidow::BlackWidow::KeyValue> kvs;
+  std::vector<BlackWidow::KeyValue> kvs;
   kvs.push_back({"", "MSET_EMPTY_VALUE"});
   kvs.push_back({"MSET_TEST_KEY1", "MSET_TEST_VALUE1"});
   kvs.push_back({"MSET_TEST_KEY2", "MSET_TEST_VALUE2"});
@@ -207,6 +209,48 @@ TEST_F(StringsTest, StrlenTest) {
   s = db.Strlen("STRLEN_KEY", &strlen);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(strlen, 12);
+}
+
+// Expire
+TEST_F(StringsTest, ExpireTest) {
+  std::string value;
+  std::map<BlackWidow::DataType, Status> type_status;
+  int32_t ret;
+  s = db.Set("EXPIRE_KEY", "EXPIREVALUE");
+  ASSERT_TRUE(s.ok());
+  ret = db.Expire("EXPIRE_KEY", 1, &type_status);
+  for (auto it = type_status.begin(); it != type_status.end(); it++) {
+    if (it->first == BlackWidow::DataType::STRINGS) {
+      ASSERT_TRUE(it->second.ok());
+    } else {
+      ASSERT_TRUE(it->second.IsNotFound());
+    }
+  }
+  std::this_thread::sleep_for(std::chrono::milliseconds(2500));
+  s = db.Get("EXPIRE_KEY", &value);
+  ASSERT_TRUE(s.IsNotFound());
+}
+
+// Del
+TEST_F(StringsTest, DelTest) {
+  int32_t ret;
+  std::map<BlackWidow::DataType, Status> type_status;
+  std::vector<rocksdb::Slice> keys {"DEL_KEY"};
+  s = db.Set("DEL_KEY", "EXPIREVALUE");
+  ASSERT_TRUE(s.ok());
+  s = db.HSet("DEL_KEY", "DEL_FIELD", "DEL_VALUE", &ret);
+  ASSERT_TRUE(s.ok());
+  ret = db.Del(keys, &type_status);
+  for (auto it = type_status.begin(); it != type_status.end(); it++) {
+    if (it->first == BlackWidow::DataType::STRINGS) {
+      ASSERT_TRUE(it->second.ok());
+    } else if (it->first == BlackWidow::DataType::HASHES) {
+      ASSERT_TRUE(it->second.ok());
+    } else {
+      ASSERT_TRUE(it->second.IsNotFound());
+    }
+  }
+  ASSERT_EQ(ret, 1);
 }
 
 int main(int argc, char** argv) {
