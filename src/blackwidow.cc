@@ -105,19 +105,40 @@ Status BlackWidow::HGet(const Slice& key, const Slice& field,
   return hashes_db_->HGet(key, field, value);
 }
 
+Status BlackWidow::HMSet(const Slice& key,
+                         const std::vector<BlackWidow::FieldValue>& fvs) {
+  return hashes_db_->HMSet(key, fvs);
+}
+
+Status BlackWidow::HMGet(const Slice& key,
+                         const std::vector<Slice>& fields,
+                         std::vector<std::string>* values) {
+  return hashes_db_->HMGet(key, fields, values);
+}
+
+Status BlackWidow::HLen(const Slice& key, int32_t* ret) {
+  return hashes_db_->HLen(key, ret);
+}
+
 Status BlackWidow::HExists(const Slice& key, const Slice& field) {
   return hashes_db_->HExists(key, field);
 }
 
+Status BlackWidow::HIncrby(const Slice& key, const Slice& field, int64_t value,
+                           int64_t* ret) {
+  return hashes_db_->HIncrby(key, field, value, ret);
+}
+
 // Keys Commands
-int BlackWidow::Expire(const Slice& key, int32_t ttl, std::map<DataType, Status>* type_status) {
+int BlackWidow::Expire(const Slice& key,
+                       int32_t ttl, std::map<DataType, Status>* type_status) {
   int ret = 0;
   bool is_corruption = false;
 
   // Strings
   Status s = strings_db_->Expire(key, ttl);
   if (s.ok()) {
-    ret++; 
+    ret++;
   } else if (!s.IsNotFound()) {
     is_corruption = true;
   }
@@ -139,7 +160,8 @@ int BlackWidow::Expire(const Slice& key, int32_t ttl, std::map<DataType, Status>
   }
 }
 
-int BlackWidow::Del(const std::vector<Slice>& keys, std::map<DataType, Status>* type_status) {
+int BlackWidow::Del(const std::vector<Slice>& keys,
+                    std::map<DataType, Status>* type_status) {
   Status s;
   int count = 0;
   bool is_corruption = false, is_success = false;
@@ -164,7 +186,7 @@ int BlackWidow::Del(const std::vector<Slice>& keys, std::map<DataType, Status>* 
     (*type_status)[DataType::HASHES] = s;
 
     if (is_success) {
-      count++; 
+      count++;
     }
   }
 

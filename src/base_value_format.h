@@ -103,7 +103,7 @@ class ParsedInternalValue {
   }
 
   void set_timestamp(int32_t timestamp) {
-    timestamp_ = timestamp_;
+    timestamp_ = timestamp;
     SetTimestampToValue();
   }
 

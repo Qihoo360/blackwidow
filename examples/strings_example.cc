@@ -62,7 +62,7 @@ int main() {
   printf("Decrby return: %s, ret: %d\n", s.ToString().c_str(), decrby_ret);
 
   // Expire
-  std::vector<BlackWidow::KeyStatus> key_status;
+  std::map<BlackWidow::DataType, Status> key_status;
   s = db.Set("EXPIRE_KEY", "EXPIREVALUE");
   printf("Set return: %s\n", s.ToString().c_str());
   db.Expire("EXPIRE_KEY", 1, &key_status);
