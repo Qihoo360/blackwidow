@@ -36,6 +36,7 @@ tags
 src/build_version.cc
 
 # Examples
+examples/make_config.mk
 examples/db
 examples/strings_example
 examples/hashes_example
@@ -45,6 +46,7 @@ benchmark/db
 benchmark/blackwidow_bench
 
 # Tests
+tests/make_config.mk
 tests/db
 tests/gtest_strings
 tests/gtest_hashes

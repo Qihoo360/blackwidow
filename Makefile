@@ -26,8 +26,8 @@ endif
 
 #-----------------------------------------------
 
-SRC_DIR=src
-DEPS_DIR=deps
+SRC_DIR=./src
+DEPS_DIR=./deps
 VERSION_CC=$(SRC_DIR)/build_version.cc
 LIB_SOURCES :=  $(VERSION_CC) \
 				$(filter-out $(VERSION_CC), $(wildcard $(SRC_DIR)/*.cc))
@@ -123,7 +123,10 @@ static_lib: $(LIBRARY)
 dbg: $(LIBRARY)
 
 test:
-	cd ./tests; make PROCESSOR_NUMS=2;
+	make -C ./tests
+
+example:
+	make -C ./examples
 
 $(LIBRARY): $(LIBOBJECTS)
 	$(AM_V_AR)rm -f $@
@@ -135,8 +138,7 @@ clean:
 	rm -f $(LIBRARY)
 	rm -rf $(CLEAN_FILES)
 	rm -rf $(LIBOUTPUT)
-	rm -f $(TESTS)
-	find . -name "*.[oda]*" ! -path "./deps/rocksdb/*" -exec rm -f {} \;
+	find . -name "*.[oda]*" -path "$(SRC_DIR)/*" -exec rm -rf {} \;
 	find . -type f -regex ".*\.\(\(gcda\)\|\(gcno\)\)" -exec rm {} \;
 
 %.o: %.cc
