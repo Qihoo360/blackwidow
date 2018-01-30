@@ -6,6 +6,7 @@ CXXFLAGS=-O2 -std=c++11 -fno-builtin-memcmp -msse -msse4.2
 # Get processor numbers
 dummy := $(shell ("$(CURDIR)/../detect_environment" "$(CURDIR)/make_config.mk"))
 include make_config.mk
+LDFLAGS = -lpthread -lrt $(ROCKSDB_LDFLAGS)
 
 ifndef BLACKWIDOW_PATH
   $(warning Warning: missing blackwidow path, using default)
@@ -31,7 +32,7 @@ GOOGLETEST_LIBRARY=$(GOOGLETEST_PATH)/libgtest.a
 CXXFLAGS+= -I$(BLACKWIDOW_PATH) -I$(BLACKWIDOW_INCLUDE_DIR) -I$(ROCKSDB_INCLUDE_DIR) -I$(GOOGLETEST_INCLUDE_DIR)
 
 DEP_LIBS = $(BLACKWIDOW_LIBRARY) $(ROCKSDB_LIBRARY) $(GOOGLETEST_LIBRARY)
-LDFLAGS = $(DEP_LIBS) $(LDFLAGS)
+LDFLAGS := $(DEP_LIBS) $(LDFLAGS)
 
 all: GOOGLETEST ROCKSDB lock_mgr gtest_strings gtest_hashes
 	mkdir db
@@ -44,8 +45,6 @@ GOOGLETEST:
 
 ROCKSDB:
 	$(AM_V_at)make -j $(PROCESSOR_NUMS) -C $(ROCKSDB_PATH)/ static_lib
-include $(ROCKSDB_PATH)/make_config.mk
-LDFLAGS=$(DEP_LIBS) $(PLATFORM_LDFLAGS)
 
 lock_mgr: lock_mgr.cc
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
@@ -58,4 +57,5 @@ gtest_hashes: gtest_hashes.cc
 
 clean:
 	find . -name "*.[oda]" -exec rm -f {} \;
+	rm -f ./make_config.mk
 	rm -rf ./lock_mgr ./gtest_strings ./gtest_hashes
