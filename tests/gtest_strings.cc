@@ -86,14 +86,18 @@ TEST_F(StringsTest, SetnxTest) {
 TEST_F(StringsTest, SetrangeTest) {
   std::string value;
   int32_t ret;
-  s = db.Set("KEY", "HELLO WORLD");
+  s = db.Set("SETRANGE_KEY", "HELLO WORLD");
   ASSERT_TRUE(s.ok());
-  s = db.Setrange("KEY", 6, "REDIS", &ret);
+  s = db.Setrange("SETRANGE_KEY", 6, "REDIS", &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 11);
-  s = db.Get("KEY", &value);
+  s = db.Get("SETRANGE_KEY", &value);
   ASSERT_STREQ(value.c_str(), "HELLO REDIS");
 
+  std::vector<rocksdb::Slice> keys {"SETRANGE_KEY"};
+  std::map<BlackWidow::DataType, Status> type_status;
+  ret = db.Del(keys, &type_status);
+  ASSERT_EQ(ret, 1);
   // If not exist, padded with zero-bytes to make offset fit
   s = db.Setrange("SETRANGE_KEY", 6, "REDIS", &ret);
   ASSERT_TRUE(s.ok());

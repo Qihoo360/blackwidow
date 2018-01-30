@@ -123,7 +123,7 @@ static_lib: $(LIBRARY)
 dbg: $(LIBRARY)
 
 test:
-	make -C ./tests
+	make test -C ./tests
 
 example:
 	make -C ./examples
