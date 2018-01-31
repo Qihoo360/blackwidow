@@ -116,8 +116,17 @@ Status BlackWidow::HMGet(const Slice& key,
   return hashes_db_->HMGet(key, fields, values);
 }
 
+Status BlackWidow::HSetnx(const Slice& key, const Slice& field, const Slice& value,
+                          int32_t* ret) {
+  return hashes_db_->HSetnx(key, field, value, ret);
+}
+
 Status BlackWidow::HLen(const Slice& key, int32_t* ret) {
   return hashes_db_->HLen(key, ret);
+}
+
+Status BlackWidow::HStrlen(const Slice& key, const Slice& field, int32_t* len) {
+  return hashes_db_->HStrlen(key, field, len);
 }
 
 Status BlackWidow::HExists(const Slice& key, const Slice& field) {

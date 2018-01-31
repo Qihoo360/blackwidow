@@ -121,9 +121,19 @@ class BlackWidow {
                const std::vector<Slice>& fields,
                std::vector<std::string>* values);
 
+  // Sets field in the hash stored at key to value, only if field does not yet
+  // exist. If key does not exist, a new key holding a hash is created. If field
+  // already exists, this operation has no effect.
+  Status HSetnx(const Slice& key, const Slice& field, const Slice& value,
+                int32_t* ret);
+
   // Returns the number of fields contained in the hash stored at key.
   // Return 0 when key does not exist.
   Status HLen(const Slice& key, int32_t* ret);
+
+  // Returns the string length of the value associated with field in the hash
+  // stored at key. If the key or the field do not exist, 0 is returned.
+  Status HStrlen(const Slice& key, const Slice& field, int32_t* len);
 
   // Returns if field is an existing field in the hash stored at key.
   // Return Status::Ok() if the hash contains field.

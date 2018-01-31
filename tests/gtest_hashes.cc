@@ -27,31 +27,42 @@ class HashesTest : public ::testing::Test {
 
 // HSet
 TEST_F(HashesTest, HSetTest) {
-  int32_t ret;
+  int32_t ret = 0;
+  std::string value;
   // If field is a new field in the hash and value was set.
-  s = db.HSet("HSET_TEST_KEY", "HSET_TEST_FIELD", "HSET_TEST_VALUE", &ret);
+  s = db.HSet("HSET_KEY", "HSET_TEST_FIELD", "HSET_TEST_VALUE", &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 1);
+  s = db.HGet("HSET_KEY", "HSET_TEST_FIELD", &value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(value, "HSET_TEST_VALUE");
 
   // If field already exists in the hash and the value was updated.
-  s = db.HSet("HSET_TEST_KEY", "HSET_TEST_FIELD", "HSET_TEST_NEW_VALUE", &ret);
+  s = db.HSet("HSET_KEY", "HSET_TEST_FIELD", "HSET_TEST_NEW_VALUE", &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 0);
+  s = db.HGet("HSET_KEY", "HSET_TEST_FIELD", &value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(value, "HSET_TEST_NEW_VALUE");
 }
 
 // HGet
 TEST_F(HashesTest, HGetTest) {
+  int32_t ret = 0;
   std::string value;
-  s = db.HGet("HSET_TEST_KEY", "HSET_TEST_FIELD", &value);
+  s = db.HSet("HGET_KEY", "HGET_TEST_FIELD", "HGET_TEST_VALUE", &ret);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(value, "HSET_TEST_NEW_VALUE");
+  ASSERT_EQ(ret, 1);
+  s = db.HGet("HGET_KEY", "HGET_TEST_FIELD", &value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(value, "HGET_TEST_VALUE");
 
   // If key does not exist.
-  s = db.HGet("HSET_NOT_EXIST_KEY", "HSET_TEST_FIELD", &value);
+  s = db.HGet("HGET_NOT_EXIST_KEY", "HGET_TEST_FIELD", &value);
   ASSERT_TRUE(s.IsNotFound());
 
   // If field is not present in the hash
-  s = db.HGet("HSET_TEST_KEY", "HSET_NOT_EXIST_FIELD", &value);
+  s = db.HGet("HGET_KEY", "HGET_NOT_EXIST_FIELD", &value);
   ASSERT_TRUE(s.IsNotFound());
 }
 
@@ -147,6 +158,28 @@ TEST_F(HashesTest, HMGetTest) {
   ASSERT_EQ(values[3], "");
 }
 
+// HSetnx
+TEST_F(HashesTest, HSetnxTest) {
+  int32_t ret;
+  std::string value;
+  // If field is a new field in the hash and value was set.
+  s = db.HSetnx("HSETNX_KEY", "HSETNX_TEST_FIELD", "HSETNX_TEST_VALUE", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+  s = db.HGet("HSETNX_KEY", "HSETNX_TEST_FIELD", &value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(value, "HSETNX_TEST_VALUE");
+
+  // If field already exists, this operation has no effect.
+  s = db.HSetnx("HSETNX_KEY", "HSETNX_TEST_FIELD",
+          "HSETNX_TEST_NEW_VALUE", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 0);
+  s = db.HGet("HSETNX_KEY", "HSETNX_TEST_FIELD", &value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(value, "HSETNX_TEST_VALUE");
+}
+
 // HLen
 TEST_F(HashesTest, HLenTest) {
   int32_t ret = 0;
@@ -161,6 +194,25 @@ TEST_F(HashesTest, HLenTest) {
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 3);
 }
+
+// HStrlen
+TEST_F(HashesTest, HStrlenTest) {
+  int32_t ret = 0;
+  int32_t len = 0;
+  s = db.HSet("HSTRLEN_KEY", "HSTRLEN_TEST_FIELD", "HSTRLEN_TEST_VALUE", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+
+  s = db.HStrlen("HSTRLEN_KEY", "HSTRLEN_TEST_FIELD",  &len);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(len, 18);
+
+  // If the key or the field do not exist, 0 is returned
+  s = db.HStrlen("HSTRLEN_KEY", "HSTRLEN_NOT_EXIST_FIELD",  &len);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(len, 0);
+}
+
 
 // HExists
 TEST_F(HashesTest, HExistsTest) {
