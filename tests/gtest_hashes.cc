@@ -234,13 +234,15 @@ TEST_F(HashesTest, HIncrby) {
   // Larger than the maximum number 9223372036854775807
   s = db.HSet("HINCRBY_KEY", "HINCRBY_NUM_FIELD", "10", &ret);
   ASSERT_TRUE(s.ok());
-  s = db.HIncrby("HINCRBY_KEY", "HINCRBY_NUM_FIELD", 9223372036854775807, &value);
+  s = db.HIncrby("HINCRBY_KEY", "HINCRBY_NUM_FIELD",
+          9223372036854775807, &value);
   ASSERT_TRUE(s.IsInvalidArgument());
 
   // Less than the minimum number -9223372036854775808
   s = db.HSet("HINCRBY_KEY", "HINCRBY_NUM_FIELD", "-10", &ret);
   ASSERT_TRUE(s.ok());
-  s = db.HIncrby("HINCRBY_KEY", "HINCRBY_NUM_FIELD", -9223372036854775807, &value);
+  s = db.HIncrby("HINCRBY_KEY", "HINCRBY_NUM_FIELD",
+          -9223372036854775807, &value);
   ASSERT_TRUE(s.IsInvalidArgument());
 }
 
