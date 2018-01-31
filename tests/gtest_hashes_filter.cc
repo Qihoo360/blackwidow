@@ -201,6 +201,9 @@ TEST(HashesFilterTest, FilterTest) {
       "FILTER_TEST_VALUE", &new_value, &value_changed);
   ASSERT_EQ(filter_result, true);
   delete hashes_data_filter5;
+
+  // Delete Meta db
+  delete meta_db;
 }
 
 int main(int argc, char** argv) {
