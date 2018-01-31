@@ -26,6 +26,8 @@ TEST(StringsFilterTest, FilterTest) {
   std::this_thread::sleep_for(std::chrono::milliseconds(2000));
   is_stale = filter->Filter(0, "FILTER_KEY", strings_value.Encode(), &new_value, &value_changed);
   ASSERT_TRUE(is_stale); 
+
+  delete filter;
 }
 
 int main(int argc, char** argv) {

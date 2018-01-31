@@ -1,7 +1,28 @@
 CXX=g++
-CXXFLAGS=-O2 -std=c++11 -fno-builtin-memcmp -msse -msse4.2
+CXXFLAGS= -g -std=c++11 -fno-builtin-memcmp -msse -msse4.2
+OPT=
 
 .PHONY: clean all
+
+# Set the default DEBUG_LEVEL to 0
+DEBUG_LEVEL?=0
+
+ifeq ($(MAKECMDGOALS),dbg)
+  DEBUG_LEVEL=2 # compatible with rocksdb
+endif
+
+# compile with -O2 if for release
+# if we're compiling for release, compile without debug code (-DNDEBUG) and
+# don't treat warnings as errors
+ifeq ($(DEBUG_LEVEL),0)
+DISABLE_WARNING_AS_ERROR=1
+OPT += -O2 -DNDEBUG
+else
+$(warning Warning: Compiling in debug mode. Don't use the resulting binary in production)
+OPT += -O0
+endif
+
+#-----------------------------------------------
 
 # Get processor numbers
 dummy := $(shell ("$(CURDIR)/../detect_environment" "$(CURDIR)/make_config.mk"))
@@ -29,17 +50,21 @@ endif
 GOOGLETEST_INCLUDE_DIR=$(GOOGLETEST_PATH)/include
 GOOGLETEST_LIBRARY=$(GOOGLETEST_PATH)/libgtest.a
 
-CXXFLAGS+= -I$(BLACKWIDOW_PATH) -I$(BLACKWIDOW_INCLUDE_DIR) -I$(ROCKSDB_INCLUDE_DIR) -I$(GOOGLETEST_INCLUDE_DIR)
+CXXFLAGS+= -I$(BLACKWIDOW_PATH) -I$(BLACKWIDOW_INCLUDE_DIR) -I$(ROCKSDB_INCLUDE_DIR) -I$(GOOGLETEST_INCLUDE_DIR) $(OPT)
 
 DEP_LIBS = $(BLACKWIDOW_LIBRARY) $(ROCKSDB_LIBRARY) $(GOOGLETEST_LIBRARY)
 LDFLAGS := $(DEP_LIBS) $(LDFLAGS)
 
-all: GOOGLETEST ROCKSDB lock_mgr gtest_strings gtest_hashes gtest_strings_filter gtest_hashes_filter
+OBJECTS= GOOGLETEST ROCKSDB lock_mgr gtest_strings gtest_hashes gtest_strings_filter gtest_hashes_filter
 
-test: GOOGLETEST ROCKSDB lock_mgr gtest_strings gtest_hashes gtest_strings_filter gtest_hashes_filter
+all: $(OBJECTS)
+
+dbg: $(OBJECTS)
+
+test: $(OBJECTS)
 	@rm -rf db
-	@mkdir db
 	@rm -rf hash_meta_db
+	@mkdir db
 	@mkdir hash_meta_db
 	@./gtest_strings
 	@./gtest_hashes

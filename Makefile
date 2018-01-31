@@ -21,7 +21,7 @@ DISABLE_WARNING_AS_ERROR=1
 OPT += -O2 -fno-omit-frame-pointer -DNDEBUG
 else
 $(warning Warning: Compiling in debug mode. Don't use the resulting binary in production)
-OPT += -O0 -D__XDEBUG__ $(PROFILING_FLAGS)
+OPT += -O0 $(PROFILING_FLAGS)
 endif
 
 #-----------------------------------------------
