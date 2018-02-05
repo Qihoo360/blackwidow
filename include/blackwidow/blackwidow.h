@@ -90,7 +90,7 @@ class BlackWidow {
 
 
   // Hashes Commands
-  struct FieldValue {
+  struct SliceFieldValue {
     Slice field;
     Slice value;
   };
@@ -110,7 +110,7 @@ class BlackWidow {
   // key. This command overwrites any specified fields already existing in the
   // hash. If key does not exist, a new key holding a hash is created.
   Status HMSet(const Slice& key,
-               const std::vector<BlackWidow::FieldValue>& fvs);
+               const std::vector<BlackWidow::SliceFieldValue>& fvs);
 
   // Returns the values associated with the specified fields in the hash stored
   // at key.
@@ -146,6 +146,12 @@ class BlackWidow {
   // performed.
   Status HIncrby(const Slice& key, const Slice& field, int64_t value,
                  int64_t* ret);
+
+  // Removes the specified fields from the hash stored at key. Specified fields
+  // that do not exist within this hash are ignored. If key does not exist, it
+  // is treated as an empty hash and this command returns 0.
+  Status HDel(const Slice& key, const std::vector<Slice>& fields,
+              int32_t* ret);
 
   // Keys Commands
   enum DataType{

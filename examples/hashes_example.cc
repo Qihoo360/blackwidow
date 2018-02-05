@@ -46,7 +46,7 @@ int main() {
   printf("HGet return: %s, value = %s\n", s.ToString().c_str(), value.c_str());
 
   // HMSet
-  std::vector<blackwidow::BlackWidow::FieldValue> fvs;
+  std::vector<blackwidow::BlackWidow::SliceFieldValue> fvs;
   fvs.push_back({"TEST_FIELD1", "TEST_VALUE1"});
   fvs.push_back({"TEST_FIELD2", "TEST_VALUE2"});
   s = db.HMSet("TEST_HASH", fvs);
