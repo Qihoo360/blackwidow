@@ -480,6 +480,7 @@ Status RedisHashes::Del(const Slice& key) {
     ParsedHashesMetaValue parsed(&meta_value);
     parsed.set_count(0);
     parsed.UpdateVersion();
+    parsed.set_timestamp(0);
     s = db_->Put(default_write_options_, handles_[0], key, meta_value);
     if (s.ok() && parsed.IsStale()) {
       return Status::NotFound("Stale");
