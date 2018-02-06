@@ -31,10 +31,10 @@ class BlackWidow {
 
   // Strings Commands
   struct KeyValue {
-    Slice key;
-    Slice value;
+    std::string key;
+    std::string value;
     bool operator < (const KeyValue& kv) const {
-      return key.compare(kv.key) < 0;
+      return key < kv.key;
     }
   };
 
@@ -90,9 +90,9 @@ class BlackWidow {
 
 
   // Hashes Commands
-  struct SliceFieldValue {
-    Slice field;
-    Slice value;
+  struct FieldValue {
+    std::string field;
+    std::string value;
   };
 
   // Sets field in the hash stored at key to value. If key does not exist, a new
@@ -110,7 +110,7 @@ class BlackWidow {
   // key. This command overwrites any specified fields already existing in the
   // hash. If key does not exist, a new key holding a hash is created.
   Status HMSet(const Slice& key,
-               const std::vector<BlackWidow::SliceFieldValue>& fvs);
+               const std::vector<BlackWidow::FieldValue>& fvs);
 
   // Returns the values associated with the specified fields in the hash stored
   // at key.
@@ -118,8 +118,14 @@ class BlackWidow {
   // Because a non-existing keys are treated as empty hashes, running HMGET
   // against a non-existing key will return a list of nil values.
   Status HMGet(const Slice& key,
-               const std::vector<Slice>& fields,
+               const std::vector<std::string>& fields,
                std::vector<std::string>* values);
+
+  // Returns all fields and values of the hash stored at key. In the returned
+  // value, every field name is followed by its value, so the length of the
+  // reply is twice the size of the hash.
+  Status HGetall(const Slice& key,
+                 std::vector<BlackWidow::FieldValue>* fvs);
 
   // Sets field in the hash stored at key to value, only if field does not yet
   // exist. If key does not exist, a new key holding a hash is created. If field
@@ -150,7 +156,7 @@ class BlackWidow {
   // Removes the specified fields from the hash stored at key. Specified fields
   // that do not exist within this hash are ignored. If key does not exist, it
   // is treated as an empty hash and this command returns 0.
-  Status HDel(const Slice& key, const std::vector<Slice>& fields,
+  Status HDel(const Slice& key, const std::vector<std::string>& fields,
               int32_t* ret);
 
   // Keys Commands

@@ -136,11 +136,11 @@ Status RedisHashes::HGet(const Slice& key, const Slice& field,
 }
 
 Status RedisHashes::HMSet(const Slice& key,
-                          const std::vector<BlackWidow::SliceFieldValue>& fvs) {
+                          const std::vector<BlackWidow::FieldValue>& fvs) {
   std::unordered_set<std::string> fields;
-  std::vector<BlackWidow::SliceFieldValue> filtered_fvs;
+  std::vector<BlackWidow::FieldValue> filtered_fvs;
   for (auto iter = fvs.rbegin(); iter != fvs.rend(); ++iter) {
-    std::string field = iter->field.ToString();
+    std::string field = iter->field;
     if (fields.find(field) == fields.end()) {
       fields.insert(field);
       filtered_fvs.push_back(*iter);
@@ -202,7 +202,7 @@ Status RedisHashes::HMSet(const Slice& key,
 }
 
 Status RedisHashes::HMGet(const Slice& key,
-                          const std::vector<Slice>& fields,
+                          const std::vector<std::string>& fields,
                           std::vector<std::string>* values) {
   int32_t version = 0;
   std::string value;
@@ -235,6 +235,37 @@ Status RedisHashes::HMGet(const Slice& key,
     return Status::NotFound();
   }
   return Status::OK();
+}
+
+Status RedisHashes::HGetall(const Slice& key,
+                            std::vector<BlackWidow::FieldValue>* fvs) {
+  rocksdb::ReadOptions read_options;
+  const rocksdb::Snapshot* snapshot;
+
+  std::string meta_value;
+  int32_t version = 0;
+  ScopeSnapshot ss(db_, &snapshot);
+  read_options.snapshot = snapshot;
+  Status s = db_->Get(read_options, handles_[0], key, &meta_value);
+  if (s.ok()) {
+    ParsedHashesMetaValue parsed_hashes_meta_value(&meta_value);
+    if (parsed_hashes_meta_value.IsStale()) {
+      return Status::NotFound("Stale");
+    } else {
+      version = parsed_hashes_meta_value.version();
+      HashesDataKey hashes_data_key(key, version, "");
+      Slice prefix = hashes_data_key.Encode();
+      auto iter = db_->NewIterator(read_options, handles_[1]);
+      for (iter->Seek(prefix);
+           iter->Valid() && iter->key().starts_with(prefix);
+           iter->Next()) {
+        ParsedHashesDataKey parsed_hashes_data_key(iter->key());
+        fvs->push_back({parsed_hashes_data_key.field().ToString(),
+                iter->value().ToString()});
+      }
+    }
+  }
+  return s;
 }
 
 Status RedisHashes::HSetnx(const Slice& key, const Slice& field, const Slice& value,
@@ -395,12 +426,12 @@ Status RedisHashes::HIncrby(const Slice& key, const Slice& field, int64_t value,
   return db_->Write(default_write_options_, &batch);
 }
 
-Status RedisHashes::HDel(const Slice& key, const std::vector<Slice>& fields,
+Status RedisHashes::HDel(const Slice& key, const std::vector<std::string>& fields,
                          int32_t* ret) {
-  std::vector<Slice> filtered_fields;
+  std::vector<std::string> filtered_fields;
   std::unordered_set<std::string> field_set;
   for (auto iter = fields.begin(); iter != fields.end(); ++iter) {
-    std::string field = iter->ToString();
+    std::string field = *iter;
     if (field_set.find(field) == field_set.end()) {
       field_set.insert(field);
       filtered_fields.push_back(*iter);

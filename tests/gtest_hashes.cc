@@ -15,10 +15,9 @@ class HashesTest : public ::testing::Test {
  public:
   HashesTest() {
     std::string path = "./db";
-    if (access(path.c_str(), F_OK) == 0) {
-      remove(path.c_str());
+    if (access(path.c_str(), F_OK)) {
+      mkdir(path.c_str(), 0755);
     }
-    mkdir(path.c_str(), 0755);
     options.create_if_missing = true;
     s = db.Open(options, path);
   }
@@ -76,12 +75,12 @@ TEST_F(HashesTest, HGetTest) {
 // HMSet
 TEST_F(HashesTest, HMSetTest) {
   int32_t ret = 0;
-  std::vector<BlackWidow::SliceFieldValue> fvs1;
+  std::vector<BlackWidow::FieldValue> fvs1;
   fvs1.push_back({"TEST_FIELD1", "TEST_VALUE1"});
   fvs1.push_back({"TEST_FIELD2", "TEST_VALUE2"});
 
   // If field already exists in the hash, it is overwritten
-  std::vector<BlackWidow::SliceFieldValue> fvs2;
+  std::vector<BlackWidow::FieldValue> fvs2;
   fvs2.push_back({"TEST_FIELD2", "TEST_VALUE2"});
   fvs2.push_back({"TEST_FIELD3", "TEST_VALUE3"});
   fvs2.push_back({"TEST_FIELD4", "TEST_VALUE4"});
@@ -97,7 +96,7 @@ TEST_F(HashesTest, HMSetTest) {
   ASSERT_EQ(ret, 4);
 
   std::vector<std::string> values1;
-  std::vector<rocksdb::Slice> fields1 {"TEST_FIELD1",
+  std::vector<std::string> fields1 {"TEST_FIELD1",
       "TEST_FIELD2", "TEST_FIELD3", "TEST_FIELD4"};
   s = db.HMGet("HMSET_KEY", fields1, &values1);
   ASSERT_TRUE(s.ok());
@@ -114,7 +113,7 @@ TEST_F(HashesTest, HMSetTest) {
 
   // The key has timeout
   std::this_thread::sleep_for(std::chrono::milliseconds(2000));
-  std::vector<BlackWidow::SliceFieldValue> fvs3;
+  std::vector<BlackWidow::FieldValue> fvs3;
   fvs3.push_back({"TEST_FIELD3", "TEST_VALUE3"});
   fvs3.push_back({"TEST_FIELD4", "TEST_VALUE4"});
   fvs3.push_back({"TEST_FIELD5", "TEST_VALUE5"});
@@ -126,7 +125,7 @@ TEST_F(HashesTest, HMSetTest) {
   ASSERT_EQ(ret, 3);
 
   std::vector<std::string> values2;
-  std::vector<rocksdb::Slice> fields2 {"TEST_FIELD3",
+  std::vector<std::string> fields2 {"TEST_FIELD3",
       "TEST_FIELD4", "TEST_FIELD5"};
   s = db.HMGet("HMSET_KEY", fields2, &values2);
   ASSERT_TRUE(s.ok());
@@ -140,7 +139,7 @@ TEST_F(HashesTest, HMSetTest) {
 // HMGet
 TEST_F(HashesTest, HMGetTest) {
   int32_t ret = 0;
-  std::vector<BlackWidow::SliceFieldValue> fvs;
+  std::vector<BlackWidow::FieldValue> fvs;
   fvs.push_back({"TEST_FIELD1", "TEST_VALUE1"});
   fvs.push_back({"TEST_FIELD2", "TEST_VALUE2"});
   fvs.push_back({"TEST_FIELD3", "TEST_VALUE3"});
@@ -153,7 +152,7 @@ TEST_F(HashesTest, HMGetTest) {
   ASSERT_EQ(ret, 3);
 
   std::vector<std::string> values;
-  std::vector<rocksdb::Slice> fields {"TEST_FIELD1",
+  std::vector<std::string> fields {"TEST_FIELD1",
       "TEST_FIELD2", "TEST_FIELD3", "TEST_NOT_EXIST_FIELD"};
   s = db.HMGet("HMGET_KEY", fields, &values);
   ASSERT_TRUE(s.ok());
@@ -190,7 +189,7 @@ TEST_F(HashesTest, HSetnxTest) {
 // HLen
 TEST_F(HashesTest, HLenTest) {
   int32_t ret = 0;
-  std::vector<BlackWidow::SliceFieldValue> fvs;
+  std::vector<BlackWidow::FieldValue> fvs;
   fvs.push_back({"TEST_FIELD1", "TEST_VALUE1"});
   fvs.push_back({"TEST_FIELD2", "TEST_VALUE2"});
   fvs.push_back({"TEST_FIELD3", "TEST_VALUE3"});
@@ -308,7 +307,7 @@ TEST_F(HashesTest, HIncrby) {
 // HDel
 TEST_F(HashesTest, HDel) {
   int32_t ret = 0;
-  std::vector<BlackWidow::SliceFieldValue> fvs;
+  std::vector<BlackWidow::FieldValue> fvs;
   fvs.push_back({"TEST_FIELD1", "TEST_VALUE1"});
   fvs.push_back({"TEST_FIELD2", "TEST_VALUE2"});
   fvs.push_back({"TEST_FIELD3", "TEST_VALUE3"});
@@ -317,7 +316,7 @@ TEST_F(HashesTest, HDel) {
   s = db.HMSet("HDEL_KEY", fvs);
   ASSERT_TRUE(s.ok());
 
-  std::vector<rocksdb::Slice> fields {"TEST_FIELD1", "TEST_FIELD2",
+  std::vector<std::string> fields {"TEST_FIELD1", "TEST_FIELD2",
     "TEST_FIELD3", "TEST_FIElD2", "TEST_NOT_EXIST_FIELD"};
   s = db.HDel("HDEL_KEY", fields, &ret);
   ASSERT_TRUE(s.ok());
@@ -343,6 +342,44 @@ TEST_F(HashesTest, HDel) {
   s = db.HDel("HDEL_TIMEOUT_KEY", fields, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 0);
+}
+
+// HGetall
+TEST_F(HashesTest, HGetall) {
+  int32_t ret = 0;
+  std::vector<BlackWidow::FieldValue> fvs_in;
+  fvs_in.push_back({"TEST_FIELD1", "TEST_VALUE1"});
+  fvs_in.push_back({"TEST_FIELD2", "TEST_VALUE2"});
+  fvs_in.push_back({"TEST_FIELD3", "TEST_VALUE3"});
+  s = db.HMSet("HGETALL_KEY", fvs_in);
+  ASSERT_TRUE(s.ok());
+
+  std::vector<BlackWidow::FieldValue> fvs_out;
+  s = db.HGetall("HGETALL_KEY", &fvs_out);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(fvs_out.size(), 3);
+  ASSERT_EQ(fvs_out[0].field, "TEST_FIELD1");
+  ASSERT_EQ(fvs_out[0].value, "TEST_VALUE1");
+  ASSERT_EQ(fvs_out[1].field, "TEST_FIELD2");
+  ASSERT_EQ(fvs_out[1].value, "TEST_VALUE2");
+  ASSERT_EQ(fvs_out[2].field, "TEST_FIELD3");
+  ASSERT_EQ(fvs_out[2].value, "TEST_VALUE3");
+
+  // Getall timeout hash table
+  fvs_out.clear();
+  std::map<BlackWidow::DataType, rocksdb::Status> type_status;
+  db.Expire("HGETALL_KEY", 1, &type_status);
+  ASSERT_TRUE(type_status[BlackWidow::DataType::HASHES].ok());
+  std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+  s = db.HGetall("HGETALL_KEY", &fvs_out);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(fvs_out.size(), 0);
+
+  // Getall not exist hash table
+  fvs_out.clear();
+  s = db.HGetall("HGETALL_NOT_EXIST_KEY", &fvs_out);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(fvs_out.size(), 0);
 }
 
 

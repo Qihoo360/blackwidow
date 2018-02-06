@@ -106,14 +106,19 @@ Status BlackWidow::HGet(const Slice& key, const Slice& field,
 }
 
 Status BlackWidow::HMSet(const Slice& key,
-                         const std::vector<BlackWidow::SliceFieldValue>& fvs) {
+                         const std::vector<BlackWidow::FieldValue>& fvs) {
   return hashes_db_->HMSet(key, fvs);
 }
 
 Status BlackWidow::HMGet(const Slice& key,
-                         const std::vector<Slice>& fields,
+                         const std::vector<std::string>& fields,
                          std::vector<std::string>* values) {
   return hashes_db_->HMGet(key, fields, values);
+}
+
+Status BlackWidow::HGetall(const Slice& key,
+                           std::vector<BlackWidow::FieldValue>* fvs) {
+  return hashes_db_->HGetall(key, fvs);
 }
 
 Status BlackWidow::HSetnx(const Slice& key, const Slice& field, const Slice& value,
@@ -138,7 +143,7 @@ Status BlackWidow::HIncrby(const Slice& key, const Slice& field, int64_t value,
   return hashes_db_->HIncrby(key, field, value, ret);
 }
 
-Status BlackWidow::HDel(const Slice& key, const std::vector<Slice>& fields,
+Status BlackWidow::HDel(const Slice& key, const std::vector<std::string>& fields,
                         int32_t* ret) {
   return hashes_db_->HDel(key, fields, ret);
 }
