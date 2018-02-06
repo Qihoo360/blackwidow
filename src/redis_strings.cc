@@ -84,7 +84,7 @@ Status RedisStrings::MSet(const std::vector<BlackWidow::KeyValue>& kvs) {
   return s;
 }
 
-Status RedisStrings::MGet(const std::vector<Slice>& keys,
+Status RedisStrings::MGet(const std::vector<std::string>& keys,
                           std::vector<std::string>* values) {
   Status s;
   std::string value;

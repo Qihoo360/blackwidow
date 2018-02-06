@@ -56,7 +56,7 @@ TEST_F(StringsTest, MSetTest) {
 // MGet
 TEST_F(StringsTest, MGetTest) {
   std::vector<std::string> values;
-  std::vector<rocksdb::Slice> keys {"", "MSET_TEST_KEY1",
+  std::vector<std::string> keys {"", "MSET_TEST_KEY1",
     "MSET_TEST_KEY2", "MSET_TEST_KEY3", "MSET_TEST_KEY_NOT_EXIST"};
   s = db.MGet(keys, &values);
   ASSERT_TRUE(s.ok());
@@ -94,7 +94,7 @@ TEST_F(StringsTest, SetrangeTest) {
   s = db.Get("SETRANGE_KEY", &value);
   ASSERT_STREQ(value.c_str(), "HELLO REDIS");
 
-  std::vector<rocksdb::Slice> keys {"SETRANGE_KEY"};
+  std::vector<std::string> keys {"SETRANGE_KEY"};
   std::map<BlackWidow::DataType, Status> type_status;
   ret = db.Del(keys, &type_status);
   ASSERT_EQ(ret, 1);
@@ -239,7 +239,7 @@ TEST_F(StringsTest, ExpireTest) {
 TEST_F(StringsTest, DelTest) {
   int32_t ret;
   std::map<BlackWidow::DataType, Status> type_status;
-  std::vector<rocksdb::Slice> keys {"DEL_KEY"};
+  std::vector<std::string> keys {"DEL_KEY"};
   s = db.Set("DEL_KEY", "EXPIREVALUE");
   ASSERT_TRUE(s.ok());
   s = db.HSet("DEL_KEY", "DEL_FIELD", "DEL_VALUE", &ret);

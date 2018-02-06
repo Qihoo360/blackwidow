@@ -24,7 +24,7 @@ class RedisStrings : public Redis {
   Status Set(const Slice& key, const Slice& value);
   Status Get(const Slice& key, std::string* value);
   Status MSet(const std::vector<BlackWidow::KeyValue>& kvs);
-  Status MGet(const std::vector<Slice>& keys, std::vector<std::string>* values);
+  Status MGet(const std::vector<std::string>& keys, std::vector<std::string>* values);
   Status Setnx(const Slice& key, const Slice& value, int32_t* ret);
   Status Setrange(const Slice& key, int32_t offset,
                   const Slice& value, int32_t* ret);

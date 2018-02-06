@@ -66,9 +66,9 @@ test: $(OBJECTS)
 	@rm -rf hash_meta_db
 	@mkdir db
 	@mkdir hash_meta_db
-	@./gtest_strings
-	@./gtest_hashes
-	@./gtest_strings_filter
+	@./gtest_strings && echo
+	@./gtest_hashes && echo
+	@./gtest_strings_filter && echo
 	@./gtest_hashes_filter
 	@rm -rf db
 	@rm -rf hash_meta_db

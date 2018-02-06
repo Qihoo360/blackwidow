@@ -46,14 +46,14 @@ int main() {
   printf("HGet return: %s, value = %s\n", s.ToString().c_str(), value.c_str());
 
   // HMSet
-  std::vector<blackwidow::BlackWidow::SliceFieldValue> fvs;
+  std::vector<BlackWidow::FieldValue> fvs;
   fvs.push_back({"TEST_FIELD1", "TEST_VALUE1"});
   fvs.push_back({"TEST_FIELD2", "TEST_VALUE2"});
   s = db.HMSet("TEST_HASH", fvs);
   printf("HMset return: %s\n", s.ToString().c_str());
 
   // HMGet
-  std::vector<rocksdb::Slice> fields;
+  std::vector<std::string> fields;
   std::vector<std::string> values;
   fields.push_back("TEST_FIELD1");
   fields.push_back("TEST_FIELD2");
@@ -61,7 +61,7 @@ int main() {
   printf("HMget return: %s\n", s.ToString().c_str());
   for (uint32_t idx = 0; idx != fields.size(); idx++) {
     printf("idx = %d, field = %s, value = %s\n",
-        idx, fields[idx].ToString().c_str(), values[idx].c_str());
+        idx, fields[idx].c_str(), values[idx].c_str());
   }
 
   // HLEN

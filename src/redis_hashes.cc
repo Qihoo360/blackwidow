@@ -268,8 +268,8 @@ Status RedisHashes::HGetall(const Slice& key,
   return s;
 }
 
-Status RedisHashes::HSetnx(const Slice& key, const Slice& field, const Slice& value,
-                           int32_t* ret) {
+Status RedisHashes::HSetnx(const Slice& key, const Slice& field,
+                           const Slice& value, int32_t* ret) {
   rocksdb::WriteBatch batch;
   rocksdb::ReadOptions read_options;
   const rocksdb::Snapshot* snapshot;
@@ -294,7 +294,8 @@ Status RedisHashes::HSetnx(const Slice& key, const Slice& field, const Slice& va
       version = parsed_hashes_meta_value.version();
       HashesDataKey hashes_data_key(key, version, field);
       std::string data_value;
-      s = db_->Get(read_options, handles_[1], hashes_data_key.Encode(), &data_value);
+      s = db_->Get(read_options, handles_[1],
+              hashes_data_key.Encode(), &data_value);
       if (s.ok()) {
         *ret = 0;
       } else if (s.IsNotFound()) {
@@ -337,7 +338,8 @@ Status RedisHashes::HLen(const Slice& key, int32_t* ret) {
   return s;
 }
 
-Status RedisHashes::HStrlen(const Slice& key, const Slice& field, int32_t* len) {
+Status RedisHashes::HStrlen(const Slice& key,
+                            const Slice& field, int32_t* len) {
   std::string value;
   Status s = HGet(key, field, &value);
   if (s.ok()) {
@@ -426,7 +428,8 @@ Status RedisHashes::HIncrby(const Slice& key, const Slice& field, int64_t value,
   return db_->Write(default_write_options_, &batch);
 }
 
-Status RedisHashes::HDel(const Slice& key, const std::vector<std::string>& fields,
+Status RedisHashes::HDel(const Slice& key,
+                         const std::vector<std::string>& fields,
                          int32_t* ret) {
   std::vector<std::string> filtered_fields;
   std::unordered_set<std::string> field_set;
@@ -460,11 +463,12 @@ Status RedisHashes::HDel(const Slice& key, const std::vector<std::string>& field
       int32_t hlen = parsed_hashes_meta_value.count();
       for (const auto& field : filtered_fields) {
         HashesDataKey hashes_data_key(key, version, field);
-        s = db_->Get(read_options, handles_[1], hashes_data_key.Encode(), &data_value);
+        s = db_->Get(read_options, handles_[1],
+                hashes_data_key.Encode(), &data_value);
         if (s.ok()) {
           del_cnt++;
           batch.Delete(handles_[1], hashes_data_key.Encode());
-        } else if(s.IsNotFound()) {
+        } else if (s.IsNotFound()) {
           continue;
         } else {
           return s;
