@@ -109,7 +109,7 @@ TEST_F(HashesTest, HMSetTest) {
 
   std::map<BlackWidow::DataType, rocksdb::Status> type_status;
   db.Expire("HMSET_KEY", 1, &type_status);
-  ASSERT_TRUE(type_status[BlackWidow::DataType::HASHES].ok());
+  ASSERT_TRUE(type_status[BlackWidow::DataType::kHashes].ok());
 
   // The key has timeout
   std::this_thread::sleep_for(std::chrono::milliseconds(2000));
@@ -337,7 +337,7 @@ TEST_F(HashesTest, HDel) {
 
   std::map<BlackWidow::DataType, rocksdb::Status> type_status;
   db.Expire("HDEL_TIMEOUT_KEY", 1, &type_status);
-  ASSERT_TRUE(type_status[BlackWidow::DataType::HASHES].ok());
+  ASSERT_TRUE(type_status[BlackWidow::DataType::kHashes].ok());
   std::this_thread::sleep_for(std::chrono::milliseconds(2000));
   s = db.HDel("HDEL_TIMEOUT_KEY", fields, &ret);
   ASSERT_TRUE(s.ok());
@@ -369,7 +369,7 @@ TEST_F(HashesTest, HGetall) {
   fvs_out.clear();
   std::map<BlackWidow::DataType, rocksdb::Status> type_status;
   db.Expire("HGETALL_KEY", 1, &type_status);
-  ASSERT_TRUE(type_status[BlackWidow::DataType::HASHES].ok());
+  ASSERT_TRUE(type_status[BlackWidow::DataType::kHashes].ok());
   std::this_thread::sleep_for(std::chrono::milliseconds(2000));
   s = db.HGetall("HGETALL_KEY", &fvs_out);
   ASSERT_TRUE(s.IsNotFound());

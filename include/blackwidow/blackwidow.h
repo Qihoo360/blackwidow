@@ -7,6 +7,8 @@
 #define INCLUDE_BLACKWIDOW_BLACKWIDOW_H_
 
 #include <string>
+#include <map>
+#include <vector>
 
 #include "rocksdb/status.h"
 #include "rocksdb/options.h"
@@ -53,7 +55,8 @@ class BlackWidow {
   // Returns the values of all specified keys. For every key
   // that does not hold a string value or does not exist, the
   // special value nil is returned
-  Status MGet(const std::vector<std::string>& keys, std::vector<std::string>* values);
+  Status MGet(const std::vector<std::string>& keys,
+      std::vector<std::string>* values);
 
   // Set key to hold string value if key does not exist
   // return 1 if the key was set
@@ -143,7 +146,8 @@ class BlackWidow {
 
   // Returns if field is an existing field in the hash stored at key.
   // Return Status::Ok() if the hash contains field.
-  // Return Status::NotFound() if the hash does not contain field, or key does not exist.
+  // Return Status::NotFound() if the hash does not contain field,
+  // or key does not exist.
   Status HExists(const Slice& key, const Slice& field);
 
   // Increments the number stored at field in the hash stored at key by
@@ -160,23 +164,25 @@ class BlackWidow {
               int32_t* ret);
 
   // Keys Commands
-  enum DataType{
-    STRINGS,
-    HASHES,
-    LISTS,
-    SETS,
-    ZSETS
+  enum DataType {
+    kStrings,
+    kHashes,
+    kLists,
+    kZSets,
+    kSets
   };
 
   // Set a timeout on key
   // return -1 operation exception errors happen in database
   // return >=0 success
-  int Expire(const Slice& key, int32_t ttl, std::map<DataType, Status>* type_status);
+  int Expire(const Slice& key, int32_t ttl,
+      std::map<DataType, Status>* type_status);
 
   // Removes the specified keys
   // return -1 operation exception errors happen in database
   // return >=0 the number of keys that were removed
-  int Del(const std::vector<std::string>& keys, std::map<DataType, Status>* type_status);
+  int Del(const std::vector<std::string>& keys,
+      std::map<DataType, Status>* type_status);
 
  private:
   RedisStrings* strings_db_;

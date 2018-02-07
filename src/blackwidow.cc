@@ -162,7 +162,7 @@ int BlackWidow::Expire(const Slice& key,
   } else if (!s.IsNotFound()) {
     is_corruption = true;
   }
-  (*type_status)[DataType::STRINGS] = s;
+  (*type_status)[DataType::kStrings] = s;
 
   // Hash
   s = hashes_db_->Expire(key, ttl);
@@ -171,7 +171,7 @@ int BlackWidow::Expire(const Slice& key,
   } else if (!s.IsNotFound()) {
     is_corruption = true;
   }
-  (*type_status)[DataType::HASHES] = s;
+  (*type_status)[DataType::kHashes] = s;
 
   if (is_corruption) {
     return -1;
@@ -194,7 +194,7 @@ int BlackWidow::Del(const std::vector<std::string>& keys,
     } else if (!s.IsNotFound()) {
       is_corruption = true;
     }
-    (*type_status)[DataType::STRINGS] = s;
+    (*type_status)[DataType::kStrings] = s;
 
     // Hashes
     s = hashes_db_->Del(key);
@@ -203,7 +203,7 @@ int BlackWidow::Del(const std::vector<std::string>& keys,
     } else if (!s.IsNotFound()) {
       is_corruption = true;
     }
-    (*type_status)[DataType::HASHES] = s;
+    (*type_status)[DataType::kHashes] = s;
 
     if (is_success) {
       count++;
