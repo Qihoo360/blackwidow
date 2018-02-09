@@ -121,6 +121,16 @@ Status BlackWidow::HGetall(const Slice& key,
   return hashes_db_->HGetall(key, fvs);
 }
 
+Status BlackWidow::HKeys(const Slice& key,
+                         std::vector<std::string>* fields) {
+  return hashes_db_->HKeys(key, fields);
+}
+
+Status BlackWidow::HVals(const Slice& key,
+                         std::vector<std::string>* values) {
+  return hashes_db_->HVals(key, values);
+}
+
 Status BlackWidow::HSetnx(const Slice& key, const Slice& field,
                           const Slice& value, int32_t* ret) {
   return hashes_db_->HSetnx(key, field, value, ret);

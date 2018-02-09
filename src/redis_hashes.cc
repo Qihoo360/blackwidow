@@ -268,6 +268,65 @@ Status RedisHashes::HGetall(const Slice& key,
   return s;
 }
 
+Status RedisHashes::HKeys(const Slice& key,
+                          std::vector<std::string>* fields) {
+  rocksdb::ReadOptions read_options;
+  const rocksdb::Snapshot* snapshot;
+
+  std::string meta_value;
+  int32_t version = 0;
+  ScopeSnapshot ss(db_, &snapshot);
+  read_options.snapshot = snapshot;
+  Status s = db_->Get(read_options, handles_[0], key, &meta_value);
+  if (s.ok()) {
+    ParsedHashesMetaValue parsed_hashes_meta_value(&meta_value);
+    if (parsed_hashes_meta_value.IsStale()) {
+      return Status::NotFound("Stale");
+    } else {
+      version = parsed_hashes_meta_value.version();
+      HashesDataKey hashes_data_key(key, version, "");
+      Slice prefix = hashes_data_key.Encode();
+      auto iter = db_->NewIterator(read_options, handles_[1]);
+      for (iter->Seek(prefix);
+           iter->Valid() && iter->key().starts_with(prefix);
+           iter->Next()) {
+        ParsedHashesDataKey parsed_hashes_data_key(iter->key());
+        fields->push_back(parsed_hashes_data_key.field().ToString());
+      }
+    }
+  }
+  return s;
+}
+
+Status RedisHashes::HVals(const Slice& key,
+                          std::vector<std::string>* values) {
+  rocksdb::ReadOptions read_options;
+  const rocksdb::Snapshot* snapshot;
+
+  std::string meta_value;
+  int32_t version = 0;
+  ScopeSnapshot ss(db_, &snapshot);
+  read_options.snapshot = snapshot;
+  Status s = db_->Get(read_options, handles_[0], key, &meta_value);
+  if (s.ok()) {
+    ParsedHashesMetaValue parsed_hashes_meta_value(&meta_value);
+    if (parsed_hashes_meta_value.IsStale()) {
+      return Status::NotFound("Stale");
+    } else {
+      version = parsed_hashes_meta_value.version();
+      HashesDataKey hashes_data_key(key, version, "");
+      Slice prefix = hashes_data_key.Encode();
+      auto iter = db_->NewIterator(read_options, handles_[1]);
+      for (iter->Seek(prefix);
+           iter->Valid() && iter->key().starts_with(prefix);
+           iter->Next()) {
+        values->push_back(iter->value().ToString());
+      }
+    }
+  }
+  return s;
+}
+
 Status RedisHashes::HSetnx(const Slice& key, const Slice& field,
                            const Slice& value, int32_t* ret) {
   rocksdb::WriteBatch batch;

@@ -347,41 +347,206 @@ TEST_F(HashesTest, HDel) {
 // HGetall
 TEST_F(HashesTest, HGetall) {
   int32_t ret = 0;
-  std::vector<BlackWidow::FieldValue> fvs_in;
-  fvs_in.push_back({"TEST_FIELD1", "TEST_VALUE1"});
-  fvs_in.push_back({"TEST_FIELD2", "TEST_VALUE2"});
-  fvs_in.push_back({"TEST_FIELD3", "TEST_VALUE3"});
-  s = db.HMSet("HGETALL_KEY", fvs_in);
+  std::vector<BlackWidow::FieldValue> mid_fvs_in;
+  mid_fvs_in.push_back({"MID_TEST_FIELD1", "MID_TEST_VALUE1"});
+  mid_fvs_in.push_back({"MID_TEST_FIELD2", "MID_TEST_VALUE2"});
+  mid_fvs_in.push_back({"MID_TEST_FIELD3", "MID_TEST_VALUE3"});
+  s = db.HMSet("B_HGETALL_KEY", mid_fvs_in);
   ASSERT_TRUE(s.ok());
 
   std::vector<BlackWidow::FieldValue> fvs_out;
-  s = db.HGetall("HGETALL_KEY", &fvs_out);
+  s = db.HGetall("B_HGETALL_KEY", &fvs_out);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(fvs_out.size(), 3);
-  ASSERT_EQ(fvs_out[0].field, "TEST_FIELD1");
-  ASSERT_EQ(fvs_out[0].value, "TEST_VALUE1");
-  ASSERT_EQ(fvs_out[1].field, "TEST_FIELD2");
-  ASSERT_EQ(fvs_out[1].value, "TEST_VALUE2");
-  ASSERT_EQ(fvs_out[2].field, "TEST_FIELD3");
-  ASSERT_EQ(fvs_out[2].value, "TEST_VALUE3");
+  ASSERT_EQ(fvs_out[0].field, "MID_TEST_FIELD1");
+  ASSERT_EQ(fvs_out[0].value, "MID_TEST_VALUE1");
+  ASSERT_EQ(fvs_out[1].field, "MID_TEST_FIELD2");
+  ASSERT_EQ(fvs_out[1].value, "MID_TEST_VALUE2");
+  ASSERT_EQ(fvs_out[2].field, "MID_TEST_FIELD3");
+  ASSERT_EQ(fvs_out[2].value, "MID_TEST_VALUE3");
 
-  // Getall timeout hash table
+  // Insert some kv who's position above "mid kv"
+  std::vector<BlackWidow::FieldValue> pre_fvs_in;
+  pre_fvs_in.push_back({"PRE_TEST_FIELD1", "PRE_TEST_VALUE1"});
+  pre_fvs_in.push_back({"PRE_TEST_FIELD2", "PRE_TEST_VALUE2"});
+  pre_fvs_in.push_back({"PRE_TEST_FIELD3", "PRE_TEST_VALUE3"});
+  s = db.HMSet("A_HGETALL_KEY", pre_fvs_in);
+  ASSERT_TRUE(s.ok());
+  fvs_out.clear();
+  s = db.HGetall("B_HGETALL_KEY", &fvs_out);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(fvs_out.size(), 3);
+  ASSERT_EQ(fvs_out[0].field, "MID_TEST_FIELD1");
+  ASSERT_EQ(fvs_out[0].value, "MID_TEST_VALUE1");
+  ASSERT_EQ(fvs_out[1].field, "MID_TEST_FIELD2");
+  ASSERT_EQ(fvs_out[1].value, "MID_TEST_VALUE2");
+  ASSERT_EQ(fvs_out[2].field, "MID_TEST_FIELD3");
+  ASSERT_EQ(fvs_out[2].value, "MID_TEST_VALUE3");
+
+  // Insert some kv who's position below "mid kv"
+  std::vector<BlackWidow::FieldValue> suf_fvs_in;
+  suf_fvs_in.push_back({"SUF_TEST_FIELD1", "SUF_TEST_VALUE1"});
+  suf_fvs_in.push_back({"SUF_TEST_FIELD2", "SUF_TEST_VALUE2"});
+  suf_fvs_in.push_back({"SUF_TEST_FIELD3", "SUF_TEST_VALUE3"});
+  s = db.HMSet("C_HGETALL_KEY", suf_fvs_in);
+  ASSERT_TRUE(s.ok());
+  fvs_out.clear();
+  s = db.HGetall("B_HGETALL_KEY", &fvs_out);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(fvs_out.size(), 3);
+  ASSERT_EQ(fvs_out[0].field, "MID_TEST_FIELD1");
+  ASSERT_EQ(fvs_out[0].value, "MID_TEST_VALUE1");
+  ASSERT_EQ(fvs_out[1].field, "MID_TEST_FIELD2");
+  ASSERT_EQ(fvs_out[1].value, "MID_TEST_VALUE2");
+  ASSERT_EQ(fvs_out[2].field, "MID_TEST_FIELD3");
+  ASSERT_EQ(fvs_out[2].value, "MID_TEST_VALUE3");
+
+  // HGetall timeout hash table
   fvs_out.clear();
   std::map<BlackWidow::DataType, rocksdb::Status> type_status;
-  db.Expire("HGETALL_KEY", 1, &type_status);
+  db.Expire("B_HGETALL_KEY", 1, &type_status);
   ASSERT_TRUE(type_status[BlackWidow::DataType::kHashes].ok());
   std::this_thread::sleep_for(std::chrono::milliseconds(2000));
-  s = db.HGetall("HGETALL_KEY", &fvs_out);
+  s = db.HGetall("B_HGETALL_KEY", &fvs_out);
   ASSERT_TRUE(s.IsNotFound());
   ASSERT_EQ(fvs_out.size(), 0);
 
-  // Getall not exist hash table
+  // HGetall not exist hash table
   fvs_out.clear();
   s = db.HGetall("HGETALL_NOT_EXIST_KEY", &fvs_out);
   ASSERT_TRUE(s.IsNotFound());
   ASSERT_EQ(fvs_out.size(), 0);
 }
 
+// HKeys
+TEST_F(HashesTest, HKeys) {
+  int32_t ret = 0;
+  std::vector<BlackWidow::FieldValue> mid_fvs_in;
+  mid_fvs_in.push_back({"MID_TEST_FIELD1", "MID_TEST_VALUE1"});
+  mid_fvs_in.push_back({"MID_TEST_FIELD2", "MID_TEST_VALUE2"});
+  mid_fvs_in.push_back({"MID_TEST_FIELD3", "MID_TEST_VALUE3"});
+  s = db.HMSet("B_HKEYS_KEY", mid_fvs_in);
+  ASSERT_TRUE(s.ok());
+
+  std::vector<std::string> fields;
+  s = db.HKeys("B_HKEYS_KEY", &fields);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(fields.size(), 3);
+  ASSERT_EQ(fields[0], "MID_TEST_FIELD1");
+  ASSERT_EQ(fields[1], "MID_TEST_FIELD2");
+  ASSERT_EQ(fields[2], "MID_TEST_FIELD3");
+
+  // Insert some kv who's position above "mid kv"
+  std::vector<BlackWidow::FieldValue> pre_fvs_in;
+  pre_fvs_in.push_back({"PRE_TEST_FIELD1", "PRE_TEST_VALUE1"});
+  pre_fvs_in.push_back({"PRE_TEST_FIELD2", "PRE_TEST_VALUE2"});
+  pre_fvs_in.push_back({"PRE_TEST_FIELD3", "PRE_TEST_VALUE3"});
+  s = db.HMSet("A_HKEYS_KEY", pre_fvs_in);
+  ASSERT_TRUE(s.ok());
+  fields.clear();
+  s = db.HKeys("B_HKEYS_KEY", &fields);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(fields.size(), 3);
+  ASSERT_EQ(fields[0], "MID_TEST_FIELD1");
+  ASSERT_EQ(fields[1], "MID_TEST_FIELD2");
+  ASSERT_EQ(fields[2], "MID_TEST_FIELD3");
+
+  // Insert some kv who's position below "mid kv"
+  std::vector<BlackWidow::FieldValue> suf_fvs_in;
+  suf_fvs_in.push_back({"SUF_TEST_FIELD1", "SUF_TEST_VALUE1"});
+  suf_fvs_in.push_back({"SUF_TEST_FIELD2", "SUF_TEST_VALUE2"});
+  suf_fvs_in.push_back({"SUF_TEST_FIELD3", "SUF_TEST_VALUE3"});
+  s = db.HMSet("A_HKEYS_KEY", suf_fvs_in);
+  ASSERT_TRUE(s.ok());
+  fields.clear();
+  s = db.HKeys("B_HKEYS_KEY", &fields);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(fields.size(), 3);
+  ASSERT_EQ(fields[0], "MID_TEST_FIELD1");
+  ASSERT_EQ(fields[1], "MID_TEST_FIELD2");
+  ASSERT_EQ(fields[2], "MID_TEST_FIELD3");
+
+  // HKeys timeout hash table
+  fields.clear();
+  std::map<BlackWidow::DataType, rocksdb::Status> type_status;
+  db.Expire("B_HKEYS_KEY", 1, &type_status);
+  ASSERT_TRUE(type_status[BlackWidow::DataType::kHashes].ok());
+  std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+  s = db.HKeys("B_HKEYS_KEY", &fields);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(fields.size(), 0);
+
+  // HKeys not exist hash table
+  fields.clear();
+  s = db.HKeys("HKEYS_NOT_EXIST_KEY", &fields);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(fields.size(), 0);
+}
+
+// HVals
+TEST_F(HashesTest, HVals) {
+  int32_t ret = 0;
+  std::vector<BlackWidow::FieldValue> mid_fvs_in;
+  mid_fvs_in.push_back({"MID_TEST_FIELD1", "MID_TEST_VALUE1"});
+  mid_fvs_in.push_back({"MID_TEST_FIELD2", "MID_TEST_VALUE2"});
+  mid_fvs_in.push_back({"MID_TEST_FIELD3", "MID_TEST_VALUE3"});
+  s = db.HMSet("B_HVALS_KEY", mid_fvs_in);
+  ASSERT_TRUE(s.ok());
+
+  std::vector<std::string> values;
+  s = db.HVals("B_HVALS_KEY", &values);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(values.size(), 3);
+  ASSERT_EQ(values[0], "MID_TEST_VALUE1");
+  ASSERT_EQ(values[1], "MID_TEST_VALUE2");
+  ASSERT_EQ(values[2], "MID_TEST_VALUE3");
+
+  // Insert some kv who's position above "mid kv"
+  std::vector<BlackWidow::FieldValue> pre_fvs_in;
+  pre_fvs_in.push_back({"PRE_TEST_FIELD1", "PRE_TEST_VALUE1"});
+  pre_fvs_in.push_back({"PRE_TEST_FIELD2", "PRE_TEST_VALUE2"});
+  pre_fvs_in.push_back({"PRE_TEST_FIELD3", "PRE_TEST_VALUE3"});
+  s = db.HMSet("A_HVALS_KEY", pre_fvs_in);
+  ASSERT_TRUE(s.ok());
+  values.clear();
+  s = db.HVals("B_HVALS_KEY", &values);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(values.size(), 3);
+  ASSERT_EQ(values[0], "MID_TEST_VALUE1");
+  ASSERT_EQ(values[1], "MID_TEST_VALUE2");
+  ASSERT_EQ(values[2], "MID_TEST_VALUE3");
+
+  // Insert some kv who's position below "mid kv"
+  std::vector<BlackWidow::FieldValue> suf_fvs_in;
+  suf_fvs_in.push_back({"SUF_TEST_FIELD1", "SUF_TEST_VALUE1"});
+  suf_fvs_in.push_back({"SUF_TEST_FIELD2", "SUF_TEST_VALUE2"});
+  suf_fvs_in.push_back({"SUF_TEST_FIELD3", "SUF_TEST_VALUE3"});
+  s = db.HMSet("C_HVALS_KEY", suf_fvs_in);
+  ASSERT_TRUE(s.ok());
+  values.clear();
+  s = db.HVals("B_HVALS_KEY", &values);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(values.size(), 3);
+  ASSERT_EQ(values[0], "MID_TEST_VALUE1");
+  ASSERT_EQ(values[1], "MID_TEST_VALUE2");
+  ASSERT_EQ(values[2], "MID_TEST_VALUE3");
+
+  // HVals timeout hash table
+  values.clear();
+  std::map<BlackWidow::DataType, rocksdb::Status> type_status;
+  db.Expire("B_HVALS_KEY", 1, &type_status);
+  ASSERT_TRUE(type_status[BlackWidow::DataType::kHashes].ok());
+  std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+  s = db.HVals("B_HVALS_KEY", &values);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(values.size(), 0);
+
+  // HVals not exist hash table
+  values.clear();
+  s = db.HVals("HVALS_NOT_EXIST_KEY", &values);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(values.size(), 0);
+}
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

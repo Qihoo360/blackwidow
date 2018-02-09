@@ -130,6 +130,14 @@ class BlackWidow {
   Status HGetall(const Slice& key,
                  std::vector<BlackWidow::FieldValue>* fvs);
 
+  // Returns all field names in the hash stored at key.
+  Status HKeys(const Slice& key,
+               std::vector<std::string>* fields);
+
+  // Returns all values in the hash stored at key.
+  Status HVals(const Slice& key,
+               std::vector<std::string>* values);
+
   // Sets field in the hash stored at key to value, only if field does not yet
   // exist. If key does not exist, a new key holding a hash is created. If field
   // already exists, this operation has no effect.
