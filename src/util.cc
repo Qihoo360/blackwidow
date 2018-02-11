@@ -173,4 +173,51 @@ int StrToInt64(const char *s, size_t slen, int64_t *value) {
     return 1;
 }
 
+int StrToLongDouble(const char* s, size_t slen, long double* ldval) {
+    char *pEnd;
+    long double d = strtold(s, &pEnd);
+    if (pEnd != s + slen)
+        return -1;
+
+    if (ldval != NULL) *ldval = d;
+    return 0;
+}
+
+int LongDoubleToStr(long double ldval, std::string* value) {
+    char buf[256];
+    int len;
+    if (isnan(ldval)) {
+      return -1;
+    } else if (isinf(ldval)) {
+      /* Libc in odd systems (Hi Solaris!) will format infinite in a
+      * different way, so better to handle it in an explicit way. */
+      if (ldval > 0) {
+        memcpy(buf, "inf", 3);
+        len = 3;
+      } else {
+        memcpy(buf, "-inf", 4);
+        len = 4;
+      }
+      return -1;
+    } else {
+      /* We use 17 digits precision since with 128 bit floats that precision
+       * after rounding is able to represent most small decimal numbers in a
+       * way that is "non surprising" for the user (that is, most small
+       * decimal numbers will be represented in a way that when converted
+       * back into a string are exactly the same as what the user typed.) */
+      len = snprintf(buf, sizeof(buf), "%.17Lf", ldval);
+      /* Now remove trailing zeroes after the '.' */
+      if (strchr(buf, '.') != NULL) {
+          char *p = buf+len-1;
+          while (*p == '0') {
+              p--;
+              len--;
+          }
+          if (*p == '.') len--;
+      }
+      value->assign(buf, len);
+      return 0;
+    }
+}
+
 }  //  namespace blackwidow

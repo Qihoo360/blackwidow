@@ -304,6 +304,181 @@ TEST_F(HashesTest, HIncrby) {
   ASSERT_TRUE(s.IsInvalidArgument());
 }
 
+// HIncrbyfloat
+TEST_F(HashesTest, HIncrbyfloat) {
+  int32_t ret;
+  std::string new_value;
+
+  // If the specified increment are not parsable as a double precision
+  // floating point number
+  s = db.HIncrbyfloat("HINCRBYFLOAT_KEY",
+          "HINCRBYFLOAT_FIELD", "HINCRBYFLOAT_BY", &new_value);
+  ASSERT_TRUE(s.IsInvalidArgument());
+  s = db.HGet("HINCRBYFLOAT_KEY", "HINCRBYFLOAT_FIELD", &new_value);
+  ASSERT_TRUE(s.IsNotFound());
+
+  // If key does not exist the value is set to 0 before the
+  // operation is performed
+  s = db.HIncrbyfloat("HINCRBYFLOAT_KEY", "HINCRBYFLOAT_FIELD",
+          "12.3456", &new_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(new_value, "12.3456");
+  s = db.HGet("HINCRBYFLOAT_KEY", "HINCRBYFLOAT_FIELD", &new_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(new_value, "12.3456");
+  s = db.HLen("HINCRBYFLOAT_KEY", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+
+  // If the current field content are not parsable as a double precision
+  // floating point number
+  s = db.HSet("HINCRBYFLOAT_KEY", "HINCRBYFLOAT_STR_FIELD",
+          "HINCRBYFLOAT_VALUE", &ret);
+  ASSERT_TRUE(s.ok());
+  s = db.HIncrbyfloat("HINCRBYFLOAT_KEY", "HINCRBYFLOAT_STR_FIELD",
+          "123.456", &new_value);
+  ASSERT_TRUE(s.IsInvalidArgument());
+  s = db.HLen("HINCRBYFLOAT_KEY", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 2);
+
+  // If field does not exist the value is set to 0 before the
+  // operation is performed
+  s = db.HIncrbyfloat("HINCRBYFLOAT_KEY", "HINCRBYFLOAT_NOT_EXIST_FIELD",
+          "65.4321000", &new_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(new_value, "65.4321");
+  s = db.HGet("HINCRBYFLOAT_KEY", "HINCRBYFLOAT_NOT_EXIST_FIELD", &new_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(new_value, "65.4321");
+  s = db.HLen("HINCRBYFLOAT_KEY", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 3);
+
+  s = db.HSet("HINCRBYFLOAT_KEY", "HINCRBYFLOAT_NUM_FIELD", "1000", &ret);
+  ASSERT_TRUE(s.ok());
+
+  // Positive test
+  s = db.HIncrbyfloat("HINCRBYFLOAT_KEY", "HINCRBYFLOAT_NUM_FIELD",
+          "+123.456789", &new_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(new_value, "1123.456789");
+  s = db.HGet("HINCRBYFLOAT_KEY", "HINCRBYFLOAT_NUM_FIELD", &new_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(new_value, "1123.456789");
+
+  // Negative test
+  s = db.HIncrbyfloat("HINCRBYFLOAT_KEY", "HINCRBYFLOAT_NUM_FIELD",
+          "-123.456789", &new_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(new_value, "1000");
+  s = db.HGet("HINCRBYFLOAT_KEY", "HINCRBYFLOAT_NUM_FIELD", &new_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(new_value, "1000");
+
+  s = db.HLen("HINCRBYFLOAT_KEY", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 4);
+
+  // ***** Special test *****
+  // case 1
+  s = db.HIncrbyfloat("HINCRBYFLOAT_KEY", "HINCRBYFLOAT_SP_FIELD1",
+          "2.0e2", &new_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(new_value, "200");
+  s = db.HGet("HINCRBYFLOAT_KEY", "HINCRBYFLOAT_SP_FIELD1", &new_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(new_value, "200");
+
+  // case2
+  s = db.HIncrbyfloat("HINCRBYFLOAT_KEY", "HINCRBYFLOAT_SP_FIELD2",
+          "5.0e3", &new_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(new_value, "5000");
+  s = db.HIncrbyfloat("HINCRBYFLOAT_KEY", "HINCRBYFLOAT_SP_FIELD2",
+          "2.0e2", &new_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(new_value, "5200");
+  s = db.HGet("HINCRBYFLOAT_KEY", "HINCRBYFLOAT_SP_FIELD2", &new_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(new_value, "5200");
+
+  // case 3
+  s = db.HIncrbyfloat("HINCRBYFLOAT_KEY", "HINCRBYFLOAT_SP_FIELD3",
+          "5.0e3", &new_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(new_value, "5000");
+  s = db.HIncrbyfloat("HINCRBYFLOAT_KEY", "HINCRBYFLOAT_SP_FIELD3",
+          "-2.0e2", &new_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(new_value, "4800");
+  s = db.HGet("HINCRBYFLOAT_KEY", "HINCRBYFLOAT_SP_FIELD3", &new_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(new_value, "4800");
+
+  // case 4
+  s = db.HIncrbyfloat("HINCRBYFLOAT_KEY", "HINCRBYFLOAT_SP_FIELD4",
+          ".456789", &new_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(new_value, "0.456789");
+  s = db.HGet("HINCRBYFLOAT_KEY", "HINCRBYFLOAT_SP_FIELD4", &new_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(new_value, "0.456789");
+
+  // case5
+  s = db.HIncrbyfloat("HINCRBYFLOAT_KEY", "HINCRBYFLOAT_SP_FIELD5",
+          "-.456789", &new_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(new_value, "-0.456789");
+  s = db.HGet("HINCRBYFLOAT_KEY", "HINCRBYFLOAT_SP_FIELD5", &new_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(new_value, "-0.456789");
+
+  // case6
+  s = db.HIncrbyfloat("HINCRBYFLOAT_KEY", "HINCRBYFLOAT_SP_FIELD6",
+          "+.456789", &new_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(new_value, "0.456789");
+  s = db.HGet("HINCRBYFLOAT_KEY", "HINCRBYFLOAT_SP_FIELD6", &new_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(new_value, "0.456789");
+
+  // case7
+  s = db.HIncrbyfloat("HINCRBYFLOAT_KEY", "HINCRBYFLOAT_SP_FIELD7",
+          "+.456789", &new_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(new_value, "0.456789");
+  s = db.HIncrbyfloat("HINCRBYFLOAT_KEY", "HINCRBYFLOAT_SP_FIELD7",
+          "-.456789", &new_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(new_value, "0");
+  s = db.HGet("HINCRBYFLOAT_KEY", "HINCRBYFLOAT_SP_FIELD7", &new_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(new_value, "0");
+
+  // case8
+  s = db.HIncrbyfloat("HINCRBYFLOAT_KEY", "HINCRBYFLOAT_SP_FIELD8",
+          "-00000.456789000", &new_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(new_value, "-0.456789");
+  s = db.HGet("HINCRBYFLOAT_KEY", "HINCRBYFLOAT_SP_FIELD8", &new_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(new_value, "-0.456789");
+
+  // case9
+  s = db.HIncrbyfloat("HINCRBYFLOAT_KEY", "HINCRBYFLOAT_SP_FIELD9",
+          "+00000.456789000", &new_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(new_value, "0.456789");
+  s = db.HGet("HINCRBYFLOAT_KEY", "HINCRBYFLOAT_SP_FIELD9", &new_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(new_value, "0.456789");
+
+  s = db.HLen("HINCRBYFLOAT_KEY", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 13);
+}
+
 // HDel
 TEST_F(HashesTest, HDel) {
   int32_t ret = 0;

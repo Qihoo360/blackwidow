@@ -8,7 +8,7 @@ all: blackwidow_bench
 
 ifndef BLACKWIDOW_PATH
   $(warning Warning: missing blackwidow path, using default)
-  BLACKWIDOW_PATH=../
+  BLACKWIDOW_PATH=..
 endif
 BLACKWIDOW_INCLUDE_DIR=$(BLACKWIDOW_PATH)/include
 BLACKWIDOW_LIBRARY=$(BLACKWIDOW_PATH)/lib/libblackwidow.a
@@ -26,7 +26,7 @@ DEP_LIBS = $(BLACKWIDOW_LIBRARY) $(ROCKSDB_LIBRARY)
 LDFLAGS := $(DEP_LIBS) $(LDFLAGS)
 
 blackwidow_bench: blackwidow_bench.cc
-	$(CXX) $(CXXFLAGS) $^ -o$@ $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 
 clean:
 	find . -name "*.[oda]" -exec rm -f {} \;

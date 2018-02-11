@@ -165,6 +165,19 @@ class BlackWidow {
   Status HIncrby(const Slice& key, const Slice& field, int64_t value,
                  int64_t* ret);
 
+  // Increment the specified field of a hash stored at key, and representing a
+  // floating point number, by the specified increment. If the increment value
+  // is negative, the result is to have the hash field value decremented instead
+  // of incremented. If the field does not exist, it is set to 0 before
+  // performing the operation. An error is returned if one of the following
+  // conditions occur:
+  //
+  // The field contains a value of the wrong type (not a string).
+  // The current field content or the specified increment are not parsable as a
+  // double precision floating point number.
+  Status HIncrbyfloat(const Slice& key, const Slice& field,
+                      const Slice& by, std::string* new_value);
+
   // Removes the specified fields from the hash stored at key. Specified fields
   // that do not exist within this hash are ignored. If key does not exist, it
   // is treated as an empty hash and this command returns 0.

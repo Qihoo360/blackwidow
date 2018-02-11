@@ -153,6 +153,11 @@ Status BlackWidow::HIncrby(const Slice& key, const Slice& field, int64_t value,
   return hashes_db_->HIncrby(key, field, value, ret);
 }
 
+Status BlackWidow::HIncrbyfloat(const Slice& key, const Slice& field,
+                                const Slice& by, std::string* new_value) {
+  return hashes_db_->HIncrbyfloat(key, field, by, new_value);
+}
+
 Status BlackWidow::HDel(const Slice& key,
                         const std::vector<std::string>& fields,
                         int32_t* ret) {
