@@ -7,17 +7,20 @@
 
 #include "src/redis_strings.h"
 #include "src/redis_hashes.h"
+#include "src/redis_setes.h"
 
 namespace blackwidow {
 
 BlackWidow::BlackWidow() :
     strings_db_(nullptr),
-    hashes_db_(nullptr) {
+    hashes_db_(nullptr),
+    setes_db_(nullptr) {
 }
 
 BlackWidow::~BlackWidow() {
   delete strings_db_;
   delete hashes_db_;
+  delete setes_db_;
 }
 
 Status BlackWidow::Compact() {
@@ -43,6 +46,8 @@ Status BlackWidow::Open(const rocksdb::Options& options,
   Status s = strings_db_->Open(options, AppendSubDirectory(db_path, "strings"));
   hashes_db_ = new RedisHashes();
   s = hashes_db_->Open(options, AppendSubDirectory(db_path, "hashes"));
+  setes_db_ = new RedisSetes();
+  s = setes_db_->Open(options, AppendSubDirectory(db_path, "setes"));
   return s;
 }
 
@@ -164,6 +169,18 @@ Status BlackWidow::HDel(const Slice& key,
   return hashes_db_->HDel(key, fields, ret);
 }
 
+// Setes Commands
+Status BlackWidow::SAdd(const Slice& key,
+                        const std::vector<std::string>& members,
+                        int32_t* ret) {
+  return setes_db_->SAdd(key, members, ret);
+}
+
+Status BlackWidow::SCard(const Slice& key,
+                         int32_t* ret) {
+  return setes_db_->SCard(key, ret);
+}
+
 // Keys Commands
 int BlackWidow::Expire(const Slice& key,
                        int32_t ttl, std::map<DataType, Status>* type_status) {
@@ -187,6 +204,15 @@ int BlackWidow::Expire(const Slice& key,
     is_corruption = true;
   }
   (*type_status)[DataType::kHashes] = s;
+
+  // Setes
+  s = setes_db_->Expire(key, ttl);
+  if (s.ok()) {
+    ret++;
+  } else if (!s.IsNotFound()) {
+    is_corruption = true;
+  }
+  (*type_status)[DataType::kSetes] = s;
 
   if (is_corruption) {
     return -1;
@@ -219,6 +245,15 @@ int BlackWidow::Del(const std::vector<std::string>& keys,
       is_corruption = true;
     }
     (*type_status)[DataType::kHashes] = s;
+
+    // Setes
+    s = setes_db_->Del(key);
+    if (s.ok()) {
+      is_success = true;
+    } else if (!s.IsNotFound()) {
+      is_corruption = true;
+    }
+    (*type_status)[DataType::kSetes] = s;
 
     if (is_success) {
       count++;

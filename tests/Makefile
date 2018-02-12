@@ -55,7 +55,7 @@ CXXFLAGS+= -I$(BLACKWIDOW_PATH) -I$(BLACKWIDOW_INCLUDE_DIR) -I$(ROCKSDB_INCLUDE_
 DEP_LIBS = $(BLACKWIDOW_LIBRARY) $(ROCKSDB_LIBRARY) $(GOOGLETEST_LIBRARY)
 LDFLAGS := $(DEP_LIBS) $(LDFLAGS)
 
-OBJECTS= GOOGLETEST ROCKSDB lock_mgr gtest_strings gtest_hashes gtest_strings_filter gtest_hashes_filter
+OBJECTS= GOOGLETEST ROCKSDB lock_mgr gtest_strings gtest_hashes gtest_setes gtest_strings_filter gtest_hashes_filter
 
 all: $(OBJECTS)
 
@@ -68,6 +68,7 @@ test: $(OBJECTS)
 	@mkdir hash_meta_db
 	@./gtest_strings && echo
 	@./gtest_hashes && echo
+	@./gtest_setes && echo
 	@./gtest_strings_filter && echo
 	@./gtest_hashes_filter
 	@rm -rf db
@@ -88,6 +89,9 @@ gtest_strings: gtest_strings.cc
 gtest_hashes: gtest_hashes.cc
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 
+gtest_setes: gtest_setes.cc
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
+
 gtest_strings_filter: gtest_strings_filter.cc
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 
@@ -97,4 +101,4 @@ gtest_hashes_filter: gtest_hashes_filter.cc
 clean:
 	find . -name "*.[oda]" -exec rm -f {} \;
 	rm -f ./make_config.mk
-	rm -rf ./lock_mgr ./gtest_strings ./gtest_hashes ./gtest_strings_filter ./gtest_hashes_filter
+	rm -rf ./lock_mgr ./gtest_strings ./gtest_hashes ./gtest_setes ./gtest_strings_filter ./gtest_hashes_filter

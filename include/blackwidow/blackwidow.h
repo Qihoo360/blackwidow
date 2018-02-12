@@ -21,6 +21,7 @@ using Slice = rocksdb::Slice;
 
 class RedisStrings;
 class RedisHashes;
+class RedisSetes;
 class BlackWidow {
  public:
   BlackWidow();
@@ -184,13 +185,26 @@ class BlackWidow {
   Status HDel(const Slice& key, const std::vector<std::string>& fields,
               int32_t* ret);
 
+
+  // Setes Commands
+
+  // Add the specified members to the set stored at key. Specified members that
+  // are already a member of this set are ignored. If key does not exist, a new
+  // set is created before adding the specified members.
+  Status SAdd(const Slice& key, const std::vector<std::string>& members,
+              int32_t* ret);
+
+  // Returns the set cardinality (number of elements) of the set stored at key.
+  Status SCard(const Slice& key, int32_t* ret);
+
+
   // Keys Commands
   enum DataType {
     kStrings,
     kHashes,
     kLists,
     kZSets,
-    kSets
+    kSetes
   };
 
   // Set a timeout on key
@@ -208,6 +222,7 @@ class BlackWidow {
  private:
   RedisStrings* strings_db_;
   RedisHashes* hashes_db_;
+  RedisSetes* setes_db_;
 };
 
 }  //  namespace blackwidow

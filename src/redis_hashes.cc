@@ -627,15 +627,18 @@ Status RedisHashes::Expire(const Slice& key, int32_t ttl) {
   ScopeRecordLock l(lock_mgr_, key);
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
-    ParsedHashesMetaValue parsed(&meta_value);
-    if (parsed.IsStale()) {
+    ParsedHashesMetaValue parsed_hashes_meta_value(&meta_value);
+    if (parsed_hashes_meta_value.IsStale()) {
       return Status::NotFound("Stale");
     }
     if (ttl > 0) {
-      parsed.SetRelativeTimestamp(ttl);
-      return db_->Put(default_write_options_, handles_[0], key, meta_value);
+      parsed_hashes_meta_value.SetRelativeTimestamp(ttl);
+      s = db_->Put(default_write_options_, handles_[0], key, meta_value);
     } else {
-      return db_->Delete(default_write_options_, handles_[0], key);
+      parsed_hashes_meta_value.set_count(0);
+      parsed_hashes_meta_value.UpdateVersion();
+      parsed_hashes_meta_value.set_timestamp(0);
+      s = db_->Put(default_write_options_, handles_[0], key, meta_value);
     }
   }
   return s;
@@ -646,13 +649,14 @@ Status RedisHashes::Del(const Slice& key) {
   ScopeRecordLock l(lock_mgr_, key);
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
-    ParsedHashesMetaValue parsed(&meta_value);
-    parsed.set_count(0);
-    parsed.UpdateVersion();
-    parsed.set_timestamp(0);
-    s = db_->Put(default_write_options_, handles_[0], key, meta_value);
-    if (s.ok() && parsed.IsStale()) {
+    ParsedHashesMetaValue parsed_hashes_meta_value(&meta_value);
+    if ( parsed_hashes_meta_value.IsStale()) {
       return Status::NotFound("Stale");
+    } else {
+      parsed_hashes_meta_value.set_count(0);
+      parsed_hashes_meta_value.UpdateVersion();
+      parsed_hashes_meta_value.set_timestamp(0);
+      s = db_->Put(default_write_options_, handles_[0], key, meta_value);
     }
   }
   return s;

@@ -51,8 +51,8 @@ class HashesDataKey {
 
 class ParsedHashesDataKey {
  public:
-  explicit ParsedHashesDataKey(std::string* key) {
-    char* ptr = const_cast<char*>(key->data());
+  explicit ParsedHashesDataKey(const std::string* key) {
+    const char* ptr = key->data();
     int32_t key_len = DecodeFixed32(ptr);
     ptr += sizeof(int32_t);
     key_ = Slice(ptr, key_len);
@@ -63,7 +63,7 @@ class ParsedHashesDataKey {
   }
 
   explicit ParsedHashesDataKey(const Slice& key) {
-    char* ptr = const_cast<char*>(key.data());
+    const char* ptr = key.data();
     int32_t key_len = DecodeFixed32(ptr);
     ptr += sizeof(int32_t);
     key_ = Slice(ptr, key_len);

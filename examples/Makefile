@@ -3,7 +3,7 @@ CXXFLAGS=-O2 -std=c++11 -fno-builtin-memcmp -msse -msse4.2
 
 .PHONY: clean all
 
-all: ROCKSDB strings_example hashes_example
+all: ROCKSDB strings_example hashes_example setes_example
 
 # Get processor numbers
 dummy := $(shell ("$(CURDIR)/../detect_environment" "$(CURDIR)/make_config.mk"))
@@ -38,7 +38,10 @@ strings_example: strings_example.cc
 hashes_example: hashes_example.cc
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 
+setes_example: setes_example.cc
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
+
 clean:
 	find . -name "*.[oda]" -exec rm -f {} \;
 	rm -f ./make_config.mk
-	rm -rf ./strings_example ./hashes_example
+	rm -rf ./strings_example ./hashes_example ./setes_example
