@@ -41,6 +41,61 @@ TEST_F(StringsTest, GetTest) {
   ASSERT_STREQ(value.c_str(), "TEST_VALUE");
 }
 
+// GetSet
+TEST_F(StringsTest, GetSetTest) {
+  std::string value;
+  // If the key did not exist
+  s = db.GetSet("GETSET_KEY", "GETSET_VALUE", &value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_STREQ(value.c_str(), "");
+
+  s = db.GetSet("GETSET_KEY", "GETSET_VALUE", &value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_STREQ(value.c_str(), "GETSET_VALUE");
+}
+
+// SetBit
+TEST_F(StringsTest, SetBitTest) {
+  int32_t ret;
+  s = db.SetBit("SETBIT_KEY", 7, 1, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 0);
+
+  s = db.SetBit("SETBIT_KEY", 7, 0, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+
+  std::string value;
+  s = db.Get("SETBIT_KEY", &value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_STREQ(value.c_str(), "\x00");
+
+  // The offset argument is less than 0
+  s = db.SetBit("SETBIT_KEY", -1, 0, &ret);
+  ASSERT_TRUE(s.IsInvalidArgument());
+}
+
+// GetBit
+TEST_F(StringsTest, GetBitTest) {
+  int32_t ret;
+  s = db.SetBit("GETBIT_KEY", 7, 1, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 0);
+
+  s = db.GetBit("GETBIT_KEY", 0, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 0);
+
+  s = db.GetBit("GETBIT_KEY", 7, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+
+  // The offset is beyond the string length
+  s = db.GetBit("GETBIT_KEY", 100, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 0);
+}
+
 // MSet
 TEST_F(StringsTest, MSetTest) {
   std::vector<BlackWidow::KeyValue> kvs;
@@ -82,6 +137,29 @@ TEST_F(StringsTest, SetnxTest) {
   ASSERT_EQ(ret, 1);
 }
 
+// MSetnx
+TEST_F(StringsTest, MSetnxTest) {
+  int32_t ret;
+  std::vector<BlackWidow::KeyValue> kvs;
+  kvs.push_back({"", "MSET_EMPTY_VALUE"});
+  kvs.push_back({"MSET_TEST_KEY1", "MSET_TEST_VALUE1"});
+  kvs.push_back({"MSET_TEST_KEY2", "MSET_TEST_VALUE2"});
+  kvs.push_back({"MSET_TEST_KEY3", "MSET_TEST_VALUE3"});
+  kvs.push_back({"MSET_TEST_KEY3", "MSET_TEST_VALUE3"});
+  s = db.MSetnx(kvs, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 0);
+
+  kvs.clear();
+  kvs.push_back({"MSETNX_TEST_KEY1", "MSET_TEST_VALUE1"});
+  kvs.push_back({"MSETNX_TEST_KEY2", "MSET_TEST_VALUE2"});
+  kvs.push_back({"MSETNX_TEST_KEY3", "MSET_TEST_VALUE3"});
+  kvs.push_back({"MSETNX_TEST_KEY3", "MSET_TEST_VALUE3"});
+  s = db.MSetnx(kvs, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+}
+
 // Setrange
 TEST_F(StringsTest, SetrangeTest) {
   std::string value;
@@ -108,11 +186,35 @@ TEST_F(StringsTest, SetrangeTest) {
   // If the offset less than 0
   s = db.Setrange("SETRANGE_KEY", -1, "REDIS", &ret);
   ASSERT_TRUE(s.IsInvalidArgument());
-
-  // Beyond the maximum offset(2^29-1)
-  s = db.Setrange("SETRANGE_KEY", 536870912, "REDIS", &ret);
-  ASSERT_TRUE(s.IsInvalidArgument());
 }
+
+// Getrange
+TEST_F(StringsTest, GetrangeTest) {
+  std::string value;
+  s = db.Set("GETRANGE_KEY", "This is a string");
+  ASSERT_TRUE(s.ok());
+  s = db.Getrange("GETRANGE_KEY", 0, 3, &value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_STREQ(value.c_str(), "This");
+
+  s = db.Getrange("GETRANGE_KEY", -3, -1, &value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_STREQ(value.c_str(), "ing");
+
+  s = db.Getrange("GETRANGE_KEY", 0, -1, &value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_STREQ(value.c_str(), "This is a string");
+
+  s = db.Getrange("GETRANGE_KEY", 10, 100, &value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_STREQ(value.c_str(), "string");
+
+  // If the key is not exist
+  s = db.Getrange("GETRANGE_NOT_EXIST_KEY", 0, -1, &value);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_STREQ(value.c_str(), "");
+}
+
 
 // Append
 TEST_F(StringsTest, AppendTest) {
@@ -150,6 +252,108 @@ TEST_F(StringsTest, BitCountTest) {
   ASSERT_EQ(ret, 6);
 }
 
+// BitOp
+TEST_F(StringsTest, BitOpTest) {
+  int64_t ret;
+  std::string value;
+  s = db.Set("BITOP_KEY1", "FOOBAR");
+  ASSERT_TRUE(s.ok());
+  s = db.Set("BITOP_KEY2", "ABCDEF");
+  ASSERT_TRUE(s.ok());
+  s = db.Set("BITOP_KEY3", "BLACKWIDOW");
+  ASSERT_TRUE(s.ok());
+  std::vector<std::string> src_keys {"BITOP_KEY1", "BITOP_KEY2", "BITOP_KEY3"};
+
+  // AND
+  s = db.BitOp(BlackWidow::BitOpType::kBitOpAnd,
+               "BITOP_DESTKEY", src_keys, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 10);
+  s = db.Get("BITOP_DESTKEY", &value);
+  ASSERT_STREQ(value.c_str(), "@@A@AB\x00\x00\x00\x00");
+
+  // OR
+  s = db.BitOp(BlackWidow::BitOpType::kBitOpOr,
+               "BITOP_DESTKEY", src_keys, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 10);
+  s = db.Get("BITOP_DESTKEY", &value);
+  ASSERT_STREQ(value.c_str(), "GOOGOWIDOW");
+
+  // XOR
+  s = db.BitOp(BlackWidow::BitOpType::kBitOpXor,
+               "BITOP_DESTKEY", src_keys, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 10);
+  s = db.Get("BITOP_DESTKEY", &value);
+  ASSERT_STREQ(value.c_str(), "EAMEOCIDOW");
+
+  // NOT
+  std::vector<std::string> not_keys {"BITOP_KEY1"};
+  s = db.BitOp(BlackWidow::BitOpType::kBitOpNot,
+               "BITOP_DESTKEY", not_keys, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 6);
+  s = db.Get("BITOP_DESTKEY", &value);
+  ASSERT_STREQ(value.c_str(), "\xb9\xb0\xb0\xbd\xbe\xad");
+  // NOT operation more than two parameters
+  s = db.BitOp(BlackWidow::BitOpType::kBitOpNot,
+               "BITOP_DESTKEY", src_keys, &ret);
+  ASSERT_TRUE(s.IsInvalidArgument());
+}
+
+// BitPos
+TEST_F(StringsTest, BitPosTest) {
+  // bitpos key bit
+  int64_t ret;
+  s = db.Set("BITPOS_KEY", "\xff\xf0\x00");
+  ASSERT_TRUE(s.ok());
+  s = db.BitPos("BITPOS_KEY", 0, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 12);
+
+  // bitpos key bit [start]
+  s = db.Set("BITPOS_KEY", "\xff\x00\x00");
+  ASSERT_TRUE(s.ok());
+  s = db.BitPos("BITPOS_KEY", 1, 0, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 0);
+  s = db.BitPos("BITPOS_KEY", 1, 2, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, -1);
+
+  // bitpos key bit [start] [end]
+  s = db.BitPos("BITPOS_KEY", 1, 0, 4, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 0);
+
+  // bit value is not exists
+  s = db.Set("BITPOS_KEY", "\x00\x00\x00");
+  ASSERT_TRUE(s.ok());
+  s = db.BitPos("BITPOS_KEY", 1, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, -1);
+
+  s = db.Set("BITPOS_KEY", "\xff\xff\xff");
+  ASSERT_TRUE(s.ok());
+  s = db.BitPos("BITPOS_KEY", 0, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, -1);
+
+  s = db.BitPos("BITPOS_KEY", 0, 0, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, -1);
+
+  s = db.BitPos("BITPOS_KEY", 0, 0, -1, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, -1);
+
+  // the offset is beyond the range
+  s = db.BitPos("BITPOS_KEY", 0, 4, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, -1);
+}
+
 // Decrby
 TEST_F(StringsTest, DecrbyTest) {
   int64_t ret;
@@ -165,7 +369,49 @@ TEST_F(StringsTest, DecrbyTest) {
   ASSERT_TRUE(s.IsInvalidArgument());
 
   // Less than the minimum number -9223372036854775808
+  s = db.Set("DECRBY_KEY", "-2");
+  ASSERT_TRUE(s.ok());
   s = db.Decrby("DECRBY_KEY", 9223372036854775807, &ret);
+  ASSERT_TRUE(s.IsInvalidArgument());
+}
+
+// Incrby
+TEST_F(StringsTest, IncrbyTest) {
+  int64_t ret;
+  // If the key is not exist
+  s = db.Incrby("INCRBY_KEY", 5, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 5);
+
+  // If the key contains a string that can not be represented as integer
+  s = db.Set("INCRBY_KEY", "INCRBY_VALUE");
+  ASSERT_TRUE(s.ok());
+  s = db.Incrby("INCRBY_KEY", 5, &ret);
+  ASSERT_TRUE(s.IsInvalidArgument());
+
+  s = db.Set("INCRBY_KEY", "1");
+  ASSERT_TRUE(s.ok());
+  // Less than the maximum number 9223372036854775807
+  s = db.Incrby("INCRBY_KEY", 9223372036854775807, &ret);
+  ASSERT_TRUE(s.IsInvalidArgument());
+}
+
+// Incrbyfloat
+TEST_F(StringsTest, IncrbyfloatTest) {
+  std::string value;
+  s = db.Set("INCRBYFLOAT_KEY", "10.50");
+  ASSERT_TRUE(s.ok());
+  s = db.Incrbyfloat("INCRBYFLOAT_KEY", "0.1", &value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_STREQ(value.c_str(), "10.6");
+  s = db.Incrbyfloat("INCRBYFLOAT_KEY", "-5", &value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_STREQ(value.c_str(), "5.6");
+
+  // If the key contains a string that can not be represented as integer
+  s = db.Set("INCRBYFLOAT_KEY", "INCRBY_VALUE");
+  ASSERT_TRUE(s.ok());
+  s = db.Incrbyfloat("INCRBYFLOAT_KEY", "5", &value);
   ASSERT_TRUE(s.IsInvalidArgument());
 }
 

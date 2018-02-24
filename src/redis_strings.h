@@ -23,15 +23,32 @@ class RedisStrings : public Redis {
   // Strings Commands
   Status Set(const Slice& key, const Slice& value);
   Status Get(const Slice& key, std::string* value);
+  Status GetSet(const Slice& key, const Slice& value, std::string* old_value);
+  Status SetBit(const Slice& key, int64_t offset, int32_t value, int32_t* ret);
+  Status GetBit(const Slice& key, int64_t offset, int32_t* ret);
   Status MSet(const std::vector<BlackWidow::KeyValue>& kvs);
-  Status MGet(const std::vector<std::string>& keys, std::vector<std::string>* values);
+  Status MGet(const std::vector<std::string>& keys,
+              std::vector<std::string>* values);
   Status Setnx(const Slice& key, const Slice& value, int32_t* ret);
-  Status Setrange(const Slice& key, int32_t offset,
+  Status MSetnx(const std::vector<BlackWidow::KeyValue>& kvs, int32_t* ret);
+  Status Setrange(const Slice& key, int64_t start_offset,
                   const Slice& value, int32_t* ret);
+  Status Getrange(const Slice& key, int64_t start_offset, int64_t end_offset,
+                  std::string* ret);
   Status Append(const Slice& key, const Slice& value, int32_t* ret);
-  Status BitCount(const Slice& key, int32_t start_offset, int32_t end_offset,
+  Status BitCount(const Slice& key, int64_t start_offset, int64_t end_offset,
                   int32_t* ret, bool have_offset);
+  Status BitOp(BlackWidow::BitOpType op, const std::string& dest_key,
+               const std::vector<std::string>& src_keys, int64_t* ret);
+  Status BitPos(const Slice& key, int32_t bit, int64_t* ret);
+  Status BitPos(const Slice& key, int32_t bit,
+                int64_t start_offset, int64_t* ret);
+  Status BitPos(const Slice& key, int32_t bit,
+                int64_t start_offset, int64_t end_offset,
+                int64_t* ret);
   Status Decrby(const Slice& key, int64_t value, int64_t* ret);
+  Status Incrby(const Slice& key, int64_t value, int64_t* ret);
+  Status Incrbyfloat(const Slice& key, const Slice& value, std::string* ret);
   Status Setex(const Slice& key, const Slice& value, int32_t ttl);
   Status Strlen(const Slice& key, int32_t *len);
 

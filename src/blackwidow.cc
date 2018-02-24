@@ -96,6 +96,20 @@ Status BlackWidow::Get(const Slice& key, std::string* value) {
   return strings_db_->Get(key, value);
 }
 
+Status BlackWidow::GetSet(const Slice& key, const Slice& value,
+                          std::string* old_value) {
+  return strings_db_->GetSet(key, value, old_value);
+}
+
+Status BlackWidow::SetBit(const Slice& key, int64_t offset,
+                          int32_t value, int32_t* ret) {
+  return strings_db_->SetBit(key, offset, value, ret);
+}
+
+Status BlackWidow::GetBit(const Slice& key, int64_t offset, int32_t* ret) {
+  return strings_db_->GetBit(key, offset, ret);
+}
+
 Status BlackWidow::MSet(const std::vector<BlackWidow::KeyValue>& kvs) {
   return strings_db_->MSet(kvs);
 }
@@ -109,22 +123,63 @@ Status BlackWidow::Setnx(const Slice& key, const Slice& value, int32_t* ret) {
   return strings_db_->Setnx(key, value, ret);
 }
 
-Status BlackWidow::Setrange(const Slice& key, int32_t offset,
+Status BlackWidow::MSetnx(const std::vector<BlackWidow::KeyValue>& kvs,
+                          int32_t* ret) {
+  return strings_db_->MSetnx(kvs, ret);
+}
+
+Status BlackWidow::Setrange(const Slice& key, int64_t start_offset,
                             const Slice& value, int32_t* ret) {
-  return strings_db_->Setrange(key, offset, value, ret);
+  return strings_db_->Setrange(key, start_offset, value, ret);
+}
+
+Status BlackWidow::Getrange(const Slice& key, int64_t start_offset,
+                            int64_t end_offset, std::string* ret) {
+  return strings_db_->Getrange(key, start_offset, end_offset, ret);
 }
 
 Status BlackWidow::Append(const Slice& key, const Slice& value, int32_t* ret) {
   return strings_db_->Append(key, value, ret);
 }
 
-Status BlackWidow::BitCount(const Slice& key, int32_t start_offset,
-                            int32_t end_offset, int32_t *ret, bool have_range) {
+Status BlackWidow::BitCount(const Slice& key, int64_t start_offset,
+                            int64_t end_offset, int32_t *ret, bool have_range) {
   return strings_db_->BitCount(key, start_offset, end_offset, ret, have_range);
+}
+
+Status BlackWidow::BitOp(BitOpType op, const std::string& dest_key,
+                         const std::vector<std::string>& src_keys,
+                         int64_t* ret) {
+  return strings_db_->BitOp(op, dest_key, src_keys, ret);
+}
+
+Status BlackWidow::BitPos(const Slice& key, int32_t bit,
+                          int64_t* ret) {
+  return strings_db_->BitPos(key, bit, ret);
+}
+
+Status BlackWidow::BitPos(const Slice& key, int32_t bit,
+                          int64_t start_offset, int64_t* ret) {
+  return strings_db_->BitPos(key, bit, start_offset, ret);
+}
+
+Status BlackWidow::BitPos(const Slice& key, int32_t bit,
+                          int64_t start_offset, int64_t end_offset,
+                          int64_t* ret) {
+  return strings_db_->BitPos(key, bit, start_offset, end_offset, ret);
 }
 
 Status BlackWidow::Decrby(const Slice& key, int64_t value, int64_t* ret) {
   return strings_db_->Decrby(key, value, ret);
+}
+
+Status BlackWidow::Incrby(const Slice& key, int64_t value, int64_t* ret) {
+  return strings_db_->Incrby(key, value, ret);
+}
+
+Status BlackWidow::Incrbyfloat(const Slice& key, const Slice& value,
+                               std::string* ret) {
+  return strings_db_->Incrbyfloat(key, value, ret);
 }
 
 Status BlackWidow::Setex(const Slice& key, const Slice& value, int32_t ttl) {

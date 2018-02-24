@@ -56,6 +56,14 @@ class BlackWidow {
     }
   };
 
+  enum BitOpType {
+    kBitOpAnd = 1,
+    kBitOpOr,
+    kBitOpXor,
+    kBitOpNot,
+    kBitOpDefault
+  };
+
   // Set key to hold the string value. if key
   // already holds a value, it is overwritten
   Status Set(const Slice& key, const Slice& value);
@@ -63,6 +71,16 @@ class BlackWidow {
   // Get the value of key. If the key does not exist
   // the special value nil is returned
   Status Get(const Slice& key, std::string* value);
+
+  // Atomically sets key to value and returns the old value stored at key
+  // Returns an error when key exists but does not hold a string value.
+  Status GetSet(const Slice& key, const Slice& value, std::string* old_value);
+
+  // Sets or clears the bit at offset in the string value stored at key
+  Status SetBit(const Slice& key, int64_t offset, int32_t value, int32_t* ret);
+
+  // Returns the bit value at offset in the string value stored at key
+  Status GetBit(const Slice& key, int64_t offset, int32_t* ret);
 
   // Sets the given keys to their respective values
   // MSET replaces existing values with new values
@@ -79,10 +97,20 @@ class BlackWidow {
   // return 0 if the key was not set
   Status Setnx(const Slice& key, const Slice& value, int32_t* ret);
 
+  // Sets the given keys to their respective values.
+  // MSETNX will not perform any operation at all even
+  // if just a single key already exists.
+  Status MSetnx(const std::vector<BlackWidow::KeyValue>& kvs, int32_t* ret);
+
   // Set key to hold string value if key does not exist
   // return the length of the string after it was modified by the command
-  Status Setrange(const Slice& key, int32_t offset,
+  Status Setrange(const Slice& key, int64_t start_offset,
                   const Slice& value, int32_t* ret);
+
+  // Returns the substring of the string value stored at key,
+  // determined by the offsets start and end (both are inclusive)
+  Status Getrange(const Slice& key, int64_t start_offset, int64_t end_offset,
+                  std::string* ret);
 
   // If key already exists and is a string, this command appends the value at
   // the end of the string
@@ -92,12 +120,36 @@ class BlackWidow {
   // Count the number of set bits (population counting) in a string.
   // return the number of bits set to 1
   // note: if need to specified offset, set have_range to true
-  Status BitCount(const Slice& key, int32_t start_offset, int32_t end_offset,
-                  int32_t* ret, bool have_range);
+  Status BitCount(const Slice& key, int64_t start_offset, int64_t end_offset,
+                  int32_t* ret, bool have_offset);
+
+  // Perform a bitwise operation between multiple keys
+  // and store the result in the destination key
+  Status BitOp(BitOpType op, const std::string& dest_key,
+               const std::vector<std::string>& src_keys, int64_t* ret);
+
+  // Return the position of the first bit set to 1 or 0 in a string
+  // BitPos key 0
+  Status BitPos(const Slice& key, int32_t bit, int64_t* ret);
+  // BitPos key 0 [start]
+  Status BitPos(const Slice& key, int32_t bit,
+                int64_t start_offset, int64_t* ret);
+  // BitPos key 0 [start] [end]
+  Status BitPos(const Slice& key, int32_t bit,
+                int64_t start_offset, int64_t end_offset,
+                int64_t* ret);
 
   // Decrements the number stored at key by decrement
   // return the value of key after the decrement
   Status Decrby(const Slice& key, int64_t value, int64_t* ret);
+
+  // Increments the number stored at key by increment.
+  // If the key does not exist, it is set to 0 before performing the operation
+  Status Incrby(const Slice& key, int64_t value, int64_t* ret);
+
+  // Increment the string representing a floating point number
+  // stored at key by the specified increment.
+  Status Incrbyfloat(const Slice& key, const Slice& value, std::string* ret);
 
   // Set key to hold the string value and set key to timeout after a given
   // number of seconds
