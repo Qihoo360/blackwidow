@@ -15,7 +15,7 @@ class StringsTest : public ::testing::Test {
  public:
   StringsTest() {
     options.create_if_missing = true;
-    s = db.Open(options, "./db");
+    s = db.Open(options, "./db/strings");
   }
   virtual ~StringsTest() { }
 
@@ -94,7 +94,7 @@ TEST_F(StringsTest, SetrangeTest) {
   s = db.Get("SETRANGE_KEY", &value);
   ASSERT_STREQ(value.c_str(), "HELLO REDIS");
 
-  std::vector<std::string> keys {"SETRANGE_KEY"};
+  std::vector<Slice> keys {"SETRANGE_KEY"};
   std::map<BlackWidow::DataType, Status> type_status;
   ret = db.Del(keys, &type_status);
   ASSERT_EQ(ret, 1);
@@ -215,50 +215,7 @@ TEST_F(StringsTest, StrlenTest) {
   ASSERT_EQ(strlen, 12);
 }
 
-// Expire
-TEST_F(StringsTest, ExpireTest) {
-  std::string value;
-  std::map<BlackWidow::DataType, Status> type_status;
-  int32_t ret;
-  s = db.Set("EXPIRE_KEY", "EXPIREVALUE");
-  ASSERT_TRUE(s.ok());
-  ret = db.Expire("EXPIRE_KEY", 1, &type_status);
-  for (auto it = type_status.begin(); it != type_status.end(); it++) {
-    if (it->first == BlackWidow::DataType::kStrings) {
-      ASSERT_TRUE(it->second.ok());
-    } else {
-      ASSERT_TRUE(it->second.IsNotFound());
-    }
-  }
-  std::this_thread::sleep_for(std::chrono::milliseconds(2500));
-  s = db.Get("EXPIRE_KEY", &value);
-  ASSERT_TRUE(s.IsNotFound());
-}
-
-// Del
-TEST_F(StringsTest, DelTest) {
-  int32_t ret;
-  std::map<BlackWidow::DataType, Status> type_status;
-  std::vector<std::string> keys {"DEL_KEY"};
-  s = db.Set("DEL_KEY", "EXPIREVALUE");
-  ASSERT_TRUE(s.ok());
-  s = db.HSet("DEL_KEY", "DEL_FIELD", "DEL_VALUE", &ret);
-  ASSERT_TRUE(s.ok());
-  ret = db.Del(keys, &type_status);
-  for (auto it = type_status.begin(); it != type_status.end(); it++) {
-    if (it->first == BlackWidow::DataType::kStrings) {
-      ASSERT_TRUE(it->second.ok());
-    } else if (it->first == BlackWidow::DataType::kHashes) {
-      ASSERT_TRUE(it->second.ok());
-    } else {
-      ASSERT_TRUE(it->second.IsNotFound());
-    }
-  }
-  ASSERT_EQ(ret, 1);
-}
-
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
-

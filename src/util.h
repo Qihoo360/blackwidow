@@ -14,10 +14,11 @@ namespace blackwidow {
 
   uint32_t Digits10(uint64_t v);
   int Int64ToStr(char* dst, size_t dstlen, int64_t svalue);
-  int StrToInt64(const char* s, size_t slen, int64_t* value);
-
+  int StrToInt64(const char *s, size_t slen, int64_t *value);
+  int StringMatch(const char *pattern, int pattern_len, const char *string,
+                  int string_len, int nocase);
   int StrToLongDouble(const char* s, size_t slen, long double* ldval);
   int LongDoubleToStr(long double ldval, std::string* value);
 }
 
-#endif  //  SRC_REDIS_HASHES_H_
+#endif  //  SRC_UTIL_H_

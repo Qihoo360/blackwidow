@@ -69,7 +69,7 @@ TEST_F(SetesTest, SAddTest) {
   ASSERT_EQ(ret, 2);
 
   // Delete the key
-  std::vector<std::string> del_keys = {"SADD_KEY"};
+  std::vector<rocksdb::Slice> del_keys = {"SADD_KEY"};
   type_status.clear();
   db.Del(del_keys, &type_status);
   ASSERT_TRUE(type_status[BlackWidow::DataType::kSetes].ok());

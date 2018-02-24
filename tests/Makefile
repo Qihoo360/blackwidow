@@ -55,7 +55,7 @@ CXXFLAGS+= -I$(BLACKWIDOW_PATH) -I$(BLACKWIDOW_INCLUDE_DIR) -I$(ROCKSDB_INCLUDE_
 DEP_LIBS = $(BLACKWIDOW_LIBRARY) $(ROCKSDB_LIBRARY) $(GOOGLETEST_LIBRARY)
 LDFLAGS := $(DEP_LIBS) $(LDFLAGS)
 
-OBJECTS= GOOGLETEST ROCKSDB lock_mgr gtest_strings gtest_hashes gtest_setes gtest_strings_filter gtest_hashes_filter
+OBJECTS= GOOGLETEST ROCKSDB lock_mgr gtest_strings gtest_hashes gtest_setes gtest_strings_filter gtest_hashes_filter gtest_keys
 
 all: $(OBJECTS)
 
@@ -63,16 +63,14 @@ dbg: $(OBJECTS)
 
 test: $(OBJECTS)
 	@rm -rf db
-	@rm -rf hash_meta_db
-	@mkdir db
-	@mkdir hash_meta_db
-	@./gtest_strings && echo
-	@./gtest_hashes && echo
-	@./gtest_setes && echo
-	@./gtest_strings_filter && echo
+	@mkdir -p db/keys db/strings db/hashes db/hash_meta db/setes
+	@./gtest_keys
+	@./gtest_strings
+	@./gtest_hashes
+	@./gtest_setes
+	@./gtest_strings_filter
 	@./gtest_hashes_filter
 	@rm -rf db
-	@rm -rf hash_meta_db
 
 GOOGLETEST:
 	@cd $(GOOGLETEST_PATH); if [ ! -f ./Makefile ]; then  cmake .; fi; make;
@@ -98,7 +96,10 @@ gtest_strings_filter: gtest_strings_filter.cc
 gtest_hashes_filter: gtest_hashes_filter.cc
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 
+gtest_keys: gtest_keys.cc
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
+
 clean:
 	find . -name "*.[oda]" -exec rm -f {} \;
 	rm -f ./make_config.mk
-	rm -rf ./lock_mgr ./gtest_strings ./gtest_hashes ./gtest_setes ./gtest_strings_filter ./gtest_hashes_filter
+	rm -rf ./lock_mgr ./gtest_strings ./gtest_hashes ./gtest_setes ./gtest_strings_filter ./gtest_hashes_filter ./gtest_keys

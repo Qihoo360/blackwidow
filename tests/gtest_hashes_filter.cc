@@ -16,7 +16,7 @@ using namespace blackwidow;
 // Filter
 TEST(HashesFilterTest, FilterTest) {
   rocksdb::DB* meta_db;
-  std::string db_path = "./hash_meta_db";
+  std::string db_path = "./db/hash_meta";
   std::vector<rocksdb::ColumnFamilyHandle*> handles;
 
   blackwidow::Options options;

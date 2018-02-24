@@ -9,6 +9,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <list>
 
 #include "rocksdb/status.h"
 #include "rocksdb/options.h"
@@ -22,6 +23,8 @@ using Slice = rocksdb::Slice;
 class RedisStrings;
 class RedisHashes;
 class RedisSetes;
+class MutexFactory;
+class Mutex;
 class BlackWidow {
  public:
   BlackWidow();
@@ -31,6 +34,18 @@ class BlackWidow {
   Status Compact();
 
   Status Open(const Options& options, const std::string& db_path);
+
+  Status GetStartKey(int64_t cursor, std::string* start_key);
+
+  int64_t StoreAndGetCursor(int64_t cursor, const std::string& next_key);
+
+  // Common
+  template <typename T1, typename T2>
+  struct LRU{
+    int64_t max_size_;
+    std::list<T1> list_;
+    std::map<T1, T2> map_;
+  };
 
   // Strings Commands
   struct KeyValue {
@@ -57,7 +72,7 @@ class BlackWidow {
   // that does not hold a string value or does not exist, the
   // special value nil is returned
   Status MGet(const std::vector<std::string>& keys,
-      std::vector<std::string>* values);
+              std::vector<std::string>* values);
 
   // Set key to hold string value if key does not exist
   // return 1 if the key was set
@@ -210,19 +225,30 @@ class BlackWidow {
   // Set a timeout on key
   // return -1 operation exception errors happen in database
   // return >=0 success
-  int Expire(const Slice& key, int32_t ttl,
-      std::map<DataType, Status>* type_status);
+  int32_t Expire(const Slice& key, int32_t ttl,
+                 std::map<DataType, Status>* type_status);
 
   // Removes the specified keys
   // return -1 operation exception errors happen in database
   // return >=0 the number of keys that were removed
-  int Del(const std::vector<std::string>& keys,
-      std::map<DataType, Status>* type_status);
+  int64_t Del(const std::vector<Slice>& keys,
+              std::map<DataType, Status>* type_status);
+
+  // Iterate over a collection of elements
+  // return an updated cursor that the user need to use as the cursor argument
+  // in the next call
+  int64_t Scan(int64_t cursor, const std::string& pattern,
+               int64_t count, std::vector<std::string>* keys);
 
  private:
   RedisStrings* strings_db_;
   RedisHashes* hashes_db_;
   RedisSetes* setes_db_;
+
+  MutexFactory* mutex_factory_;
+
+  LRU<int64_t, std::string> cursors_store_;
+  std::shared_ptr<Mutex> cursors_mutex_;
 };
 
 }  //  namespace blackwidow

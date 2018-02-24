@@ -9,6 +9,7 @@
 #include <climits>
 #include <algorithm>
 
+#include "src/util.h"
 #include "src/strings_filter.h"
 #include "src/scope_record_lock.h"
 #include "src/scope_snapshot.h"
@@ -368,6 +369,51 @@ Status RedisStrings::Del(const Slice& key) {
     return db_->Delete(default_write_options_, key);
   }
   return s;
+}
+
+bool RedisStrings::Scan(const std::string& start_key,
+                        const std::string& pattern,
+                        std::vector<std::string>* keys,
+                        int64_t* count,
+                        std::string* next_key) {
+  std::string key, value;
+  bool is_finish = true;
+  rocksdb::ReadOptions iterator_options;
+  const rocksdb::Snapshot* snapshot;
+  ScopeSnapshot ss(db_, &snapshot);
+  iterator_options.snapshot = snapshot;
+  iterator_options.fill_cache = false;
+
+  // Note: This is a string type and does not need to pass the column family as
+  // a parameter, use the default column family
+  rocksdb::Iterator* it = db_->NewIterator(iterator_options);
+
+  it->Seek(start_key);
+  while (it->Valid() && (*count) > 0) {
+    ParsedStringsValue parsed_strings_value(it->value());
+    if (parsed_strings_value.IsStale()) {
+      it->Next();
+      continue;
+    } else {
+      key = it->key().ToString();
+      value = it->value().ToString();
+      if (StringMatch(pattern.data(), pattern.size(),
+                         key.data(), key.size(), 0)) {
+        keys->push_back(key);
+      }
+      (*count)--;
+      it->Next();
+    }
+  }
+
+  if (it->Valid()) {
+    is_finish = false;
+    *next_key = it->key().ToString();
+  } else {
+    *next_key = "";
+  }
+  delete it;
+  return is_finish;
 }
 
 Status RedisStrings::CompactRange(const rocksdb::Slice* begin,

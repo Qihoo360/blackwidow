@@ -49,6 +49,7 @@ benchmark/blackwidow_bench
 # Tests
 tests/make_config.mk
 tests/db
+tests/gtest_keys
 tests/gtest_strings
 tests/gtest_strings_filter
 tests/gtest_hashes

@@ -662,6 +662,50 @@ Status RedisHashes::Del(const Slice& key) {
   return s;
 }
 
+bool RedisHashes::Scan(const std::string& start_key,
+                       const std::string& pattern,
+                       std::vector<std::string>* keys,
+                       int64_t* count,
+                       std::string* next_key) {
+  std::string meta_key, meta_value;
+  bool is_finish = true;
+  rocksdb::ReadOptions iterator_options;
+  const rocksdb::Snapshot* snapshot;
+  ScopeSnapshot ss(db_, &snapshot);
+  iterator_options.snapshot = snapshot;
+  iterator_options.fill_cache = false;
+
+  rocksdb::Iterator* it = db_->NewIterator(iterator_options, handles_[0]);
+
+  it->Seek(start_key);
+  while (it->Valid() && (*count) > 0) {
+    ParsedHashesMetaValue parsed_meta_value(it->value());
+    if (parsed_meta_value.IsStale()) {
+      it->Next();
+      continue;
+    } else {
+      meta_key = it->key().ToString();
+      meta_value = it->value().ToString();
+      if (StringMatch(pattern.data(), pattern.size(),
+                         meta_key.data(), meta_key.size(), 0)) {
+        keys->push_back(meta_key);
+      }
+      (*count)--;
+      it->Next();
+    }
+  }
+
+  if (it->Valid()) {
+    *next_key = it->key().ToString();
+    is_finish = false;
+  } else {
+    *next_key = "";
+  }
+  delete it;
+  return is_finish;
+}
+
+
 Status RedisHashes::CompactRange(const rocksdb::Slice* begin,
     const rocksdb::Slice* end) {
   Status s = db_->CompactRange(default_compact_range_options_,

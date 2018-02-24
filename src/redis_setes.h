@@ -34,6 +34,10 @@ class RedisSetes : public Redis {
   // Keys Commands
   virtual Status Expire(const Slice& key, int32_t ttl) override;
   virtual Status Del(const Slice& key) override;
+  virtual bool Scan(const std::string& start_key, const std::string& pattern,
+                    std::vector<std::string>* keys,
+                    int64_t* count, std::string* next_key) override;
+
   private:
     std::vector<rocksdb::ColumnFamilyHandle*> handles_;
 };

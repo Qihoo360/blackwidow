@@ -5,6 +5,7 @@
 
 #include "blackwidow/blackwidow.h"
 
+#include "src/mutex_impl.h"
 #include "src/redis_strings.h"
 #include "src/redis_hashes.h"
 #include "src/redis_setes.h"
@@ -12,9 +13,12 @@
 namespace blackwidow {
 
 BlackWidow::BlackWidow() :
-    strings_db_(nullptr),
-    hashes_db_(nullptr),
-    setes_db_(nullptr) {
+  strings_db_(nullptr),
+  hashes_db_(nullptr),
+  setes_db_(nullptr),
+  mutex_factory_(new MutexFactoryImpl) {
+  cursors_store_.max_size_ = 5000;
+  cursors_mutex_ = mutex_factory_->AllocateMutex();
 }
 
 BlackWidow::~BlackWidow() {
@@ -49,6 +53,38 @@ Status BlackWidow::Open(const rocksdb::Options& options,
   setes_db_ = new RedisSetes();
   s = setes_db_->Open(options, AppendSubDirectory(db_path, "setes"));
   return s;
+}
+
+Status BlackWidow::GetStartKey(int64_t cursor, std::string* start_key) {
+  cursors_mutex_->Lock();
+  if (cursors_store_.map_.end() == cursors_store_.map_.find(cursor)) {
+    cursors_mutex_->UnLock();
+    return Status::NotFound();
+  } else {
+    // If the cursor is present in the list,
+    // move the cursor to the start of list
+    cursors_store_.list_.remove(cursor);
+    cursors_store_.list_.push_front(cursor);
+    *start_key = cursors_store_.map_[cursor];
+    cursors_mutex_->UnLock();
+    return Status::OK();
+  }
+}
+
+int64_t BlackWidow::StoreAndGetCursor(int64_t cursor,
+                                      const std::string& next_key) {
+  cursors_mutex_->Lock();
+  if (cursors_store_.map_.size() >
+      static_cast<size_t>(cursors_store_.max_size_)) {
+    int64_t tail = cursors_store_.list_.back();
+    cursors_store_.list_.remove(tail);
+    cursors_store_.map_.erase(tail);
+  }
+
+  cursors_store_.list_.push_back(cursor);
+  cursors_store_.map_[cursor] = next_key;
+  cursors_mutex_->UnLock();
+  return cursor;
 }
 
 // Strings Commands
@@ -182,9 +218,9 @@ Status BlackWidow::SCard(const Slice& key,
 }
 
 // Keys Commands
-int BlackWidow::Expire(const Slice& key,
-                       int32_t ttl, std::map<DataType, Status>* type_status) {
-  int ret = 0;
+int32_t BlackWidow::Expire(const Slice& key, int32_t ttl,
+                           std::map<DataType, Status>* type_status) {
+  int32_t ret = 0;
   bool is_corruption = false;
 
   // Strings
@@ -221,10 +257,10 @@ int BlackWidow::Expire(const Slice& key,
   }
 }
 
-int BlackWidow::Del(const std::vector<std::string>& keys,
-                    std::map<DataType, Status>* type_status) {
+int64_t BlackWidow::Del(const std::vector<Slice>& keys,
+                        std::map<DataType, Status>* type_status) {
   Status s;
-  int count = 0;
+  int64_t count = 0;
   bool is_corruption = false, is_success = false;
 
   for (const auto& key : keys) {
@@ -265,6 +301,55 @@ int BlackWidow::Del(const std::vector<std::string>& keys,
   } else {
     return count;
   }
+}
+
+int64_t BlackWidow::Scan(int64_t cursor, const std::string& pattern,
+                         int64_t count, std::vector<std::string>* keys) {
+  bool is_finish;
+  int64_t count_origin = count, cursor_ret = 0;
+  std::string start_key = "";
+  std::string next_key;
+
+  if (cursor < 0) {
+    return cursor_ret;
+  } else {
+    Status s = GetStartKey(cursor, &start_key);
+    if (s.IsNotFound()) {
+      start_key = "k";
+      cursor = 0;
+    }
+  }
+
+  char key_type = start_key.at(0);
+  start_key.erase(start_key.begin());
+  switch (key_type) {
+    case 'k':
+      is_finish = strings_db_->Scan(start_key, pattern, keys,
+                                    &count, &next_key);
+      if (count == 0 && is_finish) {
+        cursor_ret = StoreAndGetCursor(cursor + count_origin, std::string("h"));
+        break;
+      } else if (count == 0 && !is_finish) {
+        cursor_ret = StoreAndGetCursor(cursor + count_origin,
+                                       std::string("k") + next_key);
+        break;
+      }
+      start_key = "";
+    case 'h':
+      is_finish = hashes_db_->Scan(start_key, pattern, keys,
+                                   &count, &next_key);
+      if (count == 0 && is_finish) {
+        cursor_ret = StoreAndGetCursor(cursor + count_origin, std::string("l"));
+        break;
+      } else if (count == 0 && !is_finish) {
+        cursor_ret = StoreAndGetCursor(cursor + count_origin,
+                                       std::string("h") + next_key);
+        break;
+      }
+    // TODO(shq) other data types
+  }
+
+  return cursor_ret;
 }
 
 }  //  namespace blackwidow
