@@ -254,6 +254,10 @@ class BlackWidow {
 
 
   // Setes Commands
+  struct KeyVersion {
+    std::string key;
+    int32_t version;
+  };
 
   // Add the specified members to the set stored at key. Specified members that
   // are already a member of this set are ignored. If key does not exist, a new
@@ -264,6 +268,31 @@ class BlackWidow {
   // Returns the set cardinality (number of elements) of the set stored at key.
   Status SCard(const Slice& key, int32_t* ret);
 
+  // Returns the members of the set resulting from the difference between the
+  // first set and all the successive sets.
+  //
+  // For example:
+  //   key1 = {a, b, c, d}
+  //   key2 = {c}
+  //   key3 = {a, c, e}
+  //   SDIFF key1 key2 key3  = {b, d}
+  Status SDiff(const std::vector<std::string>& keys,
+               std::vector<std::string>* members);
+
+  // This command is equal to SDIFF, but instead of returning the resulting set,
+  // it is stored in destination.
+  // If destination already exists, it is overwritten.
+  Status SDiffstore(const Slice& destination,
+                    const std::vector<std::string>& keys,
+                    int32_t* ret);
+
+  // Returns if member is a member of the set stored at key.
+  Status SIsmember(const Slice& key, const Slice& member,
+                   int32_t* ret);
+
+  // Returns all the members of the set value stored at key.
+  // This has the same effect as running SINTER with one argument key.
+  Status SMembers(const Slice& key, std::vector<std::string>* members);
 
   // Keys Commands
   enum DataType {

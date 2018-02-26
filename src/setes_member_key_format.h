@@ -7,12 +7,14 @@
 #define SRC_SETES_DATA_KEY_FORMAT_H_
 
 #include <string>
+std::hash<std::string> hash_func;
 
 namespace blackwidow {
 class SetesMemberKey {
   public:
     SetesMemberKey(const Slice& key, int32_t version, const Slice& member) :
-      start_(nullptr), key_(key), version_(version), serial_num_(0), member_(member) {
+      start_(nullptr), key_(key), version_(version),
+      serial_num_(static_cast<int32_t>(hash_func(member.ToString()))), member_(member) {
     }
 
     ~SetesMemberKey() {
@@ -41,6 +43,23 @@ class SetesMemberKey {
       dst += sizeof(int32_t);
       memcpy(dst, member_.data(), member_.size());
       return Slice(start_, needed);
+    }
+
+    static void EncodePrefix(const Slice& key, int32_t version, std::string* prefix) {
+      char* dst;
+      char* start;
+      size_t needed = key.size() + sizeof(int32_t) * 2;
+
+      dst = new char[needed];
+      start = dst;
+      EncodeFixed32(dst, key.size());
+      dst += sizeof(int32_t);
+      memcpy(dst, key.data(), key.size());
+      dst += key.size();
+      EncodeFixed32(dst, version);
+      dst += sizeof(int32_t);
+      prefix->assign(start, needed);
+      delete start;
     }
 
   private:

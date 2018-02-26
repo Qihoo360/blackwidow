@@ -272,6 +272,27 @@ Status BlackWidow::SCard(const Slice& key,
   return setes_db_->SCard(key, ret);
 }
 
+Status BlackWidow::SDiff(const std::vector<std::string>& keys,
+                         std::vector<std::string>* members) {
+  return setes_db_->SDiff(keys, members);
+}
+
+Status BlackWidow::SDiffstore(const Slice& destination,
+                              const std::vector<std::string>& keys,
+                              int32_t* ret) {
+  return setes_db_->SDiffstore(destination, keys, ret);
+}
+
+Status BlackWidow::SIsmember(const Slice& key, const Slice& member,
+                             int32_t* ret) {
+  return setes_db_->SIsmember(key, member, ret);
+}
+
+Status BlackWidow::SMembers(const Slice& key,
+                            std::vector<std::string>* members) {
+  return setes_db_->SMembers(key, members);
+}
+
 // Keys Commands
 int32_t BlackWidow::Expire(const Slice& key, int32_t ttl,
                            std::map<DataType, Status>* type_status) {

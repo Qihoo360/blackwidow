@@ -650,7 +650,7 @@ Status RedisHashes::Del(const Slice& key) {
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
     ParsedHashesMetaValue parsed_hashes_meta_value(&meta_value);
-    if ( parsed_hashes_meta_value.IsStale()) {
+    if (parsed_hashes_meta_value.IsStale()) {
       return Status::NotFound("Stale");
     } else {
       parsed_hashes_meta_value.set_count(0);
