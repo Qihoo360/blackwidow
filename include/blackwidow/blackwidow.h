@@ -274,6 +274,10 @@ class BlackWidow {
     kSetes
   };
 
+  // Note:
+  // While any error happens, you need to check type_status for
+  // the error message
+
   // Set a timeout on key
   // return -1 operation exception errors happen in database
   // return >=0 success
@@ -291,6 +295,12 @@ class BlackWidow {
   // in the next call
   int64_t Scan(int64_t cursor, const std::string& pattern,
                int64_t count, std::vector<std::string>* keys);
+
+  // Returns if key exists.
+  // return -1 operation exception errors happen in database
+  // return >=0 the number of keys existing
+  int64_t Exists(const std::vector<Slice>& keys,
+             std::map<DataType, Status>* type_status);
 
  private:
   RedisStrings* strings_db_;

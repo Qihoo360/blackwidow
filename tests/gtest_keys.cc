@@ -99,7 +99,7 @@ TEST_F(KeysTest, ScanTest) {
   for (; ;) {
     keys.clear();
     cursor_origin = cursor_ret;
-    cursor_ret = db.Scan(cursor_ret, "SCAN*", 3, &keys); 
+    cursor_ret = db.Scan(cursor_ret, "SCAN*", 3, &keys);
     if (cursor_ret != 0) {
       ASSERT_EQ(cursor_ret, cursor_origin + 3);
     } else {
@@ -110,7 +110,7 @@ TEST_F(KeysTest, ScanTest) {
   // Repeat scan the same parameters should return the same result
   for (int32_t i = 0; i < 10; i++) {
     keys.clear();
-    cursor_ret = db.Scan(3, "SCAN*", 7, &keys); 
+    cursor_ret = db.Scan(3, "SCAN*", 7, &keys);
     ASSERT_EQ(keys.size(), 5);
     ASSERT_EQ(cursor_ret, 10);
   }
@@ -135,20 +135,20 @@ TEST_F(KeysTest, ScanTest) {
 TEST_F(KeysTest, ExpireTest) {
   std::string value;
   std::map<BlackWidow::DataType, Status> type_status;
+  std::vector<rocksdb::Slice> keys {"DEL_KEY"};
   int32_t ret;
-  s = db.Set("EXPIRE_KEY", "EXPIREVALUE");
+  s = db.Set("EXPIRE_KEY", "EXPIRE_VALUE");
+  ASSERT_TRUE(s.ok());
+  s = db.HSet("EXPIRE_KEY", "EXPIRE_FIELD", "EXPIRE_VALUE", &ret);
   ASSERT_TRUE(s.ok());
   ret = db.Expire("EXPIRE_KEY", 1, &type_status);
-  for (auto it = type_status.begin(); it != type_status.end(); it++) {
-    if (it->first == BlackWidow::DataType::kStrings) {
-      ASSERT_TRUE(it->second.ok());
-    } else {
-      ASSERT_TRUE(it->second.IsNotFound());
-    }
-  }
+  ASSERT_EQ(ret, 2);
   std::this_thread::sleep_for(std::chrono::milliseconds(2000));
   s = db.Get("EXPIRE_KEY", &value);
   ASSERT_TRUE(s.IsNotFound());
+  s = db.HGet("EXPIRE_KEY", "EXPIRE_FIELD", &value);
+  ASSERT_TRUE(s.IsNotFound());
+  // TODO(shq) other types
 }
 
 // Del
@@ -161,16 +161,22 @@ TEST_F(KeysTest, DelTest) {
   s = db.HSet("DEL_KEY", "DEL_FIELD", "DEL_VALUE", &ret);
   ASSERT_TRUE(s.ok());
   ret = db.Del(keys, &type_status);
-  for (auto it = type_status.begin(); it != type_status.end(); it++) {
-    if (it->first == BlackWidow::DataType::kStrings) {
-      ASSERT_TRUE(it->second.ok());
-    } else if (it->first == BlackWidow::DataType::kHashes) {
-      ASSERT_TRUE(it->second.ok());
-    } else {
-      ASSERT_TRUE(it->second.IsNotFound());
-    }
-  }
   ASSERT_EQ(ret, 1);
+  // TODO(shq) other types
+}
+
+// Exists
+TEST_F(KeysTest, ExistsTest) {
+  int32_t ret;
+  std::map<BlackWidow::DataType, Status> type_status;
+  std::vector<Slice> keys {"EXISTS_KEY"};
+  s = db.Set("EXISTS_KEY", "EXISTS_VALUE");
+  ASSERT_TRUE(s.ok());
+  s = db.HSet("EXISTS_KEY", "EXISTS_FIELD", "EXISTS_VALUE", &ret);
+  ASSERT_TRUE(s.ok());
+  ret = db.Exists(keys, &type_status);
+  ASSERT_EQ(ret, 2);
+  // TODO(shq) other types
 }
 
 int main(int argc, char** argv) {
