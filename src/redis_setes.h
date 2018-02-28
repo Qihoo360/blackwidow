@@ -29,10 +29,17 @@ class RedisSetes : public Redis {
   Status SDiffstore(const Slice& destination,
                     const std::vector<std::string>& keys,
                     int32_t* ret);
+  Status SInter(const std::vector<std::string>& keys,
+                std::vector<std::string>* members);
+  Status SInterstore(const Slice& destination,
+                     const std::vector<std::string>& keys,
+                     int32_t* ret);
   Status SIsmember(const Slice& key, const Slice& member,
                    int32_t* ret);
   Status SMembers(const Slice& key,
                   std::vector<std::string>* members);
+  Status SRem(const Slice& key, const std::vector<std::string>& members,
+              int32_t* ret);
 
   // Common Commands
   virtual Status Open(const rocksdb::Options& options,

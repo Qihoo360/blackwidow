@@ -283,6 +283,17 @@ Status BlackWidow::SDiffstore(const Slice& destination,
   return setes_db_->SDiffstore(destination, keys, ret);
 }
 
+Status BlackWidow::SInter(const std::vector<std::string>& keys,
+                          std::vector<std::string>* members) {
+  return setes_db_->SInter(keys, members);
+}
+
+Status BlackWidow::SInterstore(const Slice& destination,
+                               const std::vector<std::string>& keys,
+                               int32_t* ret) {
+  return setes_db_->SInterstore(destination, keys, ret);
+}
+
 Status BlackWidow::SIsmember(const Slice& key, const Slice& member,
                              int32_t* ret) {
   return setes_db_->SIsmember(key, member, ret);
@@ -291,6 +302,12 @@ Status BlackWidow::SIsmember(const Slice& key, const Slice& member,
 Status BlackWidow::SMembers(const Slice& key,
                             std::vector<std::string>* members) {
   return setes_db_->SMembers(key, members);
+}
+
+Status BlackWidow::SRem(const Slice& key,
+                        const std::vector<std::string>& members,
+                        int32_t* ret) {
+  return setes_db_->SRem(key, members, ret);
 }
 
 // Keys Commands

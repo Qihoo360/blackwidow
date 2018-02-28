@@ -282,9 +282,43 @@ class BlackWidow {
   // This command is equal to SDIFF, but instead of returning the resulting set,
   // it is stored in destination.
   // If destination already exists, it is overwritten.
+  //
+  // For example:
+  //   destination = {};
+  //   key1 = {a, b, c, d}
+  //   key2 = {c}
+  //   key3 = {a, c, e}
+  //   SDIFFSTORE destination key1 key2 key3
+  //   destination = {b, d}
   Status SDiffstore(const Slice& destination,
                     const std::vector<std::string>& keys,
                     int32_t* ret);
+
+  // Returns the members of the set resulting from the intersection of all the
+  // given sets.
+  //
+  // For example:
+  //   key1 = {a, b, c, d}
+  //   key2 = {c}
+  //   key3 = {a, c, e}
+  //   SINTER key1 key2 key3 = {c}
+  Status SInter(const std::vector<std::string>& keys,
+                std::vector<std::string>* members);
+
+  // This command is equal to SINTER, but instead of returning the resulting
+  // set, it is stored in destination.
+  // If destination already exists, it is overwritten.
+  //
+  // For example:
+  //   destination = {}
+  //   key1 = {a, b, c, d}
+  //   key2 = {a, c}
+  //   key3 = {a, c, e}
+  //   SINTERSTORE destination key1 key2 key3
+  //   destination = {a, c}
+  Status SInterstore(const Slice& destination,
+                     const std::vector<std::string>& keys,
+                     int32_t* ret);
 
   // Returns if member is a member of the set stored at key.
   Status SIsmember(const Slice& key, const Slice& member,
@@ -293,6 +327,12 @@ class BlackWidow {
   // Returns all the members of the set value stored at key.
   // This has the same effect as running SINTER with one argument key.
   Status SMembers(const Slice& key, std::vector<std::string>* members);
+
+  // Remove the specified members from the set stored at key. Specified members
+  // that are not a member of this set are ignored. If key does not exist, it is
+  // treated as an empty set and this command returns 0.
+  Status SRem(const Slice& key, const std::vector<std::string>& members,
+              int32_t* ret);
 
   // Keys Commands
   enum DataType {

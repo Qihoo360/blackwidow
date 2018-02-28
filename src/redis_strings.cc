@@ -137,45 +137,18 @@ Status RedisStrings::GetBit(const Slice& key, int64_t offset, int32_t* ret) {
 }
 
 Status RedisStrings::MSet(const std::vector<BlackWidow::KeyValue>& kvs) {
-  std::string pre_key, cur_key;
-  std::vector<BlackWidow::KeyValue> tmp_kvs(kvs);
-  std::sort(tmp_kvs.begin(), tmp_kvs.end());
-
-  pre_key.clear();
-  if (!tmp_kvs.empty() &&
-      tmp_kvs[0].key.empty()) {
-    lock_mgr_->TryLock(pre_key);
+  std::vector<std::string> keys;
+  for (const auto& kv :  kvs) {
+    keys.push_back(kv.key);
   }
 
-  for (const auto& kv : tmp_kvs) {
-    cur_key = kv.key;
-    if (pre_key != cur_key) {
-      lock_mgr_->TryLock(cur_key);
-      pre_key = cur_key;
-    }
-  }
-
+  MultiScopeRecordLock ml(lock_mgr_, keys);
   rocksdb::WriteBatch batch;
-  for (const auto& kv : tmp_kvs) {
+  for (const auto& kv : kvs) {
     StringsValue strings_value(kv.value);
     batch.Put(kv.key, strings_value.Encode());
   }
-  Status s = db_->Write(default_write_options_, &batch);
-
-  pre_key.clear();
-  if (!tmp_kvs.empty() &&
-      tmp_kvs[0].key.empty()) {
-    lock_mgr_->UnLock(pre_key);
-  }
-
-  for (const auto& kv : tmp_kvs) {
-    cur_key = kv.key;
-    if (pre_key != cur_key) {
-      lock_mgr_->UnLock(cur_key);
-      pre_key = cur_key;
-    }
-  }
-  return s;
+  return db_->Write(default_write_options_, &batch);
 }
 
 Status RedisStrings::MGet(const std::vector<std::string>& keys,
