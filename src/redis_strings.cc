@@ -10,7 +10,6 @@
 #include <algorithm>
 #include <limits>
 
-#include "src/util.h"
 #include "src/strings_filter.h"
 #include "src/scope_record_lock.h"
 #include "src/scope_snapshot.h"
@@ -930,6 +929,64 @@ bool RedisStrings::Scan(const std::string& start_key,
   }
   delete it;
   return is_finish;
+}
+
+Status RedisStrings::Expireat(const Slice& key, int32_t timestamp) {
+  std::string value;
+  ScopeRecordLock l(lock_mgr_, key);
+  Status s = db_->Get(default_read_options_, key, &value);
+  if (s.ok()) {
+    ParsedStringsValue parsed_strings_value(&value);
+    if (parsed_strings_value.IsStale()) {
+      return Status::NotFound("Stale");
+    } else {
+      parsed_strings_value.set_timestamp(timestamp);
+      return db_->Put(default_write_options_, key, value);
+    }
+  }
+  return s;
+}
+
+Status RedisStrings::Persist(const Slice& key) {
+  std::string value;
+  ScopeRecordLock l(lock_mgr_, key);
+  Status s = db_->Get(default_read_options_, key, &value);
+  if (s.ok()) {
+    ParsedStringsValue parsed_strings_value(&value);
+    if (parsed_strings_value.IsStale()) {
+      return Status::NotFound("Stale");
+    } else {
+      int32_t timestamp = parsed_strings_value.timestamp();
+      if (timestamp == 0) {
+        return Status::NotFound("Not have an associated timeout");
+      } else {
+        parsed_strings_value.set_timestamp(0);
+        return db_->Put(default_write_options_, key, value);
+      }
+    }
+  }
+  return s;
+}
+
+Status RedisStrings::TTL(const Slice& key, int32_t* timestamp) {
+  std::string value;
+  ScopeRecordLock l(lock_mgr_, key);
+  Status s = db_->Get(default_read_options_, key, &value);
+  if (s.ok()) {
+    ParsedStringsValue parsed_strings_value(&value);
+    if (parsed_strings_value.IsStale()) {
+      *timestamp = -2;
+      return Status::NotFound("Stale");
+    } else {
+      *timestamp = parsed_strings_value.timestamp();
+      if (*timestamp == 0) {
+        *timestamp = -1;
+      }
+    }
+  } else if (s.IsNotFound()) {
+    *timestamp = -2;
+  }
+  return s;
 }
 
 Status RedisStrings::CompactRange(const rocksdb::Slice* begin,

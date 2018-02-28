@@ -16,7 +16,7 @@
 namespace blackwidow {
 
 class RedisSetes : public Redis {
-  public:
+ public:
     RedisSetes() = default;
     ~RedisSetes();
 
@@ -46,9 +46,12 @@ class RedisSetes : public Redis {
   virtual bool Scan(const std::string& start_key, const std::string& pattern,
                     std::vector<std::string>* keys,
                     int64_t* count, std::string* next_key) override;
+  virtual Status Expireat(const Slice& key, int32_t timestamp) override;
+  virtual Status Persist(const Slice& key) override;
+  virtual Status TTL(const Slice& key, int32_t* timestamp) override;
 
-  private:
-    std::vector<rocksdb::ColumnFamilyHandle*> handles_;
+ private:
+  std::vector<rocksdb::ColumnFamilyHandle*> handles_;
 };
 
 }  //  namespace blackwidow

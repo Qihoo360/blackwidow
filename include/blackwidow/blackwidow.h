@@ -331,6 +331,33 @@ class BlackWidow {
   int64_t Exists(const std::vector<Slice>& keys,
              std::map<DataType, Status>* type_status);
 
+  // EXPIREAT has the same effect and semantic as EXPIRE, but instead of
+  // specifying the number of seconds representing the TTL (time to live), it
+  // takes an absolute Unix timestamp (seconds since January 1, 1970). A
+  // timestamp in the past will delete the key immediately.
+  // return -1 operation exception errors happen in database
+  // return 0 if key does not exist
+  // return >=1 if the timueout was set
+  int32_t Expireat(const Slice& key, int32_t timestamp,
+                   std::map<DataType, Status>* type_status);
+
+  // Remove the existing timeout on key, turning the key from volatile (a key
+  // with an expire set) to persistent (a key that will never expire as no
+  // timeout is associated).
+  // return -1 operation exception errors happen in database
+  // return 0 if key does not exist or does not have an associated timeout
+  // return >=1 if the timueout was set
+  int32_t Persist(const Slice& key,
+                  std::map<DataType, Status>* type_status);
+
+  // Returns the remaining time to live of a key that has a timeout.
+  // return -3 operation exception errors happen in database
+  // return -2 if the key does not exist
+  // return -1 if the key exists but has not associated expire
+  // return > 0 TTL in seconds
+  std::map<DataType, int32_t> TTL(const Slice& key,
+              std::map<DataType, Status>* type_status);
+
  private:
   RedisStrings* strings_db_;
   RedisHashes* hashes_db_;

@@ -96,7 +96,7 @@ Status RedisSetes::SAdd(const Slice& key,
       for (const auto& member : filtered_members) {
         SetesMemberKey setes_member_key(key, version, member);
         s = db_->Get(read_options, handles_[1],
-                setes_member_key.Encode(), &member_value);
+                     setes_member_key.Encode(), &member_value);
         if (s.ok()) {
           cnt++;
         } else if (s.IsNotFound()) {
@@ -498,6 +498,57 @@ bool RedisSetes::Scan(const std::string& start_key,
   }
   delete it;
   return is_finish;
+}
+
+Status RedisSetes::Expireat(const Slice& key, int32_t timestamp) {
+  std::string meta_value;
+  ScopeRecordLock l(lock_mgr_, key);
+  Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
+  if (s.ok()) {
+    ParsedSetesMetaValue parsed_setes_meta_value(&meta_value);
+    if (parsed_setes_meta_value.IsStale()) {
+      return Status::NotFound("Stale");
+    } else {
+      parsed_setes_meta_value.set_timestamp(timestamp);
+      return db_->Put(default_write_options_, handles_[0], key, meta_value);
+    }
+  }
+  return s;
+}
+
+Status RedisSetes::Persist(const Slice& key) {
+  std::string meta_value;
+  ScopeRecordLock l(lock_mgr_, key);
+  Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
+  if (s.ok()) {
+    ParsedSetesMetaValue parsed_setes_meta_value(&meta_value);
+    if (parsed_setes_meta_value.IsStale()) {
+      return Status::NotFound("Stale");
+    } else {
+      int32_t timestamp = parsed_setes_meta_value.timestamp();
+      if (timestamp == 0) {
+        return Status::NotFound("Not have an associated timeout");
+      } else {
+        parsed_setes_meta_value.set_timestamp(0);
+        return db_->Put(default_write_options_, handles_[0], key, meta_value);
+      }
+    }
+  }
+  return s;
+}
+
+Status RedisSetes::TTL(const Slice& key, int32_t* timestamp) {
+  std::string meta_value;
+  Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
+  if (s.ok()) {
+    ParsedSetesMetaValue parsed_setes_meta_value(&meta_value);
+    if (parsed_setes_meta_value.IsStale()) {
+      return Status::NotFound("Stale");
+    } else {
+      *timestamp = parsed_setes_meta_value.timestamp();
+    }
+  }
+  return s;
 }
 
 

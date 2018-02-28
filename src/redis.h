@@ -48,6 +48,11 @@ class Redis {
                     std::vector<std::string>* keys,
                     int64_t* count,
                     std::string* next_key) = 0;
+  virtual Status Expireat(const Slice& key,
+                          int32_t timestamp) = 0;
+  virtual Status Persist(const Slice& key) = 0;
+  virtual Status TTL(const Slice& key,
+                     int32_t* timestamp) = 0;
 
  protected:
   LockMgr* lock_mgr_;

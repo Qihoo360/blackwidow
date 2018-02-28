@@ -462,4 +462,90 @@ int64_t BlackWidow::Scan(int64_t cursor, const std::string& pattern,
   return cursor_ret;
 }
 
+int32_t BlackWidow::Expireat(const Slice& key, int32_t timestamp,
+                             std::map<DataType, Status>* type_status) {
+  Status s;
+  int32_t count = 0;
+  bool is_corruption = false;
+
+  s = strings_db_->Expireat(key, timestamp);
+  if (s.ok()) {
+    count++;
+  } else if (!s.IsNotFound()) {
+    is_corruption = true;
+    (*type_status)[DataType::kStrings] = s;
+  }
+
+  s = hashes_db_->Expireat(key, timestamp);
+  if (s.ok()) {
+    count++;
+  } else if (!s.IsNotFound()) {
+    is_corruption = true;
+    (*type_status)[DataType::kHashes] = s;
+  }
+
+  // TODO(shq) other types
+  if (is_corruption) {
+    return -1;
+  } else {
+    return count;
+  }
+}
+
+int32_t BlackWidow::Persist(const Slice& key,
+                            std::map<DataType, Status>* type_status) {
+  Status s;
+  int32_t count = 0;
+  bool is_corruption = false;
+
+  s = strings_db_->Persist(key);
+  if (s.ok()) {
+    count++;
+  } else if (!s.IsNotFound()) {
+    is_corruption = true;
+    (*type_status)[DataType::kStrings] = s;
+  }
+
+  s = hashes_db_->Persist(key);
+  if (s.ok()) {
+    count++;
+  } else if (!s.IsNotFound()) {
+    is_corruption = true;
+    (*type_status)[DataType::kHashes] = s;
+  }
+
+  // TODO(shq) other types
+  if (is_corruption) {
+    return -1;
+  } else {
+    return count;
+  }
+}
+
+std::map<BlackWidow::DataType, int32_t> BlackWidow::TTL(const Slice& key,
+                        std::map<DataType, Status>* type_status) {
+  Status s;
+  std::map<DataType, int32_t> ret;
+  int32_t timestamp = 0;
+
+  s = strings_db_->TTL(key, &timestamp);
+  if (s.ok() || s.IsNotFound()) {
+    ret[DataType::kStrings] = timestamp;
+  } else if (!s.IsNotFound()) {
+    ret[DataType::kStrings] = -3;
+    (*type_status)[DataType::kStrings] = s;
+  }
+
+  s = hashes_db_->TTL(key, &timestamp);
+  if (s.ok() || s.IsNotFound()) {
+    ret[DataType::kHashes] = timestamp;
+  } else if (!s.IsNotFound()) {
+    ret[DataType::kHashes] = -3;
+    (*type_status)[DataType::kHashes] = s;
+  }
+
+  // TODO(shq) other types
+  return ret;
+}
+
 }  //  namespace blackwidow

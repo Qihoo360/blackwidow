@@ -120,18 +120,15 @@ Status RedisHashes::HGet(const Slice& key, const Slice& field,
   read_options.snapshot = snapshot;
   Status s = db_->Get(read_options, handles_[0], key, &meta_value);
   if (s.ok()) {
-    ParsedHashesMetaValue parsed(&meta_value);
-    if (parsed.IsStale()) {
+    ParsedHashesMetaValue parsed_hashes_meta_value(&meta_value);
+    if (parsed_hashes_meta_value.IsStale()) {
       return Status::NotFound("Stale");
     } else {
-      version = parsed.version();
+      version = parsed_hashes_meta_value.version();
       HashesDataKey data_key(key, version, field);
       s = db_->Get(read_options, handles_[1], data_key.Encode(), value);
     }
-  } else if (s.IsNotFound()) {
-    return Status::NotFound();
   }
-
   return s;
 }
 
@@ -705,6 +702,64 @@ bool RedisHashes::Scan(const std::string& start_key,
   return is_finish;
 }
 
+Status RedisHashes::Expireat(const Slice& key, int32_t timestamp) {
+  std::string meta_value;
+  ScopeRecordLock l(lock_mgr_, key);
+  Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
+  if (s.ok()) {
+    ParsedHashesMetaValue parsed_hashes_meta_value(&meta_value);
+    if (parsed_hashes_meta_value.IsStale()) {
+      return Status::NotFound("Stale");
+    } else {
+      parsed_hashes_meta_value.set_timestamp(timestamp);
+      s = db_->Put(default_write_options_, handles_[0], key, meta_value);
+    }
+  }
+  return s;
+}
+
+Status RedisHashes::Persist(const Slice& key) {
+  std::string meta_value;
+  ScopeRecordLock l(lock_mgr_, key);
+  Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
+  if (s.ok()) {
+    ParsedHashesMetaValue parsed_hashes_meta_value(&meta_value);
+    if (parsed_hashes_meta_value.IsStale()) {
+      return Status::NotFound("Stale");
+    } else {
+      int32_t timestamp = parsed_hashes_meta_value.timestamp();
+      if (timestamp == 0) {
+        return Status::NotFound("Not have an associated timeout");
+      }  else {
+        parsed_hashes_meta_value.set_timestamp(0);
+        s = db_->Put(default_write_options_, handles_[0], key, meta_value);
+      }
+    }
+  }
+  return s;
+}
+
+Status RedisHashes::TTL(const Slice& key,
+                       int32_t* timestamp) {
+  std::string meta_value;
+  ScopeRecordLock l(lock_mgr_, key);
+  Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
+  if (s.ok()) {
+    ParsedHashesMetaValue parsed_hashes_meta_value(&meta_value);
+    if (parsed_hashes_meta_value.IsStale()) {
+      *timestamp = -2;
+      return Status::NotFound("Stale");
+    } else {
+      *timestamp = parsed_hashes_meta_value.timestamp();
+      if (*timestamp == 0) {
+        *timestamp = -1;
+      }
+    }
+  } else if (s.IsNotFound()) {
+    *timestamp = -2;
+  }
+  return s;
+}
 
 Status RedisHashes::CompactRange(const rocksdb::Slice* begin,
     const rocksdb::Slice* end) {

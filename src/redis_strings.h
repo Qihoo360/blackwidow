@@ -64,6 +64,9 @@ class RedisStrings : public Redis {
   virtual bool Scan(const std::string& start_key, const std::string& pattern,
                     std::vector<std::string>* keys,
                     int64_t* count, std::string* next_key) override;
+  virtual Status Expireat(const Slice& key, int32_t timestamp) override;
+  virtual Status Persist(const Slice& key) override;
+  virtual Status TTL(const Slice& key, int32_t* timestamp) override;
 };
 
 }  //  namespace blackwidow
