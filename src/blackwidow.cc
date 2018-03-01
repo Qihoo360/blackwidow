@@ -8,14 +8,14 @@
 #include "src/mutex_impl.h"
 #include "src/redis_strings.h"
 #include "src/redis_hashes.h"
-#include "src/redis_setes.h"
+#include "src/redis_sets.h"
 
 namespace blackwidow {
 
 BlackWidow::BlackWidow() :
   strings_db_(nullptr),
   hashes_db_(nullptr),
-  setes_db_(nullptr),
+  sets_db_(nullptr),
   mutex_factory_(new MutexFactoryImpl) {
   cursors_store_.max_size_ = 5000;
   cursors_mutex_ = mutex_factory_->AllocateMutex();
@@ -24,7 +24,7 @@ BlackWidow::BlackWidow() :
 BlackWidow::~BlackWidow() {
   delete strings_db_;
   delete hashes_db_;
-  delete setes_db_;
+  delete sets_db_;
 }
 
 Status BlackWidow::Compact() {
@@ -50,8 +50,8 @@ Status BlackWidow::Open(const rocksdb::Options& options,
   Status s = strings_db_->Open(options, AppendSubDirectory(db_path, "strings"));
   hashes_db_ = new RedisHashes();
   s = hashes_db_->Open(options, AppendSubDirectory(db_path, "hashes"));
-  setes_db_ = new RedisSetes();
-  s = setes_db_->Open(options, AppendSubDirectory(db_path, "setes"));
+  sets_db_ = new RedisSets();
+  s = sets_db_->Open(options, AppendSubDirectory(db_path, "sets"));
   return s;
 }
 
@@ -260,65 +260,70 @@ Status BlackWidow::HDel(const Slice& key,
   return hashes_db_->HDel(key, fields, ret);
 }
 
-// Setes Commands
+// Sets Commands
 Status BlackWidow::SAdd(const Slice& key,
                         const std::vector<std::string>& members,
                         int32_t* ret) {
-  return setes_db_->SAdd(key, members, ret);
+  return sets_db_->SAdd(key, members, ret);
 }
 
 Status BlackWidow::SCard(const Slice& key,
                          int32_t* ret) {
-  return setes_db_->SCard(key, ret);
+  return sets_db_->SCard(key, ret);
 }
 
 Status BlackWidow::SDiff(const std::vector<std::string>& keys,
                          std::vector<std::string>* members) {
-  return setes_db_->SDiff(keys, members);
+  return sets_db_->SDiff(keys, members);
 }
 
 Status BlackWidow::SDiffstore(const Slice& destination,
                               const std::vector<std::string>& keys,
                               int32_t* ret) {
-  return setes_db_->SDiffstore(destination, keys, ret);
+  return sets_db_->SDiffstore(destination, keys, ret);
 }
 
 Status BlackWidow::SInter(const std::vector<std::string>& keys,
                           std::vector<std::string>* members) {
-  return setes_db_->SInter(keys, members);
+  return sets_db_->SInter(keys, members);
 }
 
 Status BlackWidow::SInterstore(const Slice& destination,
                                const std::vector<std::string>& keys,
                                int32_t* ret) {
-  return setes_db_->SInterstore(destination, keys, ret);
+  return sets_db_->SInterstore(destination, keys, ret);
 }
 
 Status BlackWidow::SIsmember(const Slice& key, const Slice& member,
                              int32_t* ret) {
-  return setes_db_->SIsmember(key, member, ret);
+  return sets_db_->SIsmember(key, member, ret);
 }
 
 Status BlackWidow::SMembers(const Slice& key,
                             std::vector<std::string>* members) {
-  return setes_db_->SMembers(key, members);
+  return sets_db_->SMembers(key, members);
+}
+
+Status BlackWidow::SMove(const Slice& source, const Slice& destination,
+                         const Slice& member, int32_t* ret) {
+  return sets_db_->SMove(source, destination, member, ret);
 }
 
 Status BlackWidow::SRem(const Slice& key,
                         const std::vector<std::string>& members,
                         int32_t* ret) {
-  return setes_db_->SRem(key, members, ret);
+  return sets_db_->SRem(key, members, ret);
 }
 
 Status BlackWidow::SUnion(const std::vector<std::string>& keys,
                           std::vector<std::string>* members) {
-  return setes_db_->SUnion(keys, members);
+  return sets_db_->SUnion(keys, members);
 }
 
 Status BlackWidow::SUnionstore(const Slice& destination,
                                const std::vector<std::string>& keys,
                                int32_t* ret) {
-  return setes_db_->SUnionstore(destination, keys, ret);
+  return sets_db_->SUnionstore(destination, keys, ret);
 }
 
 // Keys Commands
@@ -345,13 +350,13 @@ int32_t BlackWidow::Expire(const Slice& key, int32_t ttl,
     (*type_status)[DataType::kHashes] = s;
   }
 
-  // Setes
-  s = setes_db_->Expire(key, ttl);
+  // Sets
+  s = sets_db_->Expire(key, ttl);
   if (s.ok()) {
     ret++;
   } else if (!s.IsNotFound()) {
     is_corruption = true;
-    (*type_status)[DataType::kSetes] = s;
+    (*type_status)[DataType::kSets] = s;
   }
 
   if (is_corruption) {
@@ -383,16 +388,16 @@ int64_t BlackWidow::Del(const std::vector<Slice>& keys,
       is_success = true;
     } else if (!s.IsNotFound()) {
       is_corruption = true;
-      (*type_status)[DataType::kSetes] = s;
+      (*type_status)[DataType::kSets] = s;
     }
 
-    // Setes
-    s = setes_db_->Del(key);
+    // Sets
+    s = sets_db_->Del(key);
     if (s.ok()) {
       is_success = true;
     } else if (!s.IsNotFound()) {
       is_corruption = true;
-      (*type_status)[DataType::kSetes] = s;
+      (*type_status)[DataType::kSets] = s;
     }
 
     if (is_success) {

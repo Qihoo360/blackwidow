@@ -3,21 +3,21 @@
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 
-#ifndef SRC_SETES_DATA_KEY_FORMAT_H_
-#define SRC_SETES_DATA_KEY_FORMAT_H_
+#ifndef SRC_SETS_DATA_KEY_FORMAT_H_
+#define SRC_SETS_DATA_KEY_FORMAT_H_
 
 #include <string>
 std::hash<std::string> hash_func;
 
 namespace blackwidow {
-class SetesMemberKey {
+class SetsMemberKey {
   public:
-    SetesMemberKey(const Slice& key, int32_t version, const Slice& member) :
+    SetsMemberKey(const Slice& key, int32_t version, const Slice& member) :
       start_(nullptr), key_(key), version_(version),
       serial_num_(static_cast<int32_t>(hash_func(member.ToString()))), member_(member) {
     }
 
-    ~SetesMemberKey() {
+    ~SetsMemberKey() {
       if (start_ != space_) {
         delete start_;
       }
@@ -71,9 +71,9 @@ class SetesMemberKey {
     Slice member_;
 };
 
-class ParsedSetesMemberKey {
+class ParsedSetsMemberKey {
   public:
-    explicit ParsedSetesMemberKey(const std::string* rdb_key) {
+    explicit ParsedSetsMemberKey(const std::string* rdb_key) {
       const char* ptr = rdb_key->data();
       int32_t key_len = DecodeFixed32(ptr);
       ptr += sizeof(int32_t);
@@ -86,7 +86,7 @@ class ParsedSetesMemberKey {
       member_ = Slice(ptr, rdb_key->size() - key_len - sizeof(int32_t) * 3);
     }
 
-    explicit ParsedSetesMemberKey(const Slice& rdb_key) {
+    explicit ParsedSetsMemberKey(const Slice& rdb_key) {
       const char* ptr = rdb_key.data();
       int32_t key_len = DecodeFixed32(ptr);
       ptr += sizeof(int32_t);
@@ -99,7 +99,7 @@ class ParsedSetesMemberKey {
       member_ = Slice(ptr, rdb_key.size() - key_len - sizeof(int32_t) * 3);
     }
 
-    virtual ~ParsedSetesMemberKey() = default;
+    virtual ~ParsedSetsMemberKey() = default;
 
     Slice key() {
       return key_;
@@ -121,4 +121,4 @@ class ParsedSetesMemberKey {
 };
 
 }  //  namespace blackwidow
-#endif  // SRC_SETES_DATA_KEY_FORMAT_H_
+#endif  // SRC_SETS_DATA_KEY_FORMAT_H_

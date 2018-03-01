@@ -3,8 +3,8 @@
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 
-#ifndef SRC_REDIS_SETES_H_
-#define SRC_REDIS_SETES_H_
+#ifndef SRC_REDIS_SETS_H_
+#define SRC_REDIS_SETS_H_
 
 #include <string>
 #include <vector>
@@ -15,10 +15,10 @@
 
 namespace blackwidow {
 
-class RedisSetes : public Redis {
+class RedisSets : public Redis {
  public:
-    RedisSetes() = default;
-    ~RedisSetes();
+    RedisSets() = default;
+    ~RedisSets();
 
   // Setes Commands
   Status SAdd(const Slice& key,
@@ -38,6 +38,8 @@ class RedisSetes : public Redis {
                    int32_t* ret);
   Status SMembers(const Slice& key,
                   std::vector<std::string>* members);
+  Status SMove(const Slice& source, const Slice& destination,
+               const Slice& member, int32_t* ret);
   Status SRem(const Slice& key, const std::vector<std::string>& members,
               int32_t* ret);
   Status SUnion(const std::vector<std::string>& keys,
@@ -67,4 +69,4 @@ class RedisSetes : public Redis {
 };
 
 }  //  namespace blackwidow
-#endif  //  SRC_REDIS_SETES_H_
+#endif  //  SRC_REDIS_SETS_H_

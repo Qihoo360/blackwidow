@@ -40,7 +40,7 @@ examples/make_config.mk
 examples/db
 examples/strings_example
 examples/hashes_example
-examples/setes_example
+examples/sets_example
 
 # Benchmark
 benchmark/db
@@ -54,5 +54,5 @@ tests/gtest_strings
 tests/gtest_strings_filter
 tests/gtest_hashes
 tests/gtest_hashes_filter
-tests/gtest_setes
+tests/gtest_sets
 tests/lock_mgr

@@ -3,45 +3,45 @@
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 
-#ifndef SRC_SETES_FILTER_H_
-#define SRC_SETES_FILTER_H_
+#ifndef SRC_SETS_FILTER_H_
+#define SRC_SETS_FILTER_H_
 
 #include <string>
 #include <memory>
 #include <vector>
 
-#include "src/setes_meta_value_format.h"
-#include "src/setes_member_key_format.h"
+#include "src/sets_meta_value_format.h"
+#include "src/sets_member_key_format.h"
 #include "src/debug.h"
 #include "rocksdb/compaction_filter.h"
 
 namespace blackwidow {
 
-class SetesMetaFilter : public rocksdb::CompactionFilter {
+class SetsMetaFilter : public rocksdb::CompactionFilter {
   public:
-    SetesMetaFilter() = default;
+    SetsMetaFilter() = default;
     virtual bool Filter(int level, const rocksdb::Slice& key,
                         const rocksdb::Slice& value,
                         std::string* new_value, bool* value_changed) const
       override {
-      ParsedSetesMetaValue parsed_setes_meta_value(value);
+      ParsedSetsMetaValue parsed_sets_meta_value(value);
       int64_t unix_time;
       rocksdb::Env::Default()->GetCurrentTime(&unix_time);
       int32_t cur_time = static_cast<int32_t>(unix_time);
       Trace("==================================================================");
       Trace("[MetaFilter], key: %s, count = %d, timestamp: %d, cur_time: %d, version: %d",
           key.ToString().c_str(),
-          parsed_setes_meta_value.count(),
-          parsed_setes_meta_value.timestamp(),
-          cur_time, parsed_setes_meta_value.version());
-      if (parsed_setes_meta_value.timestamp() != 0 &&
-          parsed_setes_meta_value.timestamp() < cur_time &&
-          parsed_setes_meta_value.version() < cur_time) {
-        Trace("Drsetes_op[Stale & version < cur_time]");
+          parsed_sets_meta_value.count(),
+          parsed_sets_meta_value.timestamp(),
+          cur_time, parsed_sets_meta_value.version());
+      if (parsed_sets_meta_value.timestamp() != 0 &&
+          parsed_sets_meta_value.timestamp() < cur_time &&
+          parsed_sets_meta_value.version() < cur_time) {
+        Trace("Drop[Stale & version < cur_time]");
         return true;
       }
-      if (parsed_setes_meta_value.count() == 0 &&
-        parsed_setes_meta_value.version() < cur_time) {
+      if (parsed_sets_meta_value.count() == 0 &&
+        parsed_sets_meta_value.version() < cur_time) {
         Trace("Drop[Empty & version < cur_time]");
         return true;
       }
@@ -50,50 +50,50 @@ class SetesMetaFilter : public rocksdb::CompactionFilter {
       return false;
     }
 
-    virtual const char* Name() const override { return "SetesMetaFilter"; }
+    virtual const char* Name() const override { return "SetsMetaFilter"; }
 };
 
-class SetesMetaFilterFactory : public rocksdb::CompactionFilterFactory {
+class SetsMetaFilterFactory : public rocksdb::CompactionFilterFactory {
   public:
-    SetesMetaFilterFactory() = default;
+    SetsMetaFilterFactory() = default;
     virtual std::unique_ptr<rocksdb::CompactionFilter> CreateCompactionFilter(
         const rocksdb::CompactionFilter::Context& context) override {
-      return std::unique_ptr<rocksdb::CompactionFilter>(new SetesMetaFilter());
+      return std::unique_ptr<rocksdb::CompactionFilter>(new SetsMetaFilter());
     }
     virtual const char* Name() const override {
-      return "SetesMetaFilterFactory";
+      return "SetsMetaFilterFactory";
     }
 };
 
-class SetesMemberFilter : public rocksdb::CompactionFilter {
+class SetsMemberFilter : public rocksdb::CompactionFilter {
   public:
-    SetesMemberFilter(rocksdb::DB* db, std::vector<rocksdb::ColumnFamilyHandle*>* cf_handles_ptr) :
+    SetsMemberFilter(rocksdb::DB* db, std::vector<rocksdb::ColumnFamilyHandle*>* cf_handles_ptr) :
         db_(db), cf_handles_ptr_(cf_handles_ptr) {
     }
     virtual bool Filter(int level, const Slice& key,
                         const rocksdb::Slice& value,
                         std::string* new_value, bool* value_changed) const
         override {
-      ParsedSetesMemberKey parsed_setes_member_key(key);
+      ParsedSetsMemberKey parsed_sets_member_key(key);
       Trace("------------------------------------------------------------------");
       Trace("[DataFilter], key: %s, memeber: %s, version: %d",
-          parsed_setes_member_key.key().ToString().c_str(),
-          parsed_setes_member_key.member().ToString().c_str(),
-          parsed_setes_member_key.version());
+          parsed_sets_member_key.key().ToString().c_str(),
+          parsed_sets_member_key.member().ToString().c_str(),
+          parsed_sets_member_key.version());
 
-      if (parsed_setes_member_key.key().ToString() != cur_key_) {
+      if (parsed_sets_member_key.key().ToString() != cur_key_) {
         Trace("+++++++++++++++++++++++++++++++++++++++++++++++++++");
         Trace("!!!===>Prev Key: %s", cur_key_.c_str());
-        cur_key_ = parsed_setes_member_key.key().ToString();
+        cur_key_ = parsed_sets_member_key.key().ToString();
         std::string meta_value;
         Status s = db_->Get(default_read_options_, (*cf_handles_ptr_)[0],
             cur_key_, &meta_value);
 
         if (s.ok()) {
           meta_not_found_ = false;
-          ParsedSetesMetaValue parsed_setes_meta_value(&meta_value);
-          cur_meta_version_ = parsed_setes_meta_value.version();
-          cur_meta_timestamp_ = parsed_setes_meta_value.timestamp();
+          ParsedSetsMetaValue parsed_sets_meta_value(&meta_value);
+          cur_meta_version_ = parsed_sets_meta_value.version();
+          cur_meta_timestamp_ = parsed_sets_meta_value.timestamp();
           Trace("Update cur_key to "
               "[%s, cur_meta_version: %d, cur_meta_timestamp: %d]",
               cur_key_.c_str(),
@@ -135,9 +135,9 @@ class SetesMemberFilter : public rocksdb::CompactionFilter {
       }
       Trace("------------------------------------------------------------------");
 #endif
-      return cur_meta_version_ > parsed_setes_member_key.version();
+      return cur_meta_version_ > parsed_sets_member_key.version();
     }
-    virtual const char* Name() const override { return "SetesMemberFilter"; }
+    virtual const char* Name() const override { return "SetsMemberFilter"; }
   private:
     rocksdb::DB* db_;
     std::vector<rocksdb::ColumnFamilyHandle*>* cf_handles_ptr_;
@@ -149,19 +149,19 @@ class SetesMemberFilter : public rocksdb::CompactionFilter {
 
 };
 
-class SetesMemberFilterFactory : public rocksdb::CompactionFilterFactory {
+class SetsMemberFilterFactory : public rocksdb::CompactionFilterFactory {
  public:
-  SetesMemberFilterFactory(rocksdb::DB** db_ptr,
+  SetsMemberFilterFactory(rocksdb::DB** db_ptr,
       std::vector<rocksdb::ColumnFamilyHandle*>* handles_ptr)
     : db_ptr_(db_ptr), cf_handles_ptr_(handles_ptr) {
   }
   virtual std::unique_ptr<rocksdb::CompactionFilter> CreateCompactionFilter(
       const rocksdb::CompactionFilter::Context& context) override {
     return std::unique_ptr<rocksdb::CompactionFilter>(
-        new SetesMemberFilter(*db_ptr_, cf_handles_ptr_));
+        new SetsMemberFilter(*db_ptr_, cf_handles_ptr_));
   }
   virtual const char* Name() const override {
-    return "SetesMemberFilterFactory";
+    return "SetsMemberFilterFactory";
   }
 
  private:
@@ -170,4 +170,4 @@ class SetesMemberFilterFactory : public rocksdb::CompactionFilterFactory {
 };
 
 }  //  namespace blackwidow
-#endif  // SRC_SETES_FILTER_H_
+#endif  // SRC_SETS_FILTER_H_

@@ -3,8 +3,8 @@
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 
-#ifndef SRC_SETES_META_VALUE_FORMAT_H_
-#define SRC_SETES_META_VALUE_FORMAT_H_
+#ifndef SRC_SETS_META_VALUE_FORMAT_H_
+#define SRC_SETS_META_VALUE_FORMAT_H_
 
 #include <string>
 
@@ -12,9 +12,9 @@
 
 namespace blackwidow {
 
-class SetesMetaValue : public InternalValue {
+class SetsMetaValue : public InternalValue {
  public:
-  explicit SetesMetaValue(const Slice& user_value) :
+  explicit SetsMetaValue(const Slice& user_value) :
     InternalValue(user_value) {
   }
   virtual size_t AppendTimestampAndVersion() override {
@@ -40,14 +40,14 @@ class SetesMetaValue : public InternalValue {
   }
 };
 
-class ParsedSetesMetaValue : public ParsedInternalValue {
+class ParsedSetsMetaValue : public ParsedInternalValue {
  public:
   // Use this constructor after rocksdb::DB::Get();
-  explicit ParsedSetesMetaValue(std::string* internal_value_str) :
+  explicit ParsedSetsMetaValue(std::string* internal_value_str) :
     ParsedInternalValue(internal_value_str) {
-    if (internal_value_str->size() >= kSetesMetaValueSuffixLength) {
+    if (internal_value_str->size() >= kSetsMetaValueSuffixLength) {
       user_value_ = Slice(internal_value_str->data(),
-          internal_value_str->size() - kSetesMetaValueSuffixLength);
+          internal_value_str->size() - kSetsMetaValueSuffixLength);
       version_ = DecodeFixed32(internal_value_str->data() +
             internal_value_str->size() - sizeof(int32_t) * 2);
       timestamp_ = DecodeFixed32(internal_value_str->data() +
@@ -57,11 +57,11 @@ class ParsedSetesMetaValue : public ParsedInternalValue {
   }
 
   // Use this constructor in rocksdb::CompactionFilter::Filter();
-  explicit ParsedSetesMetaValue(const Slice& internal_value_slice) :
+  explicit ParsedSetsMetaValue(const Slice& internal_value_slice) :
     ParsedInternalValue(internal_value_slice) {
-    if (internal_value_slice.size() >= kSetesMetaValueSuffixLength) {
+    if (internal_value_slice.size() >= kSetsMetaValueSuffixLength) {
       user_value_ = Slice(internal_value_slice.data(),
-          internal_value_slice.size() - kSetesMetaValueSuffixLength);
+          internal_value_slice.size() - kSetsMetaValueSuffixLength);
       version_ = DecodeFixed32(internal_value_slice.data() +
             internal_value_slice.size() - sizeof(int32_t) * 2);
       timestamp_ = DecodeFixed32(internal_value_slice.data() +
@@ -72,15 +72,15 @@ class ParsedSetesMetaValue : public ParsedInternalValue {
 
   virtual void StripSuffix() override {
     if (value_ != nullptr) {
-      value_->erase(value_->size() - kSetesMetaValueSuffixLength,
-          kSetesMetaValueSuffixLength);
+      value_->erase(value_->size() - kSetsMetaValueSuffixLength,
+          kSetsMetaValueSuffixLength);
     }
   }
 
   virtual void SetVersionToValue() override {
     if (value_ != nullptr) {
       char* dst = const_cast<char*>(value_->data()) + value_->size() -
-        kSetesMetaValueSuffixLength;
+        kSetsMetaValueSuffixLength;
       EncodeFixed32(dst, version_);
     }
   }
@@ -92,7 +92,7 @@ class ParsedSetesMetaValue : public ParsedInternalValue {
       EncodeFixed32(dst, timestamp_);
     }
   }
-  static const size_t kSetesMetaValueSuffixLength = 2 * sizeof(int32_t);
+  static const size_t kSetsMetaValueSuffixLength = 2 * sizeof(int32_t);
 
   int32_t count() {
     return count_;
@@ -131,4 +131,4 @@ class ParsedSetesMetaValue : public ParsedInternalValue {
 };
 
 }  //  namespace blackwidow
-#endif  // SRC_SETES_META_VALUE_FORMAT_H_
+#endif  // SRC_SETS_META_VALUE_FORMAT_H_
