@@ -310,6 +310,17 @@ Status BlackWidow::SRem(const Slice& key,
   return setes_db_->SRem(key, members, ret);
 }
 
+Status BlackWidow::SUnion(const std::vector<std::string>& keys,
+                          std::vector<std::string>* members) {
+  return setes_db_->SUnion(keys, members);
+}
+
+Status BlackWidow::SUnionstore(const Slice& destination,
+                               const std::vector<std::string>& keys,
+                               int32_t* ret) {
+  return setes_db_->SUnionstore(destination, keys, ret);
+}
+
 // Keys Commands
 int32_t BlackWidow::Expire(const Slice& key, int32_t ttl,
                            std::map<DataType, Status>* type_status) {

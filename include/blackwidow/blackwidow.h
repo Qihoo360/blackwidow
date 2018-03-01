@@ -334,6 +334,31 @@ class BlackWidow {
   Status SRem(const Slice& key, const std::vector<std::string>& members,
               int32_t* ret);
 
+  // Returns the members of the set resulting from the union of all the given
+  // sets.
+  //
+  // For example:
+  //   key1 = {a, b, c, d}
+  //   key2 = {c}
+  //   key3 = {a, c, e}
+  //   SUNION key1 key2 key3 = {a, b, c, d, e}
+  Status SUnion(const std::vector<std::string>& keys,
+                std::vector<std::string>* members);
+
+  // This command is equal to SUNION, but instead of returning the resulting
+  // set, it is stored in destination.
+  // If destination already exists, it is overwritten.
+  //
+  // For example:
+  //   key1 = {a, b}
+  //   key2 = {c, d}
+  //   key3 = {c, d, e}
+  //   SUNIONSTORE destination key1 key2 key3
+  //   destination = {a, b, c, d, e}
+  Status SUnionstore(const Slice& destination,
+                     const std::vector<std::string>& keys,
+                     int32_t* ret);
+
   // Keys Commands
   enum DataType {
     kStrings,
