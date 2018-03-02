@@ -23,7 +23,7 @@ RedisSets::~RedisSets() {
 }
 
 Status RedisSets::Open(const rocksdb::Options& options,
-    const std::string& db_path) {
+                       const std::string& db_path) {
   rocksdb::Options ops(options);
   Status s = rocksdb::DB::Open(ops, db_path, &db_);
   if (s.ok()) {
@@ -58,7 +58,7 @@ Status RedisSets::Open(const rocksdb::Options& options,
 }
 
 Status RedisSets::SAdd(const Slice& key,
-                        const std::vector<std::string>& members, int32_t* ret) {
+                       const std::vector<std::string>& members, int32_t* ret) {
   std::unordered_set<std::string> unique;
   std::vector<std::string> filtered_members;
   for (auto iter = members.begin(); iter != members.end(); ++iter) {
@@ -145,7 +145,7 @@ Status RedisSets::SCard(const Slice& key, int32_t* ret) {
 }
 
 Status RedisSets::SDiff(const std::vector<std::string>& keys,
-                         std::vector<std::string>* members) {
+                        std::vector<std::string>* members) {
   if (keys.size() <= 0) {
     return Status::Corruption("SDiff invalid parameter, no keys");
   }
@@ -155,7 +155,6 @@ Status RedisSets::SDiff(const std::vector<std::string>& keys,
 
   std::string meta_value;
   int32_t version = 0;
-  MultiScopeRecordLock ml(lock_mgr_, keys);
   ScopeSnapshot ss(db_, &snapshot);
   read_options.snapshot = snapshot;
   std::vector<BlackWidow::KeyVersion> vaild_sets;
@@ -199,6 +198,7 @@ Status RedisSets::SDiff(const std::vector<std::string>& keys,
             found = true;
             break;
           } else if (!s.IsNotFound()) {
+            delete iter;
             return s;
           }
         }
@@ -206,6 +206,7 @@ Status RedisSets::SDiff(const std::vector<std::string>& keys,
           members->push_back(member.ToString());
         }
       }
+      delete iter;
     }
   } else if (!s.IsNotFound()) {
     return s;
@@ -214,14 +215,11 @@ Status RedisSets::SDiff(const std::vector<std::string>& keys,
 }
 
 Status RedisSets::SDiffstore(const Slice& destination,
-                              const std::vector<std::string>& keys,
-                              int32_t* ret) {
+                             const std::vector<std::string>& keys,
+                             int32_t* ret) {
   if (keys.size() <= 0) {
     return Status::Corruption("SDiffsotre invalid parameter, no keys");
   }
-
-  std::vector<std::string> tmp_keys(keys);
-  tmp_keys.push_back(destination.ToString());
 
   rocksdb::WriteBatch batch;
   rocksdb::ReadOptions read_options;
@@ -229,7 +227,7 @@ Status RedisSets::SDiffstore(const Slice& destination,
 
   std::string meta_value;
   int32_t version = 0;
-  MultiScopeRecordLock ml(lock_mgr_, tmp_keys);
+  ScopeRecordLock l(lock_mgr_, destination);
   ScopeSnapshot ss(db_, &snapshot);
   read_options.snapshot = snapshot;
   std::vector<BlackWidow::KeyVersion> vaild_sets;
@@ -274,6 +272,7 @@ Status RedisSets::SDiffstore(const Slice& destination,
             found = true;
             break;
           } else if (!s.IsNotFound()) {
+            delete iter;
             return s;
           }
         }
@@ -281,6 +280,7 @@ Status RedisSets::SDiffstore(const Slice& destination,
           members.push_back(member.ToString());
         }
       }
+      delete iter;
     }
   } else if (!s.IsNotFound()) {
     return s;
@@ -311,7 +311,7 @@ Status RedisSets::SDiffstore(const Slice& destination,
 }
 
 Status RedisSets::SInter(const std::vector<std::string>& keys,
-                          std::vector<std::string>* members) {
+                         std::vector<std::string>* members) {
   if (keys.size() <= 0) {
     return Status::Corruption("SInter invalid parameter, no keys");
   }
@@ -321,7 +321,6 @@ Status RedisSets::SInter(const std::vector<std::string>& keys,
 
   std::string meta_value;
   int32_t version = 0;
-  MultiScopeRecordLock ml(lock_mgr_, keys);
   ScopeSnapshot ss(db_, &snapshot);
   read_options.snapshot = snapshot;
   std::vector<BlackWidow::KeyVersion> vaild_sets;
@@ -375,6 +374,7 @@ Status RedisSets::SInter(const std::vector<std::string>& keys,
             reliable = false;
             break;
           } else {
+            delete iter;
             return s;
           }
         }
@@ -382,6 +382,7 @@ Status RedisSets::SInter(const std::vector<std::string>& keys,
           members->push_back(member.ToString());
         }
       }
+      delete iter;
     }
   } else if (s.IsNotFound()) {
     return Status::OK();
@@ -392,14 +393,11 @@ Status RedisSets::SInter(const std::vector<std::string>& keys,
 }
 
 Status RedisSets::SInterstore(const Slice& destination,
-                               const std::vector<std::string>& keys,
-                               int32_t* ret) {
+                              const std::vector<std::string>& keys,
+                              int32_t* ret) {
   if (keys.size() <= 0) {
     return Status::Corruption("SInterstore invalid parameter, no keys");
   }
-
-  std::vector<std::string> tmp_keys(keys);
-  tmp_keys.push_back(destination.ToString());
 
   rocksdb::WriteBatch batch;
   rocksdb::ReadOptions read_options;
@@ -408,7 +406,7 @@ Status RedisSets::SInterstore(const Slice& destination,
   std::string meta_value;
   int32_t version = 0;
   bool have_invalid_sets = false;
-  MultiScopeRecordLock ml(lock_mgr_, tmp_keys);
+  ScopeRecordLock l(lock_mgr_, destination);
   ScopeSnapshot ss(db_, &snapshot);
   read_options.snapshot = snapshot;
   std::vector<BlackWidow::KeyVersion> vaild_sets;
@@ -466,6 +464,7 @@ Status RedisSets::SInterstore(const Slice& destination,
               reliable = false;
               break;
             } else {
+              delete iter;
               return s;
             }
           }
@@ -473,6 +472,7 @@ Status RedisSets::SInterstore(const Slice& destination,
             members.push_back(member.ToString());
           }
         }
+        delete iter;
       }
     } else if (s.IsNotFound()) {
     } else {
@@ -505,13 +505,12 @@ Status RedisSets::SInterstore(const Slice& destination,
 }
 
 Status RedisSets::SIsmember(const Slice& key, const Slice& member,
-                             int32_t* ret) {
+                            int32_t* ret) {
   rocksdb::ReadOptions read_options;
   const rocksdb::Snapshot* snapshot;
 
   std::string meta_value;
   int32_t version = 0;
-  ScopeRecordLock l(lock_mgr_, key);
   ScopeSnapshot ss(db_, &snapshot);
   read_options.snapshot = snapshot;
   Status s = db_->Get(read_options, handles_[0], key, &meta_value);
@@ -535,13 +534,12 @@ Status RedisSets::SIsmember(const Slice& key, const Slice& member,
 }
 
 Status RedisSets::SMembers(const Slice& key,
-                            std::vector<std::string>* members) {
+                           std::vector<std::string>* members) {
   rocksdb::ReadOptions read_options;
   const rocksdb::Snapshot* snapshot;
 
   std::string meta_value;
   int32_t version = 0;
-  ScopeRecordLock l(lock_mgr_, key);
   ScopeSnapshot ss(db_, &snapshot);
   read_options.snapshot = snapshot;
   Status s = db_->Get(read_options, handles_[0], key, &meta_value);
@@ -560,6 +558,7 @@ Status RedisSets::SMembers(const Slice& key,
         ParsedSetsMemberKey parsed_sets_member_key(iter->key());
         members->push_back(parsed_sets_member_key.member().ToString());
       }
+      delete iter;
     }
   }
   return s;
@@ -648,8 +647,8 @@ Status RedisSets::SMove(const Slice& source, const Slice& destination,
 }
 
 Status RedisSets::SRem(const Slice& key,
-                        const std::vector<std::string>& members,
-                        int32_t* ret) {
+                       const std::vector<std::string>& members,
+                       int32_t* ret) {
   rocksdb::WriteBatch batch;
   rocksdb::ReadOptions read_options;
   const rocksdb::Snapshot* snapshot;
@@ -695,7 +694,7 @@ Status RedisSets::SRem(const Slice& key,
 }
 
 Status RedisSets::SUnion(const std::vector<std::string>& keys,
-                          std::vector<std::string>* members) {
+                         std::vector<std::string>* members) {
   if (keys.size() <= 0) {
     return Status::Corruption("SUnion invalid parameter, no keys");
   }
@@ -704,7 +703,6 @@ Status RedisSets::SUnion(const std::vector<std::string>& keys,
   const rocksdb::Snapshot* snapshot;
 
   std::string meta_value;
-  MultiScopeRecordLock ml(lock_mgr_, keys);
   ScopeSnapshot ss(db_, &snapshot);
   read_options.snapshot = snapshot;
   std::vector<BlackWidow::KeyVersion> vaild_sets;
@@ -738,19 +736,17 @@ Status RedisSets::SUnion(const std::vector<std::string>& keys,
         result_flag[member] = true;
       }
     }
+    delete iter;
   }
   return Status::OK();
 }
 
 Status RedisSets::SUnionstore(const Slice& destination,
-                               const std::vector<std::string>& keys,
-                               int32_t* ret) {
+                              const std::vector<std::string>& keys,
+                              int32_t* ret) {
   if (keys.size() <= 0) {
     return Status::Corruption("SUnionstore invalid parameter, no keys");
   }
-
-  std::vector<std::string> tmp_keys(keys);
-  tmp_keys.push_back(destination.ToString());
 
   rocksdb::WriteBatch batch;
   rocksdb::ReadOptions read_options;
@@ -758,7 +754,7 @@ Status RedisSets::SUnionstore(const Slice& destination,
 
   std::string meta_value;
   int32_t version = 0;
-  MultiScopeRecordLock ml(lock_mgr_, tmp_keys);
+  ScopeRecordLock l(lock_mgr_, destination);
   ScopeSnapshot ss(db_, &snapshot);
   read_options.snapshot = snapshot;
   std::vector<BlackWidow::KeyVersion> vaild_sets;
@@ -793,6 +789,7 @@ Status RedisSets::SUnionstore(const Slice& destination,
         result_flag[member] = true;
       }
     }
+    delete iter;
   }
 
   s = db_->Get(read_options, handles_[0], destination, &meta_value);
@@ -860,10 +857,10 @@ Status RedisSets::Del(const Slice& key) {
 }
 
 bool RedisSets::Scan(const std::string& start_key,
-                      const std::string& pattern,
-                      std::vector<std::string>* keys,
-                      int64_t* count,
-                      std::string* next_key) {
+                     const std::string& pattern,
+                     std::vector<std::string>* keys,
+                     int64_t* count,
+                     std::string* next_key) {
   std::string meta_key, meta_value;
   bool is_finish = true;
   rocksdb::ReadOptions iterator_options;
@@ -965,7 +962,7 @@ Status RedisSets::TTL(const Slice& key, int64_t* timestamp) {
 
 
 Status RedisSets::CompactRange(const rocksdb::Slice* begin,
-    const rocksdb::Slice* end) {
+                               const rocksdb::Slice* end) {
   Status s = db_->CompactRange(default_compact_range_options_,
       handles_[0], begin, end);
   if (!s.ok()) {

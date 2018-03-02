@@ -31,11 +31,11 @@ class SetsTest : public ::testing::Test {
   blackwidow::Status s;
 };
 
-static bool members_match(blackwidow::BlackWidow& db,
+static bool members_match(blackwidow::BlackWidow *const db,
                           const Slice& key,
                           const std::vector<std::string>& expect_members) {
   std::vector<std::string> mm_out;
-  Status s = db.SMembers(key, &mm_out);
+  Status s = db->SMembers(key, &mm_out);
   if (!s.ok() && !s.IsNotFound()) {
     return false;
   }
@@ -54,7 +54,7 @@ static bool members_match(blackwidow::BlackWidow& db,
 }
 
 static bool members_match(const std::vector<std::string>& mm_out,
-                         const std::vector<std::string>& expect_members) {
+                          const std::vector<std::string>& expect_members) {
   if (mm_out.size() != expect_members.size()) {
     return false;
   }
@@ -66,11 +66,11 @@ static bool members_match(const std::vector<std::string>& mm_out,
   return true;
 }
 
-static bool size_match(blackwidow::BlackWidow& db,
+static bool size_match(blackwidow::BlackWidow *const db,
                        const Slice& key,
                        int32_t expect_size) {
   int32_t size = 0;
-  Status s = db.SCard(key, &size);
+  Status s = db->SCard(key, &size);
   if (!s.ok() && !s.IsNotFound()) {
     return false;
   }
@@ -80,10 +80,10 @@ static bool size_match(blackwidow::BlackWidow& db,
   return size == expect_size;
 }
 
-static bool make_expired(blackwidow::BlackWidow& db,
+static bool make_expired(blackwidow::BlackWidow *const db,
                          const Slice& key) {
   std::map<BlackWidow::DataType, rocksdb::Status> type_status;
-  int ret = db.Expire(key, 1, &type_status);
+  int ret = db->Expire(key, 1, &type_status);
   if (!ret || !type_status[BlackWidow::DataType::kSets].ok()) {
     return false;
   }
@@ -98,41 +98,41 @@ TEST_F(SetsTest, SAddTest) {
   s = db.SAdd("SADD_KEY", members1, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 3);
-  ASSERT_TRUE(size_match(db, "SADD_KEY", 3));
-  ASSERT_TRUE(members_match(db, "SADD_KEY", {"a", "b", "c"}));
+  ASSERT_TRUE(size_match(&db, "SADD_KEY", 3));
+  ASSERT_TRUE(members_match(&db, "SADD_KEY", {"a", "b", "c"}));
 
   std::vector<std::string> members2 {"d", "e"};
   s = db.SAdd("SADD_KEY", members2, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 2);
-  ASSERT_TRUE(size_match(db, "SADD_KEY", 5));
-  ASSERT_TRUE(members_match(db, "SADD_KEY", {"a", "b", "c", "d", "e"}));
+  ASSERT_TRUE(size_match(&db, "SADD_KEY", 5));
+  ASSERT_TRUE(members_match(&db, "SADD_KEY", {"a", "b", "c", "d", "e"}));
 
   // The key has timeout
-  ASSERT_TRUE(make_expired(db, "SADD_KEY"));
-  ASSERT_TRUE(size_match(db, "SADD_KEY", 0));
+  ASSERT_TRUE(make_expired(&db, "SADD_KEY"));
+  ASSERT_TRUE(size_match(&db, "SADD_KEY", 0));
 
   std::vector<std::string> members3 {"a", "b"};
   s = db.SAdd("SADD_KEY", members3, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 2);
-  ASSERT_TRUE(size_match(db, "SADD_KEY", 2));
-  ASSERT_TRUE(members_match(db, "SADD_KEY", {"a", "b"}));
+  ASSERT_TRUE(size_match(&db, "SADD_KEY", 2));
+  ASSERT_TRUE(members_match(&db, "SADD_KEY", {"a", "b"}));
 
   // Delete the key
   std::vector<rocksdb::Slice> del_keys = {"SADD_KEY"};
   std::map<BlackWidow::DataType, blackwidow::Status> type_status;
   db.Del(del_keys, &type_status);
   ASSERT_TRUE(type_status[BlackWidow::DataType::kSets].ok());
-  ASSERT_TRUE(size_match(db, "SADD_KEY", 0));
-  ASSERT_TRUE(members_match(db, "SADD_KEY", {}));
+  ASSERT_TRUE(size_match(&db, "SADD_KEY", 0));
+  ASSERT_TRUE(members_match(&db, "SADD_KEY", {}));
 
   std::vector<std::string> members4 {"a", "x", "l"};
   s = db.SAdd("SADD_KEY", members4, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 3);
-  ASSERT_TRUE(size_match(db, "SADD_KEY", 3));
-  ASSERT_TRUE(members_match(db, "SADD_KEY", {"a", "x", "l"}));
+  ASSERT_TRUE(size_match(&db, "SADD_KEY", 3));
+  ASSERT_TRUE(members_match(&db, "SADD_KEY", {"a", "x", "l"}));
 }
 
 // SCard
@@ -261,7 +261,7 @@ TEST_F(SetsTest, SDiffTest) {
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 3);
 
-  ASSERT_TRUE(make_expired(db, "GP4_SDIFF_KEY1"));
+  ASSERT_TRUE(make_expired(&db, "GP4_SDIFF_KEY1"));
 
   std::vector<std::string> gp4_keys {"GP4_SDIFF_KEY1",
       "GP4_SDIFF_KEY2", "GP4_SDIFF_KEY3"};
@@ -343,8 +343,8 @@ TEST_F(SetsTest, SDiffstoreTest) {
   s = db.SDiffstore("GP1_SDIFFSTORE_DESTINATION1", gp1_keys, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 2);
-  ASSERT_TRUE(size_match(db, "GP1_SDIFFSTORE_DESTINATION1", 2));
-  ASSERT_TRUE(members_match(db, "GP1_SDIFFSTORE_DESTINATION1", {"b", "d"}));
+  ASSERT_TRUE(size_match(&db, "GP1_SDIFFSTORE_DESTINATION1", 2));
+  ASSERT_TRUE(members_match(&db, "GP1_SDIFFSTORE_DESTINATION1", {"b", "d"}));
 
   // destination = {};
   // key1 = {a, b, c, d}
@@ -361,8 +361,9 @@ TEST_F(SetsTest, SDiffstoreTest) {
   s = db.SDiffstore("GP1_SDIFFSTORE_DESTINATION2", gp1_keys, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 3);
-  ASSERT_TRUE(size_match(db, "GP1_SDIFFSTORE_DESTINATION2", 3));
-  ASSERT_TRUE(members_match(db, "GP1_SDIFFSTORE_DESTINATION2", {"a", "b", "d"}));
+  ASSERT_TRUE(size_match(&db, "GP1_SDIFFSTORE_DESTINATION2", 3));
+  ASSERT_TRUE(members_match(&db, "GP1_SDIFFSTORE_DESTINATION2",
+              {"a", "b", "d"}));
 
   // destination = {};
   // key1 = {a, b, c, d}
@@ -376,8 +377,9 @@ TEST_F(SetsTest, SDiffstoreTest) {
   s = db.SDiffstore("GP1_SDIFFSTORE_DESTINATION3", gp1_keys, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 3);
-  ASSERT_TRUE(size_match(db, "GP1_SDIFFSTORE_DESTINATION3", 3));
-  ASSERT_TRUE(members_match(db, "GP1_SDIFFSTORE_DESTINATION3", {"a", "b", "d"}));
+  ASSERT_TRUE(size_match(&db, "GP1_SDIFFSTORE_DESTINATION3", 3));
+  ASSERT_TRUE(members_match(&db, "GP1_SDIFFSTORE_DESTINATION3",
+              {"a", "b", "d"}));
 
 
   // ***************** Group 2 Test *****************
@@ -406,8 +408,8 @@ TEST_F(SetsTest, SDiffstoreTest) {
   s = db.SDiffstore("GP2_SDIFFSTORE_DESTINATION1", gp2_keys, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 0);
-  ASSERT_TRUE(size_match(db, "GP2_SDIFFSTORE_DESTINATION1", 0));
-  ASSERT_TRUE(members_match(db, "GP2_SDIFFSTORE_DESTINATION1", {}));
+  ASSERT_TRUE(size_match(&db, "GP2_SDIFFSTORE_DESTINATION1", 0));
+  ASSERT_TRUE(members_match(&db, "GP2_SDIFFSTORE_DESTINATION1", {}));
 
 
   // ***************** Group 3 Test *****************
@@ -425,8 +427,9 @@ TEST_F(SetsTest, SDiffstoreTest) {
   s = db.SDiffstore("GP3_SDIFFSTORE_DESTINATION1", gp3_keys, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 4);
-  ASSERT_TRUE(size_match(db, "GP3_SDIFFSTORE_DESTINATION1", 4));
-  ASSERT_TRUE(members_match(db, "GP3_SDIFFSTORE_DESTINATION1", {"a", "b", "c", "d"}));
+  ASSERT_TRUE(size_match(&db, "GP3_SDIFFSTORE_DESTINATION1", 4));
+  ASSERT_TRUE(members_match(&db, "GP3_SDIFFSTORE_DESTINATION1",
+              {"a", "b", "c", "d"}));
 
 
   // ***************** Group 4 Test *****************
@@ -449,7 +452,7 @@ TEST_F(SetsTest, SDiffstoreTest) {
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 3);
 
-  ASSERT_TRUE(make_expired(db, "GP4_SDIFFSTORE_KEY1"));
+  ASSERT_TRUE(make_expired(&db, "GP4_SDIFFSTORE_KEY1"));
 
   std::vector<std::string> gp4_keys {"GP4_SDIFFSTORE_KEY1",
       "GP4_SDIFFSTORE_KEY2", "GP4_SDIFFSTORE_KEY3"};
@@ -457,8 +460,8 @@ TEST_F(SetsTest, SDiffstoreTest) {
   s = db.SDiffstore("GP4_SDIFFSTORE_DESTINATION1", gp4_keys, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 0);
-  ASSERT_TRUE(size_match(db, "GP4_SDIFFSTORE_DESTINATION1", 0));
-  ASSERT_TRUE(members_match(db, "GP4_SDIFFSTORE_DESTINATION1", {}));
+  ASSERT_TRUE(size_match(&db, "GP4_SDIFFSTORE_DESTINATION1", 0));
+  ASSERT_TRUE(members_match(&db, "GP4_SDIFFSTORE_DESTINATION1", {}));
 
 
   // ***************** Group 5 Test *****************
@@ -491,8 +494,8 @@ TEST_F(SetsTest, SDiffstoreTest) {
   s = db.SDiffstore("GP5_SDIFFSTORE_DESTINATION1", gp5_keys, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 2);
-  ASSERT_TRUE(size_match(db, "GP5_SDIFFSTORE_DESTINATION1", 2));
-  ASSERT_TRUE(members_match(db, "GP5_SDIFFSTORE_DESTINATION1", {"b", "d"}));
+  ASSERT_TRUE(size_match(&db, "GP5_SDIFFSTORE_DESTINATION1", 2));
+  ASSERT_TRUE(members_match(&db, "GP5_SDIFFSTORE_DESTINATION1", {"b", "d"}));
 
 
   // ***************** Group 6 Test *****************
@@ -521,8 +524,8 @@ TEST_F(SetsTest, SDiffstoreTest) {
   s = db.SDiffstore("GP6_SDIFFSTORE_DESTINATION1", gp6_keys, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 2);
-  ASSERT_TRUE(size_match(db, "GP6_SDIFFSTORE_DESTINATION1", 2));
-  ASSERT_TRUE(members_match(db, "GP6_SDIFFSTORE_DESTINATION1", {"b", "d"}));
+  ASSERT_TRUE(size_match(&db, "GP6_SDIFFSTORE_DESTINATION1", 2));
+  ASSERT_TRUE(members_match(&db, "GP6_SDIFFSTORE_DESTINATION1", {"b", "d"}));
 
 
   // ***************** Group 7 Test *****************
@@ -551,15 +554,15 @@ TEST_F(SetsTest, SDiffstoreTest) {
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 3);
 
-  ASSERT_TRUE(make_expired(db, "GP7_SDIFFSTORE_DESTINATION1"));
+  ASSERT_TRUE(make_expired(&db, "GP7_SDIFFSTORE_DESTINATION1"));
 
   std::vector<std::string> gp7_keys {"GP7_SDIFFSTORE_KEY1",
       "GP7_SDIFFSTORE_KEY2", "GP7_SDIFFSTORE_KEY3"};
   s = db.SDiffstore("GP7_SDIFFSTORE_DESTINATION1", gp7_keys, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 2);
-  ASSERT_TRUE(size_match(db, "GP7_SDIFFSTORE_DESTINATION1", 2));
-  ASSERT_TRUE(members_match(db, "GP7_SDIFFSTORE_DESTINATION1", {"b", "d"}));
+  ASSERT_TRUE(size_match(&db, "GP7_SDIFFSTORE_DESTINATION1", 2));
+  ASSERT_TRUE(members_match(&db, "GP7_SDIFFSTORE_DESTINATION1", {"b", "d"}));
 }
 
 // SInter
@@ -595,7 +598,7 @@ TEST_F(SetsTest, SInterTest) {
   // key2 = {a, c}
   // key3 = {a, c, e}       (expire)
   // SINTER key1 key2 key3  = {}
-  ASSERT_TRUE(make_expired(db, "GP1_SINTER_KEY3"));
+  ASSERT_TRUE(make_expired(&db, "GP1_SINTER_KEY3"));
 
   gp1_members_out.clear();
   s = db.SInter(gp1_keys, &gp1_members_out);
@@ -758,8 +761,8 @@ TEST_F(SetsTest, SInterstoreTest) {
   s = db.SInterstore("GP1_SINTERSTORE_DESTINATION1", gp1_keys, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 2);
-  ASSERT_TRUE(size_match(db, "GP1_SINTERSTORE_DESTINATION1", 2));
-  ASSERT_TRUE(members_match(db, "GP1_SINTERSTORE_DESTINATION1", {"a", "c"}));
+  ASSERT_TRUE(size_match(&db, "GP1_SINTERSTORE_DESTINATION1", 2));
+  ASSERT_TRUE(members_match(&db, "GP1_SINTERSTORE_DESTINATION1", {"a", "c"}));
 
 
   // ***************** Group 2 Test *****************
@@ -792,8 +795,8 @@ TEST_F(SetsTest, SInterstoreTest) {
   s = db.SInterstore("GP2_SINTERSTORE_DESTINATION1", gp2_keys, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 2);
-  ASSERT_TRUE(size_match(db, "GP2_SINTERSTORE_DESTINATION1", 2));
-  ASSERT_TRUE(members_match(db, "GP2_SINTERSTORE_DESTINATION1", {"a", "c"}));
+  ASSERT_TRUE(size_match(&db, "GP2_SINTERSTORE_DESTINATION1", 2));
+  ASSERT_TRUE(members_match(&db, "GP2_SINTERSTORE_DESTINATION1", {"a", "c"}));
 
 
   // ***************** Group 3 Test *****************
@@ -822,8 +825,8 @@ TEST_F(SetsTest, SInterstoreTest) {
   s = db.SInterstore("GP3_SINTERSTORE_DESTINATION1", gp3_keys, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 0);
-  ASSERT_TRUE(size_match(db, "GP3_SINTERSTORE_DESTINATION1", 0));
-  ASSERT_TRUE(members_match(db, "GP3_SINTERSTORE_DESTINATION1", {}));
+  ASSERT_TRUE(size_match(&db, "GP3_SINTERSTORE_DESTINATION1", 0));
+  ASSERT_TRUE(members_match(&db, "GP3_SINTERSTORE_DESTINATION1", {}));
 
 
   // ***************** Group 4 Test *****************
@@ -846,15 +849,15 @@ TEST_F(SetsTest, SInterstoreTest) {
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 3);
 
-  ASSERT_TRUE(make_expired(db, "GP4_SINTERSTORE_KEY2"));
+  ASSERT_TRUE(make_expired(&db, "GP4_SINTERSTORE_KEY2"));
 
   std::vector<std::string> gp4_keys {"GP4_SINTERSTORE_KEY1",
       "GP4_SINTERSTORE_KEY2", "GP4_SINTERSTORE_KEY3"};
   s = db.SInterstore("GP4_SINTERSTORE_DESTINATION1", gp4_keys, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 0);
-  ASSERT_TRUE(size_match(db, "GP4_SINTERSTORE_DESTINATION1", 0));
-  ASSERT_TRUE(members_match(db, "GP4_SINTERSTORE_DESTINATION1", {}));
+  ASSERT_TRUE(size_match(&db, "GP4_SINTERSTORE_DESTINATION1", 0));
+  ASSERT_TRUE(members_match(&db, "GP4_SINTERSTORE_DESTINATION1", {}));
 
 
   // ***************** Group 5 Test *****************
@@ -877,15 +880,15 @@ TEST_F(SetsTest, SInterstoreTest) {
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 3);
 
-  ASSERT_TRUE(make_expired(db, "GP5_SINTERSTORE_KEY1"));
+  ASSERT_TRUE(make_expired(&db, "GP5_SINTERSTORE_KEY1"));
 
   std::vector<std::string> gp5_keys {"GP5_SINTERSTORE_KEY1",
       "GP5_SINTERSTORE_KEY2", "GP5_SINTERSTORE_KEY3"};
   s = db.SInterstore("GP5_SINTERSTORE_DESTINATION1", gp5_keys, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 0);
-  ASSERT_TRUE(size_match(db, "GP5_SINTERSTORE_DESTINATION1", 0));
-  ASSERT_TRUE(members_match(db, "GP5_SINTERSTORE_DESTINATION1", {}));
+  ASSERT_TRUE(size_match(&db, "GP5_SINTERSTORE_DESTINATION1", 0));
+  ASSERT_TRUE(members_match(&db, "GP5_SINTERSTORE_DESTINATION1", {}));
 
 
   // ***************** Group 6 Test *****************
@@ -920,8 +923,8 @@ TEST_F(SetsTest, SInterstoreTest) {
   s = db.SInterstore("GP6_SINTERSTORE_DESTINATION1", gp6_keys, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 0);
-  ASSERT_TRUE(size_match(db, "GP6_SINTERSTORE_DESTINATION1", 0));
-  ASSERT_TRUE(members_match(db, "GP6_SINTERSTORE_DESTINATION1", {}));
+  ASSERT_TRUE(size_match(&db, "GP6_SINTERSTORE_DESTINATION1", 0));
+  ASSERT_TRUE(members_match(&db, "GP6_SINTERSTORE_DESTINATION1", {}));
 
 
   // ***************** Group 7 Test *****************
@@ -949,8 +952,8 @@ TEST_F(SetsTest, SInterstoreTest) {
   s = db.SInterstore("GP7_SINTERSTORE_DESTINATION1", gp7_keys, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 0);
-  ASSERT_TRUE(size_match(db, "GP7_SINTERSTORE_DESTINATION1", 0));
-  ASSERT_TRUE(members_match(db, "GP7_SINTERSTORE_DESTINATION1", {}));
+  ASSERT_TRUE(size_match(&db, "GP7_SINTERSTORE_DESTINATION1", 0));
+  ASSERT_TRUE(members_match(&db, "GP7_SINTERSTORE_DESTINATION1", {}));
 
 
   // ***************** Group 8 Test *****************
@@ -979,8 +982,9 @@ TEST_F(SetsTest, SInterstoreTest) {
   s = db.SInterstore("GP8_SINTERSTORE_DESTINATION1", gp8_keys, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 4);
-  ASSERT_TRUE(size_match(db, "GP8_SINTERSTORE_DESTINATION1", 4));
-  ASSERT_TRUE(members_match(db, "GP8_SINTERSTORE_DESTINATION1", {"a", "b", "c", "d"}));
+  ASSERT_TRUE(size_match(&db, "GP8_SINTERSTORE_DESTINATION1", 4));
+  ASSERT_TRUE(members_match(&db, "GP8_SINTERSTORE_DESTINATION1",
+              {"a", "b", "c", "d"}));
 }
 
 
@@ -1059,11 +1063,11 @@ TEST_F(SetsTest, SMembersTest) {
   ASSERT_TRUE(members_match(members_out, mid_members_in));
 
   // SMembers timeout setes
-  ASSERT_TRUE(make_expired(db, "B_SMEMBERS_KEY"));
-  ASSERT_TRUE(members_match(db, "B_SMEMBERS_KEY", {}));
+  ASSERT_TRUE(make_expired(&db, "B_SMEMBERS_KEY"));
+  ASSERT_TRUE(members_match(&db, "B_SMEMBERS_KEY", {}));
 
   // SMembers not exist setes
-  ASSERT_TRUE(members_match(db, "SMEMBERS_NOT_EXIST_KEY", {}));
+  ASSERT_TRUE(members_match(&db, "SMEMBERS_NOT_EXIST_KEY", {}));
 }
 
 // SMove
@@ -1088,10 +1092,10 @@ TEST_F(SetsTest, SMoveTest) {
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 1);
 
-  ASSERT_TRUE(size_match(db, "GP1_SMOVE_SOURCE", 3));
-  ASSERT_TRUE(members_match(db, "GP1_SMOVE_SOURCE", {"a", "b", "c"}));
-  ASSERT_TRUE(size_match(db, "GP1_SMOVE_DESTINATION", 3));
-  ASSERT_TRUE(members_match(db, "GP1_SMOVE_DESTINATION", {"a", "c", "d"}));
+  ASSERT_TRUE(size_match(&db, "GP1_SMOVE_SOURCE", 3));
+  ASSERT_TRUE(members_match(&db, "GP1_SMOVE_SOURCE", {"a", "b", "c"}));
+  ASSERT_TRUE(size_match(&db, "GP1_SMOVE_DESTINATION", 3));
+  ASSERT_TRUE(members_match(&db, "GP1_SMOVE_DESTINATION", {"a", "c", "d"}));
 
 
   // ***************** Group 2 Test *****************
@@ -1109,16 +1113,16 @@ TEST_F(SetsTest, SMoveTest) {
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 2);
 
-  ASSERT_TRUE(make_expired(db, "GP2_SMOVE_DESTINATION"));
+  ASSERT_TRUE(make_expired(&db, "GP2_SMOVE_DESTINATION"));
 
   s = db.SMove("GP2_SMOVE_SOURCE", "GP2_SMOVE_DESTINATION", "d", &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 1);
 
-  ASSERT_TRUE(size_match(db, "GP2_SMOVE_SOURCE", 3));
-  ASSERT_TRUE(members_match(db, "GP2_SMOVE_SOURCE", {"a", "b", "c"}));
-  ASSERT_TRUE(size_match(db, "GP2_SMOVE_DESTINATION", 1));
-  ASSERT_TRUE(members_match(db, "GP2_SMOVE_DESTINATION", {"d"}));
+  ASSERT_TRUE(size_match(&db, "GP2_SMOVE_SOURCE", 3));
+  ASSERT_TRUE(members_match(&db, "GP2_SMOVE_SOURCE", {"a", "b", "c"}));
+  ASSERT_TRUE(size_match(&db, "GP2_SMOVE_DESTINATION", 1));
+  ASSERT_TRUE(members_match(&db, "GP2_SMOVE_DESTINATION", {"d"}));
 
 
   // ***************** Group 3 Test *****************
@@ -1147,10 +1151,10 @@ TEST_F(SetsTest, SMoveTest) {
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 1);
 
-  ASSERT_TRUE(size_match(db, "GP3_SMOVE_SOURCE", 2));
-  ASSERT_TRUE(members_match(db, "GP3_SMOVE_SOURCE", {"a", "l"}));
-  ASSERT_TRUE(size_match(db, "GP3_SMOVE_DESTINATION", 1));
-  ASSERT_TRUE(members_match(db, "GP3_SMOVE_DESTINATION", {"x"}));
+  ASSERT_TRUE(size_match(&db, "GP3_SMOVE_SOURCE", 2));
+  ASSERT_TRUE(members_match(&db, "GP3_SMOVE_SOURCE", {"a", "l"}));
+  ASSERT_TRUE(size_match(&db, "GP3_SMOVE_DESTINATION", 1));
+  ASSERT_TRUE(members_match(&db, "GP3_SMOVE_DESTINATION", {"x"}));
 
 
   // ***************** Group 4 Test *****************
@@ -1167,10 +1171,10 @@ TEST_F(SetsTest, SMoveTest) {
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 1);
 
-  ASSERT_TRUE(size_match(db, "GP4_SMOVE_SOURCE", 2));
-  ASSERT_TRUE(members_match(db, "GP4_SMOVE_SOURCE", {"a", "l"}));
-  ASSERT_TRUE(size_match(db, "GP4_SMOVE_NOT_EXIST_KEY", 1));
-  ASSERT_TRUE(members_match(db, "GP4_SMOVE_NOT_EXIST_KEY", {"x"}));
+  ASSERT_TRUE(size_match(&db, "GP4_SMOVE_SOURCE", 2));
+  ASSERT_TRUE(members_match(&db, "GP4_SMOVE_SOURCE", {"a", "l"}));
+  ASSERT_TRUE(size_match(&db, "GP4_SMOVE_NOT_EXIST_KEY", 1));
+  ASSERT_TRUE(members_match(&db, "GP4_SMOVE_NOT_EXIST_KEY", {"x"}));
 
 
   // ***************** Group 5 Test *****************
@@ -1199,10 +1203,10 @@ TEST_F(SetsTest, SMoveTest) {
   ASSERT_TRUE(s.IsNotFound());
   ASSERT_EQ(ret, 0);
 
-  ASSERT_TRUE(size_match(db, "GP5_SMOVE_SOURCE", 0));
-  ASSERT_TRUE(members_match(db, "GP5_SMOVE_SOURCE", {}));
-  ASSERT_TRUE(size_match(db, "GP5_SMOVE_DESTINATION", 3));
-  ASSERT_TRUE(members_match(db, "GP5_SMOVE_DESTINATION", {"a", "x", "l"}));
+  ASSERT_TRUE(size_match(&db, "GP5_SMOVE_SOURCE", 0));
+  ASSERT_TRUE(members_match(&db, "GP5_SMOVE_SOURCE", {}));
+  ASSERT_TRUE(size_match(&db, "GP5_SMOVE_DESTINATION", 3));
+  ASSERT_TRUE(members_match(&db, "GP5_SMOVE_DESTINATION", {"a", "x", "l"}));
 
 
   // ***************** Group 6 Test *****************
@@ -1220,16 +1224,16 @@ TEST_F(SetsTest, SMoveTest) {
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 2);
 
-  ASSERT_TRUE(make_expired(db, "GP6_SMOVE_SOURCE"));
+  ASSERT_TRUE(make_expired(&db, "GP6_SMOVE_SOURCE"));
 
   s = db.SMove("GP6_SMOVE_SOURCE", "GP6_SMOVE_DESTINATION", "d", &ret);
   ASSERT_TRUE(s.IsNotFound());
   ASSERT_EQ(ret, 0);
 
-  ASSERT_TRUE(size_match(db, "GP6_SMOVE_SOURCE", 0));
-  ASSERT_TRUE(members_match(db, "GP6_SMOVE_SOURCE", {}));
-  ASSERT_TRUE(size_match(db, "GP6_SMOVE_DESTINATION", 2));
-  ASSERT_TRUE(members_match(db, "GP6_SMOVE_DESTINATION", {"a", "c"}));
+  ASSERT_TRUE(size_match(&db, "GP6_SMOVE_SOURCE", 0));
+  ASSERT_TRUE(members_match(&db, "GP6_SMOVE_SOURCE", {}));
+  ASSERT_TRUE(size_match(&db, "GP6_SMOVE_DESTINATION", 2));
+  ASSERT_TRUE(members_match(&db, "GP6_SMOVE_DESTINATION", {"a", "c"}));
 
 
   // ***************** Group 7 Test *****************
@@ -1251,10 +1255,10 @@ TEST_F(SetsTest, SMoveTest) {
   ASSERT_TRUE(s.IsNotFound());
   ASSERT_EQ(ret, 0);
 
-  ASSERT_TRUE(size_match(db, "GP7_SMOVE_SOURCE", 4));
-  ASSERT_TRUE(members_match(db, "GP7_SMOVE_SOURCE", {"a", "b", "c", "d"}));
-  ASSERT_TRUE(size_match(db, "GP7_SMOVE_DESTINATION", 2));
-  ASSERT_TRUE(members_match(db, "GP7_SMOVE_DESTINATION", {"a", "c"}));
+  ASSERT_TRUE(size_match(&db, "GP7_SMOVE_SOURCE", 4));
+  ASSERT_TRUE(members_match(&db, "GP7_SMOVE_SOURCE", {"a", "b", "c", "d"}));
+  ASSERT_TRUE(size_match(&db, "GP7_SMOVE_DESTINATION", 2));
+  ASSERT_TRUE(members_match(&db, "GP7_SMOVE_DESTINATION", {"a", "c"}));
 
 
   // ***************** Group 8 Test *****************
@@ -1276,10 +1280,10 @@ TEST_F(SetsTest, SMoveTest) {
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 1);
 
-  ASSERT_TRUE(size_match(db, "GP8_SMOVE_SOURCE", 3));
-  ASSERT_TRUE(members_match(db, "GP8_SMOVE_SOURCE", {"a", "b", "c"}));
-  ASSERT_TRUE(size_match(db, "GP8_SMOVE_DESTINATION", 3));
-  ASSERT_TRUE(members_match(db, "GP8_SMOVE_DESTINATION", {"a", "c", "d"}));
+  ASSERT_TRUE(size_match(&db, "GP8_SMOVE_SOURCE", 3));
+  ASSERT_TRUE(members_match(&db, "GP8_SMOVE_SOURCE", {"a", "b", "c"}));
+  ASSERT_TRUE(size_match(&db, "GP8_SMOVE_DESTINATION", 3));
+  ASSERT_TRUE(members_match(&db, "GP8_SMOVE_DESTINATION", {"a", "c", "d"}));
 }
 
 // SRem
@@ -1297,8 +1301,8 @@ TEST_F(SetsTest, SRemTest) {
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 2);
 
-  ASSERT_TRUE(size_match(db, "GP1_SREM_KEY", 2));
-  ASSERT_TRUE(members_match(db, "GP1_SREM_KEY", {"c", "d"}));
+  ASSERT_TRUE(size_match(&db, "GP1_SREM_KEY", 2));
+  ASSERT_TRUE(members_match(&db, "GP1_SREM_KEY", {"c", "d"}));
 
 
   // ***************** Group 2 Test *****************
@@ -1313,8 +1317,8 @@ TEST_F(SetsTest, SRemTest) {
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 0);
 
-  ASSERT_TRUE(size_match(db, "GP2_SREM_KEY", 4));
-  ASSERT_TRUE(members_match(db, "GP2_SREM_KEY", {"a", "b", "c", "d"}));
+  ASSERT_TRUE(size_match(&db, "GP2_SREM_KEY", 4));
+  ASSERT_TRUE(members_match(&db, "GP2_SREM_KEY", {"a", "b", "c", "d"}));
 
 
   // ***************** Group 3 Test *****************
@@ -1332,15 +1336,15 @@ TEST_F(SetsTest, SRemTest) {
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 4);
 
-  ASSERT_TRUE(make_expired(db, "GP4_SREM_KEY"));
+  ASSERT_TRUE(make_expired(&db, "GP4_SREM_KEY"));
 
   std::vector<std::string> gp4_del_members {"a", "b"};
   s = db.SRem("GP4_SREM_KEY", gp4_del_members, &ret);
   ASSERT_TRUE(s.IsNotFound());
   ASSERT_EQ(ret, 0);
 
-  ASSERT_TRUE(size_match(db, "GP4_SREM_KEY", 0));
-  ASSERT_TRUE(members_match(db, "GP4_SREM_KEY", {}));
+  ASSERT_TRUE(size_match(&db, "GP4_SREM_KEY", 0));
+  ASSERT_TRUE(members_match(&db, "GP4_SREM_KEY", {}));
 }
 
 // SUnion
@@ -1494,8 +1498,9 @@ TEST_F(SetsTest, SUnionstoreTest) {
   s = db.SUnionstore("GP1_SUNIONSTORE_DESTINATION1", gp1_keys, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 5);
-  ASSERT_TRUE(size_match(db, "GP1_SUNIONSTORE_DESTINATION1", 5));
-  ASSERT_TRUE(members_match(db, "GP1_SUNIONSTORE_DESTINATION1", {"a", "b", "c", "d", "e"}));
+  ASSERT_TRUE(size_match(&db, "GP1_SUNIONSTORE_DESTINATION1", 5));
+  ASSERT_TRUE(members_match(&db, "GP1_SUNIONSTORE_DESTINATION1",
+              {"a", "b", "c", "d", "e"}));
 
   // destination = {}
   // key1 = {a, b, c, d}
@@ -1503,13 +1508,14 @@ TEST_F(SetsTest, SUnionstoreTest) {
   // key3 = {a, c, e}          (expire key);
   // SUNIONSTORE destination key1 key2 key3
   // destination = {a, b, c, d}
-  ASSERT_TRUE(make_expired(db, "GP1_SUNIONSTORE_KEY3"));
+  ASSERT_TRUE(make_expired(&db, "GP1_SUNIONSTORE_KEY3"));
 
   s = db.SUnionstore("GP1_SUNIONSTORE_DESTINATION1", gp1_keys, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 4);
-  ASSERT_TRUE(size_match(db, "GP1_SUNIONSTORE_DESTINATION1", 4));
-  ASSERT_TRUE(members_match(db, "GP1_SUNIONSTORE_DESTINATION1", {"a", "b", "c", "d"}));
+  ASSERT_TRUE(size_match(&db, "GP1_SUNIONSTORE_DESTINATION1", 4));
+  ASSERT_TRUE(members_match(&db, "GP1_SUNIONSTORE_DESTINATION1",
+              {"a", "b", "c", "d"}));
 
 
   // ***************** Group 2 Test *****************
@@ -1538,8 +1544,9 @@ TEST_F(SetsTest, SUnionstoreTest) {
   s = db.SUnionstore("GP2_SUNIONSTORE_DESTINATION1", gp2_keys, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 5);
-  ASSERT_TRUE(size_match(db, "GP2_SUNIONSTORE_DESTINATION1", 5));
-  ASSERT_TRUE(members_match(db, "GP2_SUNIONSTORE_DESTINATION1", {"a", "b", "c", "d", "e"}));
+  ASSERT_TRUE(size_match(&db, "GP2_SUNIONSTORE_DESTINATION1", 5));
+  ASSERT_TRUE(members_match(&db, "GP2_SUNIONSTORE_DESTINATION1",
+              {"a", "b", "c", "d", "e"}));
 
 
   // ***************** Group 3 Test *****************
@@ -1565,16 +1572,17 @@ TEST_F(SetsTest, SUnionstoreTest) {
   s = db.SRem("GP3_SUNIONSTORE_KEY3", gp3_members3, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 3);
-  ASSERT_TRUE(size_match(db, "GP3_SUNIONSTORE_KEY3", 0));
-  ASSERT_TRUE(members_match(db, "GP3_SUNIONSTORE_KEY3", {}));
+  ASSERT_TRUE(size_match(&db, "GP3_SUNIONSTORE_KEY3", 0));
+  ASSERT_TRUE(members_match(&db, "GP3_SUNIONSTORE_KEY3", {}));
 
   std::vector<std::string> gp3_keys {"GP3_SUNIONSTORE_KEY1",
       "GP3_SUNIONSTORE_KEY2", "GP3_SUNIONSTORE_KEY3"};
   s = db.SUnionstore("GP3_SUNIONSTORE_DESTINATION1", gp3_keys, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 4);
-  ASSERT_TRUE(size_match(db, "GP3_SUNIONSTORE_DESTINATION1", 4));
-  ASSERT_TRUE(members_match(db, "GP3_SUNIONSTORE_DESTINATION1", {"a", "b", "c", "d"}));
+  ASSERT_TRUE(size_match(&db, "GP3_SUNIONSTORE_DESTINATION1", 4));
+  ASSERT_TRUE(members_match(&db, "GP3_SUNIONSTORE_DESTINATION1",
+              {"a", "b", "c", "d"}));
 
 
   // ***************** Group 4 Test *****************
@@ -1593,8 +1601,9 @@ TEST_F(SetsTest, SUnionstoreTest) {
   s = db.SUnionstore("GP4_SUNIONSTORE_DESTINATION1", gp4_keys, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 3);
-  ASSERT_TRUE(size_match(db, "GP4_SUNIONSTORE_DESTINATION1", 3));
-  ASSERT_TRUE(members_match(db, "GP4_SUNIONSTORE_DESTINATION1", {"a", "x", "l"}));
+  ASSERT_TRUE(size_match(&db, "GP4_SUNIONSTORE_DESTINATION1", 3));
+  ASSERT_TRUE(members_match(&db, "GP4_SUNIONSTORE_DESTINATION1",
+              {"a", "x", "l"}));
 }
 
 
