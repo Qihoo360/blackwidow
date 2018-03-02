@@ -222,19 +222,25 @@ TEST_F(KeysTest, PersistTest) {
   // Hashes
   s = db.HSet("PERSIST_KEY", "PERSIST_FIELD", "PERSIST_VALUE", &ret);
   ASSERT_TRUE(s.ok());
+  // Sets
+  std::vector<std::string> members1 {"MM1", "MM2", "MM3", "MM2"};
+  s = db.SAdd("PERSIST_KEY", members1, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 3);
+
   // TODO(shq) other types
   ret = db.Persist("PERSIST_KEY", &type_status);
   ASSERT_EQ(ret, 0);
 
   // If the timeout was set
   ret = db.Expire("PERSIST_KEY", 1000, &type_status);
-  ASSERT_EQ(ret, 2);
+  ASSERT_EQ(ret, 3);
   ret = db.Persist("PERSIST_KEY", &type_status);
-  ASSERT_EQ(ret, 2);
+  ASSERT_EQ(ret, 3);
 
-  std::map<BlackWidow::DataType, int32_t> ttl_ret;
+  std::map<BlackWidow::DataType, int64_t> ttl_ret;
   ttl_ret = db.TTL("PERSIST_KEY", &type_status);
-  ASSERT_EQ(ttl_ret.size(), 2);
+  ASSERT_EQ(ttl_ret.size(), 3);
   for (auto it = ttl_ret.begin(); it != ttl_ret.end(); it++) {
     ASSERT_EQ(it->second, -1);
   }
@@ -244,9 +250,9 @@ TEST_F(KeysTest, PersistTest) {
 TEST_F(KeysTest, TTLTest) {
   // If the key does not exist
   std::map<BlackWidow::DataType, Status> type_status;
-  std::map<BlackWidow::DataType, int32_t> ttl_ret;
+  std::map<BlackWidow::DataType, int64_t> ttl_ret;
   ttl_ret = db.TTL("TTL_KEY", &type_status);
-  ASSERT_EQ(ttl_ret.size(), 2);
+  ASSERT_EQ(ttl_ret.size(), 3);
   for (auto it = ttl_ret.begin(); it != ttl_ret.end(); it++) {
     ASSERT_EQ(it->second, -2);
   }
@@ -254,26 +260,33 @@ TEST_F(KeysTest, TTLTest) {
   // If the key does not have an associated timeout
   // Strings
   std::string value;
-  int32_t ret;
+  int32_t ret = 0;
   s = db.Set("TTL_KEY", "TTL_VALUE");
   ASSERT_TRUE(s.ok());
   // Hashes
   s = db.HSet("TTL_KEY", "TTL_FIELD", "TTL_VALUE", &ret);
   ASSERT_TRUE(s.ok());
+  // Sets
+  std::vector<std::string> members1 {"MM1", "MM2", "MM3", "MM2"};
+  s = db.SAdd("TTL_KEY", members1, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 3);
+
   // TODO(shq) other types
   ttl_ret = db.TTL("TTL_KEY", &type_status);
-  ASSERT_EQ(ttl_ret.size(), 2);
+  ASSERT_EQ(ttl_ret.size(), 3);
   for (auto it = ttl_ret.begin(); it != ttl_ret.end(); it++) {
     ASSERT_EQ(it->second, -1);
   }
 
   // If the timeout was set
-  ret = db.Expire("TTL_KEY", 1000, &type_status);
-  ASSERT_EQ(ret, 2);
+  ret = db.Expire("TTL_KEY", 10, &type_status);
+  ASSERT_EQ(ret, 3);
   ttl_ret = db.TTL("TTL_KEY", &type_status);
-  ASSERT_EQ(ttl_ret.size(), 2);
+  ASSERT_EQ(ttl_ret.size(), 3);
   for (auto it = ttl_ret.begin(); it != ttl_ret.end(); it++) {
     ASSERT_GT(it->second, 0);
+    ASSERT_LE(it->second, 10);
   }
 }
 

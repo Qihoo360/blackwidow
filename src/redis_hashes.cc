@@ -739,8 +739,7 @@ Status RedisHashes::Persist(const Slice& key) {
   return s;
 }
 
-Status RedisHashes::TTL(const Slice& key,
-                       int32_t* timestamp) {
+Status RedisHashes::TTL(const Slice& key, int64_t* timestamp) {
   std::string meta_value;
   ScopeRecordLock l(lock_mgr_, key);
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
@@ -753,6 +752,10 @@ Status RedisHashes::TTL(const Slice& key,
       *timestamp = parsed_hashes_meta_value.timestamp();
       if (*timestamp == 0) {
         *timestamp = -1;
+      } else {
+        int64_t curtime;
+        rocksdb::Env::Default()->GetCurrentTime(&curtime);
+        *timestamp = *timestamp - curtime > 0 ? *timestamp - curtime : -1;
       }
     }
   } else if (s.IsNotFound()) {

@@ -939,16 +939,26 @@ Status RedisSets::Persist(const Slice& key) {
   return s;
 }
 
-Status RedisSets::TTL(const Slice& key, int32_t* timestamp) {
+Status RedisSets::TTL(const Slice& key, int64_t* timestamp) {
   std::string meta_value;
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
-    ParsedSetsMetaValue parsed_sets_meta_value(&meta_value);
-    if (parsed_sets_meta_value.IsStale()) {
+    ParsedSetsMetaValue parsed_setes_meta_value(&meta_value);
+    if (parsed_setes_meta_value.IsStale()) {
+      *timestamp = -2;
       return Status::NotFound("Stale");
     } else {
-      *timestamp = parsed_sets_meta_value.timestamp();
+      *timestamp = parsed_setes_meta_value.timestamp();
+      if (*timestamp == 0) {
+        *timestamp = -1;
+      } else {
+        int64_t curtime;
+        rocksdb::Env::Default()->GetCurrentTime(&curtime);
+        *timestamp = *timestamp - curtime > 0 ? *timestamp - curtime : -1;
+      }
     }
+  } else if (s.IsNotFound()) {
+    *timestamp = -2;
   }
   return s;
 }
