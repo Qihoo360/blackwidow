@@ -370,39 +370,36 @@ int64_t BlackWidow::Del(const std::vector<Slice>& keys,
                         std::map<DataType, Status>* type_status) {
   Status s;
   int64_t count = 0;
-  bool is_corruption = false, is_success = false;
+  bool is_corruption = false;
 
   for (const auto& key : keys) {
     // Strings
     Status s = strings_db_->Del(key);
     if (s.ok()) {
-      is_success = true;
+      count++;
     } else if (!s.IsNotFound()) {
       is_corruption = true;
-      (*type_status)[DataType::kHashes] = s;
+      (*type_status)[DataType::kStrings] = s;
     }
 
     // Hashes
     s = hashes_db_->Del(key);
     if (s.ok()) {
-      is_success = true;
+      count++;
     } else if (!s.IsNotFound()) {
       is_corruption = true;
-      (*type_status)[DataType::kSets] = s;
+      (*type_status)[DataType::kHashes] = s;
     }
 
     // Sets
     s = sets_db_->Del(key);
     if (s.ok()) {
-      is_success = true;
+      count++;
     } else if (!s.IsNotFound()) {
       is_corruption = true;
       (*type_status)[DataType::kSets] = s;
     }
-
-    if (is_success) {
-      count++;
-    }
+    // TODO(shq) other types
   }
 
   if (is_corruption) {
@@ -415,7 +412,7 @@ int64_t BlackWidow::Del(const std::vector<Slice>& keys,
 int64_t BlackWidow::Exists(const std::vector<Slice>& keys,
                        std::map<DataType, Status>* type_status) {
   int64_t count = 0;
-  int32_t len;
+  int32_t ret;
   std::string value;
   Status s;
   bool is_corruption = false;
@@ -429,12 +426,20 @@ int64_t BlackWidow::Exists(const std::vector<Slice>& keys,
       (*type_status)[DataType::kStrings] = s;
     }
 
-    s = hashes_db_->HLen(key, &len);
+    s = hashes_db_->HLen(key, &ret);
     if (s.ok()) {
       count++;
     } else if (!s.IsNotFound()) {
       is_corruption = true;
       (*type_status)[DataType::kHashes] = s;
+    }
+
+    s = sets_db_->SCard(key, &ret);
+    if (s.ok()) {
+      count++;
+    } else if (!s.IsNotFound()) {
+      is_corruption = true;
+      (*type_status)[DataType::kSets] = s;
     }
     // TODO(shq) other types
   }
@@ -517,6 +522,14 @@ int32_t BlackWidow::Expireat(const Slice& key, int32_t timestamp,
     (*type_status)[DataType::kHashes] = s;
   }
 
+  s = sets_db_->Expireat(key, timestamp);
+  if (s.ok()) {
+    count++;
+  } else if (!s.IsNotFound()) {
+    is_corruption = true;
+    (*type_status)[DataType::kSets] = s;
+  }
+
   // TODO(shq) other types
   if (is_corruption) {
     return -1;
@@ -565,7 +578,7 @@ int32_t BlackWidow::Persist(const Slice& key,
 }
 
 std::map<BlackWidow::DataType, int64_t> BlackWidow::TTL(const Slice& key,
-                        std::map<DataType, Status>* type_status) {
+                        std::map<BlackWidow::DataType, Status>* type_status) {
   Status s;
   std::map<DataType, int64_t> ret;
   int64_t timestamp = 0;

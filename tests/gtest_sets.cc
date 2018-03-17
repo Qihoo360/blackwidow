@@ -654,7 +654,7 @@ TEST_F(SetsTest, SInterTest) {
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 3);
   s = db.SCard("GP3_SINTER_KEY3", &ret);
-  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(s.IsNotFound());
   ASSERT_EQ(ret, 0);
   std::vector<std::string> gp3_members_out;
   s = db.SMembers("GP3_SINTER_KEY3", &gp3_members_out);
@@ -691,7 +691,7 @@ TEST_F(SetsTest, SInterTest) {
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 4);
   s = db.SCard("GP4_SINTER_KEY1", &ret);
-  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(s.IsNotFound());
   ASSERT_EQ(ret, 0);
   std::vector<std::string> gp4_members_out;
   s = db.SMembers("GP4_SINTER_KEY1", &gp4_members_out);
@@ -915,7 +915,7 @@ TEST_F(SetsTest, SInterstoreTest) {
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 4);
   s = db.SCard("GP6_SINTERSTORE_KEY1", &ret);
-  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(s.IsNotFound());
   ASSERT_EQ(ret, 0);
 
   std::vector<std::string> gp6_keys {"GP6_SINTERSTORE_KEY1",
@@ -1144,7 +1144,7 @@ TEST_F(SetsTest, SMoveTest) {
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 2);
   s = db.SCard("GP3_SMOVE_DESTINATION", &ret);
-  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(s.IsNotFound());
   ASSERT_EQ(ret, 0);
 
   s = db.SMove("GP3_SMOVE_SOURCE", "GP3_SMOVE_DESTINATION", "x", &ret);
@@ -1196,7 +1196,7 @@ TEST_F(SetsTest, SMoveTest) {
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 2);
   s = db.SCard("GP5_SMOVE_SOURCE", &ret);
-  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(s.IsNotFound());
   ASSERT_EQ(ret, 0);
 
   s = db.SMove("GP5_SMOVE_SOURCE", "GP5_SMOVE_DESTINATION", "x", &ret);
@@ -1439,7 +1439,7 @@ TEST_F(SetsTest, SUnionTest) {
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 5);
   s = db.SCard("GP3_SUNION_KEY3", &ret);
-  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(s.IsNotFound());
   ASSERT_EQ(ret, 0);
   std::vector<std::string> gp3_members_out;
   s = db.SMembers("GP3_SUNION_KEY3", &gp3_members_out);

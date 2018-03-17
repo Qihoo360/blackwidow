@@ -407,7 +407,7 @@ class BlackWidow {
   // return -1 operation exception errors happen in database
   // return >=0 the number of keys existing
   int64_t Exists(const std::vector<Slice>& keys,
-             std::map<DataType, Status>* type_status);
+                 std::map<DataType, Status>* type_status);
 
   // EXPIREAT has the same effect and semantic as EXPIRE, but instead of
   // specifying the number of seconds representing the TTL (time to live), it
@@ -434,7 +434,7 @@ class BlackWidow {
   // return -1 if the key exists but has not associated expire
   // return > 0 TTL in seconds
   std::map<DataType, int64_t> TTL(const Slice& key,
-              std::map<DataType, Status>* type_status);
+                                  std::map<DataType, Status>* type_status);
 
  private:
   RedisStrings* strings_db_;

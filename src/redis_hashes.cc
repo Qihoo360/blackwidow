@@ -744,7 +744,6 @@ Status RedisHashes::Persist(const Slice& key) {
 
 Status RedisHashes::TTL(const Slice& key, int64_t* timestamp) {
   std::string meta_value;
-  ScopeRecordLock l(lock_mgr_, key);
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
     ParsedHashesMetaValue parsed_hashes_meta_value(&meta_value);

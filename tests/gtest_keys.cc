@@ -137,31 +137,74 @@ TEST_F(KeysTest, ExpireTest) {
   std::map<BlackWidow::DataType, Status> type_status;
   std::vector<rocksdb::Slice> keys {"DEL_KEY"};
   int32_t ret;
+
+  // Strings
   s = db.Set("EXPIRE_KEY", "EXPIRE_VALUE");
   ASSERT_TRUE(s.ok());
+
+  // Hashes
   s = db.HSet("EXPIRE_KEY", "EXPIRE_FIELD", "EXPIRE_VALUE", &ret);
   ASSERT_TRUE(s.ok());
+
+  // Sets
+  std::vector<std::string> members {"MEMBERS"};
+  s = db.SAdd("EXPIRE_KEY", members, &ret);
+  ASSERT_TRUE(s.ok());
+
   ret = db.Expire("EXPIRE_KEY", 1, &type_status);
-  ASSERT_EQ(ret, 2);
+  ASSERT_EQ(ret, 3);
+
   std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+  // Strings
   s = db.Get("EXPIRE_KEY", &value);
   ASSERT_TRUE(s.IsNotFound());
+
+  // Hashes
   s = db.HGet("EXPIRE_KEY", "EXPIRE_FIELD", &value);
   ASSERT_TRUE(s.IsNotFound());
+
+  // Sets
+  s = db.SCard("EXPIRE_KEY", &ret);
+  ASSERT_TRUE(s.IsNotFound());
+
   // TODO(shq) other types
 }
 
 // Del
 TEST_F(KeysTest, DelTest) {
   int32_t ret;
+  std::string value;
   std::map<BlackWidow::DataType, Status> type_status;
   std::vector<rocksdb::Slice> keys {"DEL_KEY"};
-  s = db.Set("DEL_KEY", "EXPIREVALUE");
+
+  // Strings
+  s = db.Set("DEL_KEY", "DEL_VALUE");
   ASSERT_TRUE(s.ok());
+
+  // Hashes
   s = db.HSet("DEL_KEY", "DEL_FIELD", "DEL_VALUE", &ret);
   ASSERT_TRUE(s.ok());
+
+  // Sets
+  std::vector<std::string> members {"MEMBERS"};
+  s = db.SAdd("DEL_KEY", members, &ret);
+  ASSERT_TRUE(s.ok());
+
   ret = db.Del(keys, &type_status);
-  ASSERT_EQ(ret, 1);
+  ASSERT_EQ(ret, 3);
+
+  // Strings
+  s = db.Get("DEL_KEY", &value);
+  ASSERT_TRUE(s.IsNotFound());
+
+  // Hashes
+  s = db.HGet("DEL_KEY", "DEL_FIELD", &value);
+  ASSERT_TRUE(s.IsNotFound());
+
+  // Sets
+  s = db.SCard("DEL_KEY", &ret);
+  ASSERT_TRUE(s.IsNotFound());
+
   // TODO(shq) other types
 }
 
@@ -170,12 +213,22 @@ TEST_F(KeysTest, ExistsTest) {
   int32_t ret;
   std::map<BlackWidow::DataType, Status> type_status;
   std::vector<Slice> keys {"EXISTS_KEY"};
+
+  // Strings
   s = db.Set("EXISTS_KEY", "EXISTS_VALUE");
   ASSERT_TRUE(s.ok());
+
+  // Hashes
   s = db.HSet("EXISTS_KEY", "EXISTS_FIELD", "EXISTS_VALUE", &ret);
   ASSERT_TRUE(s.ok());
+
+  // Sets
+  std::vector<std::string> members {"MEMBERS"};
+  s = db.SAdd("EXISTS_KEY", members, &ret);
+  ASSERT_TRUE(s.ok());
+
   ret = db.Exists(keys, &type_status);
-  ASSERT_EQ(ret, 2);
+  ASSERT_EQ(ret, 3);
   // TODO(shq) other types
 }
 
@@ -190,20 +243,35 @@ TEST_F(KeysTest, ExpireatTest) {
   std::string value;
   s = db.Set("EXPIREAT_KEY", "EXPIREAT_VALUE");
   ASSERT_TRUE(s.ok());
+
   // Hashes
   s = db.HSet("EXPIREAT_KEY", "EXPIREAT_FIELD", "EXPIREAT_VALUE", &ret);
+  ASSERT_TRUE(s.ok());
+
+  // Sets
+  std::vector<std::string> members {"MEMBERS"};
+  s = db.SAdd("EXPIREAT_KEY", members, &ret);
+  ASSERT_TRUE(s.ok());
+
   // TODO(shq) other types
 
   int64_t unix_time;
   rocksdb::Env::Default()->GetCurrentTime(&unix_time);
   int32_t timestamp = static_cast<int32_t>(unix_time) + 1;
   ret = db.Expireat("EXPIREAT_KEY", timestamp, &type_status);
-  ASSERT_EQ(ret, 2);
+  ASSERT_EQ(ret, 3);
 
   std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+  // Strings
   s = db.Get("EXPIREAT_KEY", &value);
   ASSERT_TRUE(s.IsNotFound());
+
+  // Hashes
   s = db.HGet("EXPIREAT_KEY", "EXPIREAT_FIELD", &value);
+  ASSERT_TRUE(s.IsNotFound());
+
+  // Sets
+  s = db.SCard("EXPIREAT_KEY", &ret);
   ASSERT_TRUE(s.IsNotFound());
 }
 
@@ -219,12 +287,14 @@ TEST_F(KeysTest, PersistTest) {
   std::string value;
   s = db.Set("PERSIST_KEY", "PERSIST_VALUE");
   ASSERT_TRUE(s.ok());
+
   // Hashes
   s = db.HSet("PERSIST_KEY", "PERSIST_FIELD", "PERSIST_VALUE", &ret);
   ASSERT_TRUE(s.ok());
+
   // Sets
-  std::vector<std::string> members1 {"MM1", "MM2", "MM3", "MM2"};
-  s = db.SAdd("PERSIST_KEY", members1, &ret);
+  std::vector<std::string> members {"MM1", "MM2", "MM3", "MM2"};
+  s = db.SAdd("PERSIST_KEY", members, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 3);
 
@@ -263,9 +333,11 @@ TEST_F(KeysTest, TTLTest) {
   int32_t ret = 0;
   s = db.Set("TTL_KEY", "TTL_VALUE");
   ASSERT_TRUE(s.ok());
+
   // Hashes
   s = db.HSet("TTL_KEY", "TTL_FIELD", "TTL_VALUE", &ret);
   ASSERT_TRUE(s.ok());
+
   // Sets
   std::vector<std::string> members1 {"MM1", "MM2", "MM3", "MM2"};
   s = db.SAdd("TTL_KEY", members1, &ret);
