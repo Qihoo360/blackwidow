@@ -309,6 +309,16 @@ Status BlackWidow::SMove(const Slice& source, const Slice& destination,
   return sets_db_->SMove(source, destination, member, ret);
 }
 
+Status BlackWidow::SPop(const Slice& key, int32_t count,
+                        std::vector<std::string>* members) {
+  return sets_db_->SPop(key, count, members);
+}
+
+Status BlackWidow::SRandmembers(const Slice& key, int32_t count,
+                                std::vector<std::string>* members) {
+  return sets_db_->SRandmembers(key, count, members);
+}
+
 Status BlackWidow::SRem(const Slice& key,
                         const std::vector<std::string>& members,
                         int32_t* ret) {

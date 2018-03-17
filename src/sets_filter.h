@@ -128,7 +128,7 @@ class SetsMemberFilter : public rocksdb::CompactionFilter {
         return true;
       }
 #ifndef NDEBUG
-      if (cur_meta_version_ > parsed_data_key.version()) {
+      if (cur_meta_version_ > parsed_sets_member_key.version()) {
         Trace("Drop[field_version < cur_time_version]");
       } else {
         Trace("Reserve[field_version == cur_meta_version]");

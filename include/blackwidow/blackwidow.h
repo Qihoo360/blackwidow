@@ -334,6 +334,21 @@ class BlackWidow {
   Status SRem(const Slice& key, const std::vector<std::string>& members,
               int32_t* ret);
 
+  // Removes and returns one or more random elements from the set value store at
+  // key.
+  Status SPop(const Slice& key, int32_t count,
+              std::vector<std::string>* members);
+
+  // When called with just the key argument, return a random element from the
+  // set value stored at key.
+  // when called with the additional count argument, return an array of count
+  // distinct elements if count is positive. If called with a negative count the
+  // behavior changes and the command is allowed to return the same element
+  // multiple times. In this case the number of returned elements is the
+  // absolute value of the specified count
+  Status SRandmembers(const Slice& key, int32_t count,
+                      std::vector<std::string>* members);
+
   // Move member from the set at source to the set at destination. This
   // operation is atomic. In every given moment the element will appear to be a
   // member of source or destination for other clients.
@@ -345,7 +360,6 @@ class BlackWidow {
   // from the source set.
   Status SMove(const Slice& source, const Slice& destination,
                const Slice& member, int32_t* ret);
-
 
   // Returns the members of the set resulting from the union of all the given
   // sets.
