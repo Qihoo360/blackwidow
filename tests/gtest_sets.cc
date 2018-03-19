@@ -133,6 +133,13 @@ TEST_F(SetsTest, SAddTest) {
   ASSERT_EQ(ret, 3);
   ASSERT_TRUE(size_match(&db, "SADD_KEY", 3));
   ASSERT_TRUE(members_match(&db, "SADD_KEY", {"a", "x", "l"}));
+
+  std::vector<std::string> members5 {"a", "x", "l", "z"};
+  s = db.SAdd("SADD_KEY", members5, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+  ASSERT_TRUE(size_match(&db, "SADD_KEY", 4));
+  ASSERT_TRUE(members_match(&db, "SADD_KEY", {"a", "x", "l", "z"}));
 }
 
 // SCard

@@ -101,7 +101,6 @@ Status RedisSets::SAdd(const Slice& key,
         s = db_->Get(read_options, handles_[1],
                      sets_member_key.Encode(), &member_value);
         if (s.ok()) {
-          cnt++;
         } else if (s.IsNotFound()) {
           cnt++;
           batch.Put(handles_[1], sets_member_key.Encode(), Slice());
