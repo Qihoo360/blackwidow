@@ -16,6 +16,11 @@
 
 namespace blackwidow {
 
+const rocksdb::Comparator* SetsMemberKeyComparator() {
+  static SetsMemberKeyComparatorImpl smkc;
+  return &smkc;
+}
+
 RedisSets::~RedisSets() {
   for (auto handle : handles_) {
     delete handle;
@@ -30,7 +35,7 @@ Status RedisSets::Open(const rocksdb::Options& options,
     // create column family
     rocksdb::ColumnFamilyHandle* cf;
     rocksdb::ColumnFamilyOptions cfo;
-    cfo.comparator = &sets_member_key_comparator_;
+    cfo.comparator = SetsMemberKeyComparator();
     s = db_->CreateColumnFamily(cfo, "member_cf", &cf);
     if (!s.ok()) {
       return s;
@@ -48,7 +53,7 @@ Status RedisSets::Open(const rocksdb::Options& options,
       std::make_shared<SetsMetaFilterFactory>();
   member_cf_ops.compaction_filter_factory =
       std::make_shared<SetsMemberFilterFactory>(&db_, &handles_);
-  member_cf_ops.comparator = &sets_member_key_comparator_;
+  member_cf_ops.comparator = SetsMemberKeyComparator();
   std::vector<rocksdb::ColumnFamilyDescriptor> column_families;
   // Meta CF
   column_families.push_back(rocksdb::ColumnFamilyDescriptor(

@@ -120,7 +120,7 @@ TEST_F(SetsTest, SAddTest) {
   ASSERT_TRUE(members_match(&db, "SADD_KEY", {"a", "b"}));
 
   // Delete the key
-  std::vector<rocksdb::Slice> del_keys = {"SADD_KEY"};
+  std::vector<std::string> del_keys = {"SADD_KEY"};
   std::map<BlackWidow::DataType, blackwidow::Status> type_status;
   db.Del(del_keys, &type_status);
   ASSERT_TRUE(type_status[BlackWidow::DataType::kSets].ok());

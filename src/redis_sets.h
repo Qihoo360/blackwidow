@@ -71,7 +71,6 @@ class RedisSets : public Redis {
 
  private:
   std::vector<rocksdb::ColumnFamilyHandle*> handles_;
-  SetsMemberKeyComparatorImpl sets_member_key_comparator_;
 };
 
 }  //  namespace blackwidow

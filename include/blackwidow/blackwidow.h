@@ -408,7 +408,7 @@ class BlackWidow {
   // Removes the specified keys
   // return -1 operation exception errors happen in database
   // return >=0 the number of keys that were removed
-  int64_t Del(const std::vector<Slice>& keys,
+  int64_t Del(const std::vector<std::string>& keys,
               std::map<DataType, Status>* type_status);
 
   // Iterate over a collection of elements

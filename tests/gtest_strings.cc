@@ -172,7 +172,7 @@ TEST_F(StringsTest, SetrangeTest) {
   s = db.Get("SETRANGE_KEY", &value);
   ASSERT_STREQ(value.c_str(), "HELLO REDIS");
 
-  std::vector<Slice> keys {"SETRANGE_KEY"};
+  std::vector<std::string> keys {"SETRANGE_KEY"};
   std::map<BlackWidow::DataType, Status> type_status;
   ret = db.Del(keys, &type_status);
   ASSERT_EQ(ret, 1);

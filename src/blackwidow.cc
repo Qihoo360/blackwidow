@@ -376,7 +376,7 @@ int32_t BlackWidow::Expire(const Slice& key, int32_t ttl,
   }
 }
 
-int64_t BlackWidow::Del(const std::vector<Slice>& keys,
+int64_t BlackWidow::Del(const std::vector<std::string>& keys,
                         std::map<DataType, Status>* type_status) {
   Status s;
   int64_t count = 0;

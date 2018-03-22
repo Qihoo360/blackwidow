@@ -175,7 +175,7 @@ TEST_F(KeysTest, DelTest) {
   int32_t ret;
   std::string value;
   std::map<BlackWidow::DataType, Status> type_status;
-  std::vector<rocksdb::Slice> keys {"DEL_KEY"};
+  std::vector<std::string> keys {"DEL_KEY"};
 
   // Strings
   s = db.Set("DEL_KEY", "DEL_VALUE");
