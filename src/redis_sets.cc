@@ -585,6 +585,11 @@ Status RedisSets::SMove(const Slice& source, const Slice& destination,
   ScopeSnapshot ss(db_, &snapshot);
   read_options.snapshot = snapshot;
 
+  if (source == destination) {
+    *ret = 1;
+    return Status::OK();
+  }
+
   Status s = db_->Get(read_options, handles_[0], source, &meta_value);
   if (s.ok()) {
     ParsedSetsMetaValue parsed_sets_meta_value(&meta_value);
