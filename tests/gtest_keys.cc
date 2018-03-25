@@ -63,6 +63,21 @@ TEST_F(KeysTest, ScanTest) {
   s = db.HMSet("SCAN_KEY10", fvs1);
   ASSERT_TRUE(s.ok());
 
+  // Sets
+  int32_t ret;
+  std::vector<std::string> members;
+  members.push_back("MEMBER1");
+  members.push_back("MEMBER2");
+  members.push_back("MEMBER3");
+  members.push_back("MEMBER4");
+  members.push_back("MEMBER5");
+  s = db.SAdd("SCAN_KEY11", members, &ret);
+  s = db.SAdd("SCAN_KEY12", members, &ret);
+  s = db.SAdd("SCAN_KEY13", members, &ret);
+  s = db.SAdd("SCAN_KEY14", members, &ret);
+  s = db.SAdd("SCAN_KEY15", members, &ret);
+  ASSERT_TRUE(s.ok());
+
   // TODO(shq) other data types
 
   // Iterate by data types and check data type
@@ -86,7 +101,17 @@ TEST_F(KeysTest, ScanTest) {
   ASSERT_STREQ(keys[2].c_str(), "SCAN_KEY7");
   ASSERT_STREQ(keys[3].c_str(), "SCAN_KEY8");
   ASSERT_STREQ(keys[4].c_str(), "SCAN_KEY9");
+
+  keys.clear();
   ASSERT_EQ(cursor_ret, 15);
+  cursor_ret = db.Scan(cursor_ret, "SCAN*", 5, &keys);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(keys.size(), 5);
+  ASSERT_STREQ(keys[0].c_str(), "SCAN_KEY11");
+  ASSERT_STREQ(keys[1].c_str(), "SCAN_KEY12");
+  ASSERT_STREQ(keys[2].c_str(), "SCAN_KEY13");
+  ASSERT_STREQ(keys[3].c_str(), "SCAN_KEY14");
+  ASSERT_STREQ(keys[4].c_str(), "SCAN_KEY15");
 
   keys.clear();
   cursor_ret = db.Scan(cursor_ret, "SCAN*", 5, &keys);
@@ -117,7 +142,7 @@ TEST_F(KeysTest, ScanTest) {
 
   // If the key already expired
   std::map<BlackWidow::DataType, Status> type_status;
-  int32_t ret = db.Expire("SCAN_KEY1", 1, &type_status);
+  ret = db.Expire("SCAN_KEY1", 1, &type_status);
   ASSERT_GE(ret, 0);
   std::this_thread::sleep_for(std::chrono::milliseconds(2000));
   keys.clear();

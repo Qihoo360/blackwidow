@@ -497,11 +497,23 @@ int64_t BlackWidow::Scan(int64_t cursor, const std::string& pattern,
       is_finish = hashes_db_->Scan(start_key, pattern, keys,
                                    &count, &next_key);
       if (count == 0 && is_finish) {
-        cursor_ret = StoreAndGetCursor(cursor + count_origin, std::string("l"));
+        cursor_ret = StoreAndGetCursor(cursor + count_origin, std::string("s"));
         break;
       } else if (count == 0 && !is_finish) {
         cursor_ret = StoreAndGetCursor(cursor + count_origin,
                                        std::string("h") + next_key);
+        break;
+      }
+      start_key = "";
+    case 's':
+      is_finish = sets_db_->Scan(start_key, pattern, keys,
+                                   &count, &next_key);
+      if (count == 0 && is_finish) {
+        cursor_ret = StoreAndGetCursor(cursor + count_origin, std::string("l"));
+        break;
+      } else if (count == 0 && !is_finish) {
+        cursor_ret = StoreAndGetCursor(cursor + count_origin,
+                                       std::string("s") + next_key);
         break;
       }
     // TODO(shq) other data types
