@@ -9,6 +9,7 @@
 #include "src/redis_strings.h"
 #include "src/redis_hashes.h"
 #include "src/redis_sets.h"
+#include "src/redis_hyperloglog.h"
 
 namespace blackwidow {
 
@@ -419,7 +420,7 @@ int64_t BlackWidow::Del(const std::vector<std::string>& keys,
   }
 }
 
-int64_t BlackWidow::Exists(const std::vector<Slice>& keys,
+int64_t BlackWidow::Exists(const std::vector<std::string>& keys,
                        std::map<DataType, Status>* type_status) {
   int64_t count = 0;
   int32_t ret;
@@ -631,6 +632,102 @@ std::map<BlackWidow::DataType, int64_t> BlackWidow::TTL(const Slice& key,
 
   // TODO(shq) other types
   return ret;
+}
+
+// HyperLogLog
+Status BlackWidow::PfAdd(const Slice& key,
+                         const std::vector<std::string>& values, bool* update) {
+  *update = false;
+  if (values.size() >= kMaxKeys) {
+    return Status::InvalidArgument("Invalid the number of key");
+  }
+
+  std::string value, registers, result = "";
+  Status s = strings_db_->Get(key, &value);
+  if (s.ok()) {
+    registers = value;
+  } else if (s.IsNotFound()) {
+    registers = "";
+  } else {
+    return s;
+  }
+  HyperLogLog log(kPrecision, registers);
+  int32_t previous = static_cast<int32_t>(log.Estimate());
+  for (size_t i = 0; i < values.size(); ++i) {
+    result = log.Add(values[i].data(), values[i].size());
+  }
+  HyperLogLog update_log(kPrecision, result);
+  int32_t now = static_cast<int32_t>(update_log.Estimate());
+  if (previous != now || (s.IsNotFound() && values.size() == 0)) {
+    *update = true;
+  }
+  s = strings_db_->Set(key, result);
+  return s;
+}
+
+Status BlackWidow::PfCount(const std::vector<std::string>& keys,
+                           int64_t* result) {
+  if (keys.size() >= kMaxKeys || keys.size() <= 0) {
+    return Status::InvalidArgument("Invalid the number of key");
+  }
+
+  std::string value, first_registers;
+  Status s = strings_db_->Get(keys[0], &value);
+  if (s.ok()) {
+    first_registers = std::string(value.data(), value.size());
+  } else if (s.IsNotFound()) {
+    first_registers = "";
+  }
+
+  HyperLogLog first_log(kPrecision, first_registers);
+  for (size_t i = 1; i < keys.size(); ++i) {
+    std::string value, registers;
+    s = strings_db_->Get(keys[i], &value);
+    if (s.ok()) {
+      registers = value;
+    } else if (s.IsNotFound()) {
+      continue;
+    } else {
+      return s;
+    }
+    HyperLogLog log(kPrecision, registers);
+    first_log.Merge(log);
+  }
+  *result = static_cast<int32_t>(first_log.Estimate());
+  return Status::OK();
+}
+
+Status BlackWidow::PfMerge(const std::vector<std::string>& keys) {
+  if (keys.size() >= kMaxKeys || keys.size() <= 0) {
+    return Status::InvalidArgument("Invalid the number of key");
+  }
+
+  Status s;
+  std::string value, first_registers, result;
+  s = strings_db_->Get(keys[0], &value);
+  if (s.ok()) {
+    first_registers = std::string(value.data(), value.size());
+  } else if (s.IsNotFound()) {
+    first_registers = "";
+  }
+
+  result = first_registers;
+  HyperLogLog first_log(kPrecision, first_registers);
+  for (size_t i = 1; i < keys.size(); ++i) {
+    std::string value, registers;
+    s = strings_db_->Get(keys[i], &value);
+    if (s.ok()) {
+      registers = std::string(value.data(), value.size());
+    } else if (s.IsNotFound()) {
+      continue;
+    } else {
+      return s;
+    }
+    HyperLogLog log(kPrecision, registers);
+    result = first_log.Merge(log);
+  }
+  s = strings_db_->Set(keys[0], result);
+  return s;
 }
 
 }  //  namespace blackwidow

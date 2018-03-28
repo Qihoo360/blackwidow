@@ -23,6 +23,7 @@ using Slice = rocksdb::Slice;
 class RedisStrings;
 class RedisHashes;
 class RedisSets;
+class HyperLogLog;
 class MutexFactory;
 class Mutex;
 class BlackWidow {
@@ -420,7 +421,7 @@ class BlackWidow {
   // Returns if key exists.
   // return -1 operation exception errors happen in database
   // return >=0 the number of keys existing
-  int64_t Exists(const std::vector<Slice>& keys,
+  int64_t Exists(const std::vector<std::string>& keys,
                  std::map<DataType, Status>* type_status);
 
   // EXPIREAT has the same effect and semantic as EXPIRE, but instead of
@@ -449,6 +450,26 @@ class BlackWidow {
   // return > 0 TTL in seconds
   std::map<DataType, int64_t> TTL(const Slice& key,
                                   std::map<DataType, Status>* type_status);
+
+  // HyperLogLog
+  enum {
+    kMaxKeys = 255,
+    kPrecision = 17,
+  };
+  // Adds all the element arguments to the HyperLogLog data structure stored
+  // at the variable name specified as first argument.
+  Status PfAdd(const Slice& key, const std::vector<std::string>& values,
+               bool* update);
+
+  // When called with a single key, returns the approximated cardinality
+  // computed by the HyperLogLog data structure stored at the specified
+  // variable, which is 0 if the variable does not exist.
+  Status PfCount(const std::vector<std::string>& keys, int64_t* result);
+
+  // Merge multiple HyperLogLog values into an unique value that will
+  // approximate the cardinality of the union of the observed Sets of the source
+  // HyperLogLog structures.
+  Status PfMerge(const std::vector<std::string>& keys);
 
  private:
   RedisStrings* strings_db_;

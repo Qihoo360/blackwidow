@@ -14,8 +14,12 @@ using namespace blackwidow;
 class StringsTest : public ::testing::Test {
  public:
   StringsTest() {
+    std::string path = "./db/strings";
+    if (access(path.c_str(), F_OK)) {
+      mkdir(path.c_str(), 0755);
+    }
     options.create_if_missing = true;
-    s = db.Open(options, "./db/strings");
+    s = db.Open(options, path);
   }
   virtual ~StringsTest() { }
 

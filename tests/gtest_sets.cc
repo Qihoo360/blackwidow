@@ -14,7 +14,7 @@ using namespace blackwidow;
 class SetsTest : public ::testing::Test {
  public:
   SetsTest() {
-    std::string path = "./db";
+    std::string path = "./db/sets";
     if (access(path.c_str(), F_OK)) {
       mkdir(path.c_str(), 0755);
     }

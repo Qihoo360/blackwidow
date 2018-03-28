@@ -14,8 +14,12 @@ using namespace blackwidow;
 class KeysTest : public ::testing::Test {
  public:
   KeysTest() {
+    std::string path = "./db/keys";
+    if (access(path.c_str(), F_OK)) {
+      mkdir(path.c_str(), 0755);
+    }
     options.create_if_missing = true;
-    s = db.Open(options, "./db/keys");
+    s = db.Open(options, path);
   }
   virtual ~KeysTest() { }
 
@@ -160,7 +164,6 @@ TEST_F(KeysTest, ScanTest) {
 TEST_F(KeysTest, ExpireTest) {
   std::string value;
   std::map<BlackWidow::DataType, Status> type_status;
-  std::vector<rocksdb::Slice> keys {"DEL_KEY"};
   int32_t ret;
 
   // Strings
@@ -237,7 +240,7 @@ TEST_F(KeysTest, DelTest) {
 TEST_F(KeysTest, ExistsTest) {
   int32_t ret;
   std::map<BlackWidow::DataType, Status> type_status;
-  std::vector<Slice> keys {"EXISTS_KEY"};
+  std::vector<std::string> keys {"EXISTS_KEY"};
 
   // Strings
   s = db.Set("EXISTS_KEY", "EXISTS_VALUE");

@@ -14,8 +14,12 @@ using namespace blackwidow;
 class HashesTest : public ::testing::Test {
  public:
   HashesTest() {
+    std::string path = "./db/hashes";
+    if (access(path.c_str(), F_OK)) {
+      mkdir(path.c_str(), 0755);
+    }
     options.create_if_missing = true;
-    s = db.Open(options, "./db/hashes");
+    s = db.Open(options, path);
   }
   virtual ~HashesTest() { }
 
