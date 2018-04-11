@@ -58,7 +58,7 @@ TEST(HashesFilterTest, FilterTest) {
   HashesMetaFilter* hashes_meta_filter = new HashesMetaFilter();
   ASSERT_TRUE(hashes_meta_filter != nullptr);
 
-  // No timeout is set, but it's an empty hash table.
+  // Timeout timestamp is not set, but it's an empty hash table.
   EncodeFixed32(str, 0);
   HashesMetaValue tmf_meta_value1(std::string(str, sizeof(int32_t)));
   tmf_meta_value1.UpdateVersion();
@@ -67,7 +67,7 @@ TEST(HashesFilterTest, FilterTest) {
       tmf_meta_value1.Encode(), &new_value, &value_changed);
   ASSERT_EQ(filter_result, true);
 
-  // No timeout is set, it's not an empty hash table.
+  // Timeout timestamp is not set, it's not an empty hash table.
   EncodeFixed32(str, 1);
   HashesMetaValue tmf_meta_value2(std::string(str, sizeof(int32_t)));
   tmf_meta_value2.UpdateVersion();
@@ -76,17 +76,17 @@ TEST(HashesFilterTest, FilterTest) {
       tmf_meta_value2.Encode(), &new_value, &value_changed);
   ASSERT_EQ(filter_result, false);
 
-  // timeout timestamp is set, but not timeout.
+  // Timeout timestamp is set, but not expired.
   EncodeFixed32(str, 1);
   HashesMetaValue tmf_meta_value3(std::string(str, sizeof(int32_t)));
   tmf_meta_value3.UpdateVersion();
+  tmf_meta_value3.SetRelativeTimestamp(3);
   std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-  tmf_meta_value3.SetRelativeTimestamp(1);
   filter_result = hashes_meta_filter->Filter(0, "FILTER_TEST_KEY",
       tmf_meta_value3.Encode(), &new_value, &value_changed);
   ASSERT_EQ(filter_result, false);
 
-  // timeout timestamp is set, already timeout.
+  // Timeout timestamp is set, already expired.
   EncodeFixed32(str, 1);
   HashesMetaValue tmf_meta_value4(std::string(str, sizeof(int32_t)));
   tmf_meta_value4.UpdateVersion();

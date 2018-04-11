@@ -55,7 +55,7 @@ CXXFLAGS+= -I$(BLACKWIDOW_PATH) -I$(BLACKWIDOW_INCLUDE_DIR) -I$(ROCKSDB_INCLUDE_
 DEP_LIBS = $(BLACKWIDOW_LIBRARY) $(ROCKSDB_LIBRARY) $(GOOGLETEST_LIBRARY)
 LDFLAGS := $(DEP_LIBS) $(LDFLAGS)
 
-OBJECTS= GOOGLETEST ROCKSDB lock_mgr gtest_strings gtest_hashes gtest_sets gtest_strings_filter gtest_hashes_filter gtest_keys gtest_hyperloglog
+OBJECTS= GOOGLETEST ROCKSDB lock_mgr gtest_strings gtest_hashes gtest_sets gtest_strings_filter gtest_hashes_filter gtest_keys gtest_hyperloglog gtest_lists_filter gtest_lists
 
 all: $(OBJECTS)
 
@@ -63,13 +63,15 @@ dbg: $(OBJECTS)
 
 test: $(OBJECTS)
 	@rm -rf db
-	@mkdir -p db/keys db/strings db/hashes db/hash_meta db/sets db/hyperloglog
+	@mkdir -p db/keys db/strings db/hashes db/hash_meta db/sets db/hyperloglog db/list_meta db/lists
 	@./gtest_keys
 	@./gtest_strings
 	@./gtest_hashes
 	@./gtest_sets
 	@./gtest_strings_filter
 	@./gtest_hashes_filter
+	@./gtest_lists_filter
+	@./gtest_lists
 	@./gtest_hyperloglog
 	@rm -rf db
 
@@ -97,13 +99,20 @@ gtest_strings_filter: gtest_strings_filter.cc
 gtest_hashes_filter: gtest_hashes_filter.cc
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 
+gtest_lists_filter: gtest_lists_filter.cc
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
+
 gtest_keys: gtest_keys.cc
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 
 gtest_hyperloglog: gtest_hyperloglog.cc
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 
+gtest_lists: gtest_lists.cc
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
+
 clean:
 	find . -name "*.[oda]" -exec rm -f {} \;
 	rm -f ./make_config.mk
-	rm -rf ./lock_mgr ./gtest_strings ./gtest_hashes ./gtest_sets ./gtest_strings_filter ./gtest_hashes_filter ./gtest_keys ./gtest_hyperloglog
+	rm -rf db
+	rm -rf ./lock_mgr ./gtest_strings ./gtest_hashes ./gtest_sets ./gtest_strings_filter ./gtest_hashes_filter ./gtest_keys ./gtest_hyperloglog ./gtest_lists_filter ./gtest_lists

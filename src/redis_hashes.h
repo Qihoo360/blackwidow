@@ -22,7 +22,7 @@ class RedisHashes : public Redis {
 
   // Hashes Commands
   Status HSet(const Slice& key, const Slice& field, const Slice& value,
-              int32_t* res);
+              int32_t* ret);
   Status HGet(const Slice& key, const Slice& field, std::string* value);
   Status HMSet(const Slice& key,
                const std::vector<BlackWidow::FieldValue>& fvs);

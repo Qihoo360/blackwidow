@@ -9,6 +9,7 @@
 #include "src/redis_strings.h"
 #include "src/redis_hashes.h"
 #include "src/redis_sets.h"
+#include "src/redis_lists.h"
 #include "src/redis_hyperloglog.h"
 
 namespace blackwidow {
@@ -26,6 +27,7 @@ BlackWidow::~BlackWidow() {
   delete strings_db_;
   delete hashes_db_;
   delete sets_db_;
+  delete lists_db_;
 }
 
 Status BlackWidow::Compact() {
@@ -53,6 +55,8 @@ Status BlackWidow::Open(const rocksdb::Options& options,
   s = hashes_db_->Open(options, AppendSubDirectory(db_path, "hashes"));
   sets_db_ = new RedisSets();
   s = sets_db_->Open(options, AppendSubDirectory(db_path, "sets"));
+  lists_db_ = new RedisLists();
+  s = lists_db_->Open(options, AppendSubDirectory(db_path, "lists"));
   return s;
 }
 
@@ -335,6 +339,23 @@ Status BlackWidow::SUnionstore(const Slice& destination,
                                const std::vector<std::string>& keys,
                                int32_t* ret) {
   return sets_db_->SUnionstore(destination, keys, ret);
+}
+
+Status BlackWidow::LPush(const Slice& key,
+                         const std::vector<std::string>& values,
+                         int32_t* ret) {
+  return lists_db_->LPush(key, values, ret);
+}
+
+Status BlackWidow::RPush(const Slice& key,
+                         const std::vector<std::string>& values,
+                         int32_t* ret) {
+  return lists_db_->RPush(key, values, ret);
+}
+
+Status BlackWidow::LRange(const Slice& key, int32_t start, int32_t stop,
+                          std::vector<std::string>* ret) {
+  return lists_db_->LRange(key, start, stop, ret);
 }
 
 // Keys Commands

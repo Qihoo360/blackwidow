@@ -23,6 +23,7 @@ using Slice = rocksdb::Slice;
 class RedisStrings;
 class RedisHashes;
 class RedisSets;
+class RedisLists;
 class HyperLogLog;
 class MutexFactory;
 class Mutex;
@@ -387,6 +388,26 @@ class BlackWidow {
                      const std::vector<std::string>& keys,
                      int32_t* ret);
 
+  // Lists Commands
+
+  // Insert all the specified values at the head of the list stored at key. If
+  // key does not exist, it is created as empty list before performing the push
+  // operations.
+  Status LPush(const Slice& key, const std::vector<std::string>& values,
+               int32_t* ret);
+
+  // Insert all the specified values at the tail of the list stored at key. If
+  // key does not exist, it is created as empty list before performing the push
+  // operation.
+  Status RPush(const Slice& key, const std::vector<std::string>& values,
+               int32_t* ret);
+
+  // Returns the specified elements of the list stored at key. The offsets start
+  // and stop are zero-based indexes, with 0 being the first element of the list
+  // (the head of the list), 1 being the next element and so on.
+  Status LRange(const Slice& key, int32_t start, int32_t stop,
+                std::vector<std::string>* ret);
+
   // Keys Commands
   enum DataType {
     kStrings,
@@ -475,6 +496,7 @@ class BlackWidow {
   RedisStrings* strings_db_;
   RedisHashes* hashes_db_;
   RedisSets* sets_db_;
+  RedisLists* lists_db_;
 
   MutexFactory* mutex_factory_;
 

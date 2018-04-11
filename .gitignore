@@ -54,6 +54,8 @@ tests/gtest_strings
 tests/gtest_strings_filter
 tests/gtest_hashes
 tests/gtest_hashes_filter
+tests/gtest_lists_filter
 tests/gtest_sets
+tests/gtest_lists
 tests/gtest_hyperloglog
 tests/lock_mgr

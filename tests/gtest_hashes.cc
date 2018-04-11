@@ -88,6 +88,10 @@ TEST_F(HashesTest, HMSetTest) {
 
   s = db.HMSet("HMSET_KEY", fvs1);
   ASSERT_TRUE(s.ok());
+  s = db.HLen("HMSET_KEY", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 2);
+
   s = db.HMSet("HMSET_KEY", fvs2);
   ASSERT_TRUE(s.ok());
 

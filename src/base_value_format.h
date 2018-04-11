@@ -39,7 +39,7 @@ class InternalValue {
     version_ = version;
   }
   static const size_t kDefaultValueSuffixLength = sizeof(int32_t) * 2;
-  const Slice Encode() {
+  virtual const Slice Encode() {
     size_t usize = user_value_.size();
     size_t needed = usize + kDefaultValueSuffixLength;
     char* dst;
