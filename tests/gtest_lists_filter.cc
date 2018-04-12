@@ -64,7 +64,7 @@ class ListsFilterTest : public ::testing::Test {
 
 // Meta Filter
 TEST_F(ListsFilterTest, MetaFilterTest) {
-  char str[4];
+  char str[8];
   bool filter_result;
   bool value_changed;
   int32_t version = 0;
@@ -75,8 +75,8 @@ TEST_F(ListsFilterTest, MetaFilterTest) {
   ASSERT_TRUE(lists_meta_filter != nullptr);
 
   // Timeout timestamp is not set, but it's an empty list.
-  EncodeFixed32(str, 0);
-  ListsMetaValue lists_meta_value1(std::string(str, sizeof(int32_t)));
+  EncodeFixed64(str, 0);
+  ListsMetaValue lists_meta_value1(std::string(str, sizeof(uint64_t)));
   lists_meta_value1.UpdateVersion();
   std::this_thread::sleep_for(std::chrono::milliseconds(1000));
   filter_result = lists_meta_filter->Filter(0, "FILTER_TEST_KEY",
@@ -84,8 +84,8 @@ TEST_F(ListsFilterTest, MetaFilterTest) {
   ASSERT_EQ(filter_result, true);
 
   // Timeout timestamp is not set, it's not an empty list.
-  EncodeFixed32(str, 1);
-  ListsMetaValue lists_meta_value2(std::string(str, sizeof(int32_t)));
+  EncodeFixed64(str, 1);
+  ListsMetaValue lists_meta_value2(std::string(str, sizeof(uint64_t)));
   lists_meta_value2.UpdateVersion();
   std::this_thread::sleep_for(std::chrono::milliseconds(1000));
   filter_result = lists_meta_filter->Filter(0, "FILTER_TEST_KEY",
@@ -93,8 +93,8 @@ TEST_F(ListsFilterTest, MetaFilterTest) {
   ASSERT_EQ(filter_result, false);
 
   // Timeout timestamp is set, but not expired.
-  EncodeFixed32(str, 1);
-  ListsMetaValue lists_meta_value3(std::string(str, sizeof(int32_t)));
+  EncodeFixed64(str, 1);
+  ListsMetaValue lists_meta_value3(std::string(str, sizeof(uint64_t)));
   lists_meta_value3.UpdateVersion();
   lists_meta_value3.SetRelativeTimestamp(3);
   std::this_thread::sleep_for(std::chrono::milliseconds(1000));
@@ -103,8 +103,8 @@ TEST_F(ListsFilterTest, MetaFilterTest) {
   ASSERT_EQ(filter_result, false);
 
   // Timeout timestamp is set, already expired.
-  EncodeFixed32(str, 1);
-  ListsMetaValue lists_meta_value4(std::string(str, sizeof(int32_t)));
+  EncodeFixed64(str, 1);
+  ListsMetaValue lists_meta_value4(std::string(str, sizeof(uint64_t)));
   lists_meta_value4.UpdateVersion();
   lists_meta_value4.SetRelativeTimestamp(1);
   std::this_thread::sleep_for(std::chrono::milliseconds(2000));
@@ -118,7 +118,7 @@ TEST_F(ListsFilterTest, MetaFilterTest) {
 
 // Data Filter
 TEST_F(ListsFilterTest, DataFilterTest) {
-  char str[4];
+  char str[8];
   bool filter_result;
   bool value_changed;
   int32_t version = 0;
@@ -128,8 +128,8 @@ TEST_F(ListsFilterTest, DataFilterTest) {
   ListsDataFilter* lists_data_filter1 = new ListsDataFilter(meta_db, &handles);
   ASSERT_TRUE(lists_data_filter1 != nullptr);
 
-  EncodeFixed32(str, 1);
-  ListsMetaValue lists_meta_value1(std::string(str, sizeof(int32_t)));
+  EncodeFixed64(str, 1);
+  ListsMetaValue lists_meta_value1(std::string(str, sizeof(uint64_t)));
   version = lists_meta_value1.UpdateVersion();
   s = meta_db->Put(rocksdb::WriteOptions(), handles[0],
                    "FILTER_TEST_KEY", lists_meta_value1.Encode());
@@ -148,8 +148,8 @@ TEST_F(ListsFilterTest, DataFilterTest) {
   ListsDataFilter* lists_data_filter2 = new ListsDataFilter(meta_db, &handles);
   ASSERT_TRUE(lists_data_filter2 != nullptr);
 
-  EncodeFixed32(str, 1);
-  ListsMetaValue lists_meta_value2(std::string(str, sizeof(int32_t)));
+  EncodeFixed64(str, 1);
+  ListsMetaValue lists_meta_value2(std::string(str, sizeof(uint64_t)));
   version = lists_meta_value2.UpdateVersion();
   lists_meta_value2.SetRelativeTimestamp(1);
   s = meta_db->Put(rocksdb::WriteOptions(), handles[0],
@@ -168,8 +168,8 @@ TEST_F(ListsFilterTest, DataFilterTest) {
   ListsDataFilter* lists_data_filter3 = new ListsDataFilter(meta_db, &handles);
   ASSERT_TRUE(lists_data_filter3 != nullptr);
 
-  EncodeFixed32(str, 1);
-  ListsMetaValue lists_meta_value3(std::string(str, sizeof(int32_t)));
+  EncodeFixed64(str, 1);
+  ListsMetaValue lists_meta_value3(std::string(str, sizeof(uint64_t)));
   version = lists_meta_value3.UpdateVersion();
   lists_meta_value3.SetRelativeTimestamp(1);
   s = meta_db->Put(rocksdb::WriteOptions(), handles[0],
@@ -189,8 +189,8 @@ TEST_F(ListsFilterTest, DataFilterTest) {
   ListsDataFilter* lists_data_filter4 = new ListsDataFilter(meta_db, &handles);
   ASSERT_TRUE(lists_data_filter4 != nullptr);
 
-  EncodeFixed32(str, 1);
-  ListsMetaValue lists_meta_value4(std::string(str, sizeof(int32_t)));
+  EncodeFixed64(str, 1);
+  ListsMetaValue lists_meta_value4(std::string(str, sizeof(uint64_t)));
   version = lists_meta_value4.UpdateVersion();
   s = meta_db->Put(rocksdb::WriteOptions(), handles[0],
                    "FILTER_TEST_KEY", lists_meta_value4.Encode());
@@ -212,8 +212,8 @@ TEST_F(ListsFilterTest, DataFilterTest) {
   ListsDataFilter* lists_data_filter5 = new ListsDataFilter(meta_db, &handles);
   ASSERT_TRUE(lists_data_filter5 != nullptr);
 
-  EncodeFixed32(str, 1);
-  ListsMetaValue lists_meta_value5(std::string(str, sizeof(int32_t)));
+  EncodeFixed64(str, 1);
+  ListsMetaValue lists_meta_value5(std::string(str, sizeof(uint64_t)));
   version = lists_meta_value5.UpdateVersion();
   s = meta_db->Put(rocksdb::WriteOptions(), handles[0],
                    "FILTER_TEST_KEY", lists_meta_value5.Encode());

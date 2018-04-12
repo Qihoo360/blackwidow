@@ -16,8 +16,8 @@ class ListsMetaValue : public InternalValue {
  public:
   explicit ListsMetaValue(const Slice& user_value) :
     InternalValue(user_value),
-    left_index_(2147483647),
-    right_index_(2147483648) {
+    left_index_(9223372036854775807),
+    right_index_(9223372036854775808U) {
   }
 
   virtual size_t AppendTimestampAndVersion() override {
@@ -34,13 +34,14 @@ class ListsMetaValue : public InternalValue {
   virtual size_t AppendIndex() {
     char * dst = start_;
     dst += user_value_.size() + 2 * sizeof(int32_t);
-    EncodeFixed32(dst, left_index_);
-    dst += sizeof(int32_t);
-    EncodeFixed32(dst, right_index_);
-    return 2 * sizeof(int32_t);
+    EncodeFixed64(dst, left_index_);
+    dst += sizeof(int64_t);
+    EncodeFixed64(dst, right_index_);
+    return 2 * sizeof(int64_t);
   }
 
-  static const size_t kDefaultValueSuffixLength = sizeof(int32_t) * 4;
+  static const size_t kDefaultValueSuffixLength = sizeof(int32_t) * 2 +
+    sizeof(int64_t) * 2;
 
   virtual const Slice Encode() override {
     size_t usize = user_value_.size();
@@ -67,26 +68,25 @@ class ListsMetaValue : public InternalValue {
     return version_;
   }
 
-  uint32_t left_index() {
+  uint64_t left_index() {
     return left_index_;
   }
 
-  void ModifyLeftIndex(uint32_t index) {
+  void ModifyLeftIndex(uint64_t index) {
     left_index_ -= index;
   }
 
-  uint32_t right_index() {
+  uint64_t right_index() {
     return right_index_;
   }
 
-  void ModifyRightIndex(uint32_t index) {
+  void ModifyRightIndex(uint64_t index) {
     right_index_ += index;
   }
 
-
  private:
-  uint32_t left_index_;
-  uint32_t right_index_;
+  uint64_t left_index_;
+  uint64_t right_index_;
 };
 
 class ParsedListsMetaValue : public ParsedInternalValue {
@@ -98,15 +98,17 @@ class ParsedListsMetaValue : public ParsedInternalValue {
       user_value_ = Slice(internal_value_str->data(),
           internal_value_str->size() - kListsMetaValueSuffixLength);
       version_ = DecodeFixed32(internal_value_str->data() +
-            internal_value_str->size() - sizeof(int32_t) * 4);
+            internal_value_str->size() - sizeof(int32_t) * 2 -
+            sizeof(int64_t) * 2);
       timestamp_ = DecodeFixed32(internal_value_str->data() +
-            internal_value_str->size() - sizeof(int32_t) * 3);
-      left_index_ = DecodeFixed32(internal_value_str->data() +
-            internal_value_str->size() - sizeof(int32_t) * 2);
-      right_index_ = DecodeFixed32(internal_value_str->data() +
-            internal_value_str->size() - sizeof(int32_t));
+            internal_value_str->size() - sizeof(int32_t) -
+            sizeof(int64_t) * 2);
+      left_index_ = DecodeFixed64(internal_value_str->data() +
+            internal_value_str->size() - sizeof(int64_t) * 2);
+      right_index_ = DecodeFixed64(internal_value_str->data() +
+            internal_value_str->size() - sizeof(int64_t));
     }
-    count_ = DecodeFixed32(internal_value_str->data());
+    count_ = DecodeFixed64(internal_value_str->data());
   }
 
   // Use this constructor in rocksdb::CompactionFilter::Filter();
@@ -116,15 +118,17 @@ class ParsedListsMetaValue : public ParsedInternalValue {
       user_value_ = Slice(internal_value_slice.data(),
           internal_value_slice.size() - kListsMetaValueSuffixLength);
       version_ = DecodeFixed32(internal_value_slice.data() +
-            internal_value_slice.size() - sizeof(int32_t) * 4);
+            internal_value_slice.size() - sizeof(int32_t) * 2 -
+            sizeof(int64_t) * 2);
       timestamp_ = DecodeFixed32(internal_value_slice.data() +
-            internal_value_slice.size() - sizeof(int32_t) * 3);
-      left_index_ = DecodeFixed32(internal_value_slice.data() +
-            internal_value_slice.size() - sizeof(int32_t) * 2);
-      right_index_ = DecodeFixed32(internal_value_slice.data() +
-            internal_value_slice.size() - sizeof(int32_t));
+            internal_value_slice.size() - sizeof(int32_t) -
+            sizeof(int64_t) * 2);
+      left_index_ = DecodeFixed64(internal_value_slice.data() +
+            internal_value_slice.size() - sizeof(int64_t) * 2);
+      right_index_ = DecodeFixed64(internal_value_slice.data() +
+            internal_value_slice.size() - sizeof(int64_t));
     }
-    count_ = DecodeFixed32(internal_value_slice.data());
+    count_ = DecodeFixed64(internal_value_slice.data());
   }
 
   virtual void StripSuffix() override {
@@ -145,7 +149,7 @@ class ParsedListsMetaValue : public ParsedInternalValue {
   virtual void SetTimestampToValue() override {
     if (value_ != nullptr) {
       char* dst = const_cast<char*>(value_->data()) + value_->size() -
-        3 * sizeof(int32_t);
+        sizeof(int32_t) - 2 * sizeof(int64_t);
       EncodeFixed32(dst, timestamp_);
     }
   }
@@ -153,32 +157,33 @@ class ParsedListsMetaValue : public ParsedInternalValue {
   void SetIndexToValue() {
     if (value_ != nullptr) {
       char *dst = const_cast<char *>(value_->data()) + value_->size() -
-        2 * sizeof(int32_t);
-      EncodeFixed32(dst,  left_index_);
-      dst += sizeof(int32_t);
-      EncodeFixed32(dst, right_index_);
+        2 * sizeof(int64_t);
+      EncodeFixed64(dst,  left_index_);
+      dst += sizeof(int64_t);
+      EncodeFixed64(dst, right_index_);
     }
   }
 
-  static const size_t kListsMetaValueSuffixLength = 4 * sizeof(int32_t);
+  static const size_t kListsMetaValueSuffixLength =
+                          2 * sizeof(int32_t) + 2 * sizeof(int64_t);
 
-  int32_t count() {
+  uint64_t count() {
     return count_;
   }
 
-  void set_count(int32_t count) {
+  void set_count(uint64_t count) {
     count_ = count;
     if (value_ != nullptr) {
       char* dst = const_cast<char*>(value_->data());
-      EncodeFixed32(dst, count_);
+      EncodeFixed64(dst, count_);
     }
   }
 
-  void ModifyCount(int32_t delta) {
+  void ModifyCount(uint64_t delta) {
     count_ += delta;
     if (value_ != nullptr) {
       char* dst = const_cast<char*>(value_->data());
-      EncodeFixed32(dst, count_);
+      EncodeFixed64(dst, count_);
     }
   }
 
@@ -194,54 +199,54 @@ class ParsedListsMetaValue : public ParsedInternalValue {
     return version_;
   }
 
-  uint32_t left_index() {
+  uint64_t left_index() {
     return left_index_;
   }
 
-  void set_left_index(uint32_t index) {
+  void set_left_index(uint64_t index) {
     left_index_ = index;
     if (value_ != nullptr) {
       char* dst = const_cast<char *>(value_->data()) + value_->size() -
-        2 * sizeof(int32_t);
-      EncodeFixed32(dst, left_index_);
+        2 * sizeof(int64_t);
+      EncodeFixed64(dst, left_index_);
     }
   }
 
-  void ModifyLeftIndex(uint32_t index) {
+  void ModifyLeftIndex(uint64_t index) {
     left_index_ -= index;
     if (value_ != nullptr) {
       char* dst = const_cast<char *>(value_->data()) + value_->size() -
-        2 * sizeof(int32_t);
-      EncodeFixed32(dst, left_index_);
+        2 * sizeof(int64_t);
+      EncodeFixed64(dst, left_index_);
     }
   }
 
-  uint32_t right_index() {
+  uint64_t right_index() {
     return right_index_;
   }
 
-  void set_right_index(uint32_t index) {
+  void set_right_index(uint64_t index) {
     right_index_ = index;
     if (value_ != nullptr) {
       char* dst = const_cast<char *>(value_->data()) + value_->size() -
-        sizeof(int32_t);
-      EncodeFixed32(dst, right_index_);
+        sizeof(int64_t);
+      EncodeFixed64(dst, right_index_);
     }
   }
 
-  void ModifyRightIndex(uint32_t index) {
+  void ModifyRightIndex(uint64_t index) {
     right_index_ += index;
     if (value_ != nullptr) {
       char* dst = const_cast<char *>(value_->data()) + value_->size() -
-        sizeof(int32_t);
-      EncodeFixed32(dst, right_index_);
+        sizeof(int64_t);
+      EncodeFixed64(dst, right_index_);
     }
   }
 
  private:
-  int32_t count_;
-  uint32_t left_index_ = 2147483647;
-  uint32_t right_index_ = 2147483648;
+  uint64_t count_;
+  uint64_t left_index_ = 9223372036854775807;
+  uint64_t right_index_ = 9223372036854775808U;
 };
 
 }  //  namespace blackwidow

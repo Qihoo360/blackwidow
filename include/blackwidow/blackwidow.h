@@ -394,19 +394,24 @@ class BlackWidow {
   // key does not exist, it is created as empty list before performing the push
   // operations.
   Status LPush(const Slice& key, const std::vector<std::string>& values,
-               int32_t* ret);
+               uint64_t* ret);
 
   // Insert all the specified values at the tail of the list stored at key. If
   // key does not exist, it is created as empty list before performing the push
   // operation.
   Status RPush(const Slice& key, const std::vector<std::string>& values,
-               int32_t* ret);
+               uint64_t* ret);
 
   // Returns the specified elements of the list stored at key. The offsets start
   // and stop are zero-based indexes, with 0 being the first element of the list
   // (the head of the list), 1 being the next element and so on.
-  Status LRange(const Slice& key, int32_t start, int32_t stop,
+  Status LRange(const Slice& key, int64_t start, int64_t stop,
                 std::vector<std::string>* ret);
+
+  // Removes the first count occurrences of elements equal to value from the
+  // list stored at key. The count argument influences the operation in the
+  // following ways
+  Status LTrim(const Slice& key, int64_t start, int64_t stop);
 
   // Keys Commands
   enum DataType {

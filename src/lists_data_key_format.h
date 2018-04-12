@@ -11,7 +11,7 @@
 namespace blackwidow {
 class ListsDataKey {
  public:
-  ListsDataKey(const Slice& key, int32_t version, uint32_t index) :
+  ListsDataKey(const Slice& key, int32_t version, uint64_t index) :
     start_(nullptr), key_(key), version_(version), index_(index) {
   }
 
@@ -23,7 +23,7 @@ class ListsDataKey {
 
   const Slice Encode() {
     size_t usize = key_.size();
-    size_t needed = usize + sizeof(int32_t) * 3;
+    size_t needed = usize + sizeof(int32_t) * 2 + sizeof(uint64_t);
     char* dst;
     if (needed <= sizeof(space_)) {
       dst = space_;
@@ -37,7 +37,7 @@ class ListsDataKey {
     dst += key_.size();
     EncodeFixed32(dst, version_);
     dst += sizeof(int32_t);
-    EncodeFixed32(dst, index_);
+    EncodeFixed64(dst, index_);
     return Slice(start_, needed);
   }
 
@@ -46,7 +46,7 @@ class ListsDataKey {
   char* start_;
   Slice key_;
   int32_t version_;
-  uint32_t index_;
+  uint64_t index_;
 };
 
 class ParsedListsDataKey {
@@ -59,7 +59,7 @@ class ParsedListsDataKey {
     ptr += key_len;
     version_ = DecodeFixed32(ptr);
     ptr += sizeof(int32_t);
-    index_ = DecodeFixed32(ptr);
+    index_ = DecodeFixed64(ptr);
   }
 
   explicit ParsedListsDataKey(const Slice& key) {
@@ -70,7 +70,7 @@ class ParsedListsDataKey {
     ptr += key_len;
     version_ = DecodeFixed32(ptr);
     ptr += sizeof(int32_t);
-    index_ = DecodeFixed32(ptr);
+    index_ = DecodeFixed64(ptr);
   }
 
   virtual ~ParsedListsDataKey() = default;
@@ -83,7 +83,7 @@ class ParsedListsDataKey {
     return version_;
   }
 
-  uint32_t index() {
+  uint64_t index() {
     return index_;
   }
 
@@ -91,7 +91,7 @@ class ParsedListsDataKey {
   std::string* raw_key_;
   Slice key_;
   int32_t version_;
-  uint32_t index_;
+  uint64_t index_;
 };
 
 }  //  namespace blackwidow

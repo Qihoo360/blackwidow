@@ -29,9 +29,9 @@ class ListsMetaFilter : public rocksdb::CompactionFilter {
     rocksdb::Env::Default()->GetCurrentTime(&unix_time);
     int32_t cur_time = static_cast<int32_t>(unix_time);
     Trace("==================================================================");
-    Trace("[MetaFilter], key: %s, count = %d, timestamp: %d, cur_time: %d, version: %d",
+    Trace("[MetaFilter], key: %s, count = %ld, timestamp: %d, cur_time: %d, version: %d",
         key.ToString().c_str(),
-        parsed_meta_value.count(),
+        static_cast<int64_t>(parsed_meta_value.count()),
         parsed_meta_value.timestamp(),
         cur_time, parsed_meta_value.version());
     if (parsed_meta_value.timestamp() != 0 &&

@@ -22,11 +22,12 @@ class RedisLists : public Redis {
 
   // Lists commands;
   Status LPush(const Slice& key, const std::vector<std::string>& values,
-               int32_t* ret);
+               uint64_t* ret);
   Status RPush(const Slice& key, const std::vector<std::string>& values,
-               int32_t* ret);
-  Status LRange(const Slice& key, int32_t start, int32_t stop,
+               uint64_t* ret);
+  Status LRange(const Slice& key, int64_t start, int64_t stop,
                 std::vector<std::string>* ret);
+  Status LTrim(const Slice& key, int64_t start, int64_t stop);
 
   // Common commands
   virtual Status Open(const rocksdb::Options& options,

@@ -33,7 +33,7 @@ class ListsTest : public ::testing::Test {
 
 // LRange
 TEST_F(ListsTest, LRangeTest) {
-  int32_t num;
+  uint64_t num;
   std::vector<std::string> values;
   for (int32_t i = 0; i < 100; i++) {
     values.push_back("LRANGE_VALUE"+ std::to_string(i));
@@ -59,8 +59,75 @@ TEST_F(ListsTest, LRangeTest) {
     ASSERT_STREQ(result[i].c_str(), values[i].c_str());
   }
   result.clear();
-  
+
+  s = db.LRange("LRANGE_KEY", -100, -1, &result);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(result.size(), 100);
+  for (int32_t i = 0; i < 100; i++) {
+    ASSERT_STREQ(result[i].c_str(), values[i].c_str());
+  }
+  result.clear();
+
+  s = db.LRange("LRANGE_KEY", -100, 0, &result);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(result.size(), 1);
+  ASSERT_STREQ(result[0].c_str(), values[0].c_str());
+  result.clear();
+
+  s = db.LRange("LRANGE_KEY", -1, 100, &result);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(result.size(), 1);
+  ASSERT_STREQ(result[0].c_str(), values[99].c_str());
+  result.clear();
+
+  s = db.LRange("LRANGE_KEY", -50, -20, &result);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(result.size(), 31);
+  for (int32_t i = 50, j = 0; i < 80, j < result.size(); i++, j++) {
+    ASSERT_STREQ(result[j].c_str(), values[i].c_str());
+  }
+  result.clear();
+
+  s = db.LRange("LRANGE_KEY", 0, -1, &result);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(result.size(), 100);
+  for (int32_t i = 0; i < 100; i++) {
+    ASSERT_STREQ(result[i].c_str(), values[i].c_str());
+  }
+  result.clear();
+
   // TODO(shq)
+}
+
+// LTrim
+TEST_F(ListsTest, LTrimTest) {
+  uint64_t num;
+  std::vector<std::string> values;
+  for (int32_t i = 0; i < 100; i++) {
+    values.push_back("LTRIM_VALUE"+ std::to_string(i));
+  }
+  s = db.RPush("LTRIM_KEY", values, &num);
+  ASSERT_EQ(num, values.size());
+  ASSERT_TRUE(s.ok());
+
+  std::vector<std::string> result;
+  s = db.LRange("LTRIM_KEY", 0, 100, &result);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(result.size(), 100);
+  for (int32_t i = 0; i < 100; i++) {
+    ASSERT_STREQ(result[i].c_str(), values[i].c_str());
+  }
+  result.clear();
+
+  s = db.LTrim("LTRIM_KEY", 0, 50);
+  ASSERT_TRUE(s.ok());
+  s = db.LRange("LTRIM_KEY", 0, 50, &result);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(result.size(), 51);
+  for (int32_t i = 0; i < 51; i++) {
+    ASSERT_STREQ(result[i].c_str(), values[i].c_str());
+  }
+  result.clear();
 }
 
 int main(int argc, char** argv) {

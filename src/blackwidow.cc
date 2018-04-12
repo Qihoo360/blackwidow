@@ -343,19 +343,23 @@ Status BlackWidow::SUnionstore(const Slice& destination,
 
 Status BlackWidow::LPush(const Slice& key,
                          const std::vector<std::string>& values,
-                         int32_t* ret) {
+                         uint64_t* ret) {
   return lists_db_->LPush(key, values, ret);
 }
 
 Status BlackWidow::RPush(const Slice& key,
                          const std::vector<std::string>& values,
-                         int32_t* ret) {
+                         uint64_t* ret) {
   return lists_db_->RPush(key, values, ret);
 }
 
-Status BlackWidow::LRange(const Slice& key, int32_t start, int32_t stop,
+Status BlackWidow::LRange(const Slice& key, int64_t start, int64_t stop,
                           std::vector<std::string>* ret) {
   return lists_db_->LRange(key, start, stop, ret);
+}
+
+Status BlackWidow::LTrim(const Slice& key, int64_t start, int64_t stop) {
+  return lists_db_->LTrim(key, start, stop);
 }
 
 // Keys Commands
