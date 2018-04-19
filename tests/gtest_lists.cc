@@ -83,7 +83,7 @@ TEST_F(ListsTest, LRangeTest) {
   s = db.LRange("LRANGE_KEY", -50, -20, &result);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(result.size(), 31);
-  for (int32_t i = 50, j = 0; i < 80, j < result.size(); i++, j++) {
+  for (int32_t i = 50, j = 0; i < 80 && j < result.size(); i++, j++) {
     ASSERT_STREQ(result[j].c_str(), values[i].c_str());
   }
   result.clear();

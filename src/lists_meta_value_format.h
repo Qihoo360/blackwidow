@@ -12,12 +12,15 @@
 
 namespace blackwidow {
 
+const uint64_t InitalLeftIndex = 9223372036854775807;
+const uint64_t InitalRightIndex = 9223372036854775808U;
+
 class ListsMetaValue : public InternalValue {
  public:
   explicit ListsMetaValue(const Slice& user_value) :
     InternalValue(user_value),
-    left_index_(9223372036854775807),
-    right_index_(9223372036854775808U) {
+    left_index_(InitalLeftIndex),
+    right_index_(InitalRightIndex) {
   }
 
   virtual size_t AppendTimestampAndVersion() override {
@@ -166,6 +169,14 @@ class ParsedListsMetaValue : public ParsedInternalValue {
 
   static const size_t kListsMetaValueSuffixLength =
                           2 * sizeof(int32_t) + 2 * sizeof(int64_t);
+
+  int32_t InitialMetaValue() {
+    this->set_count(0);
+    this->set_left_index(InitalLeftIndex);
+    this->set_right_index(InitalRightIndex);
+    this->set_timestamp(0);
+    return this->UpdateVersion();
+  }
 
   uint64_t count() {
     return count_;

@@ -68,8 +68,7 @@ Status RedisLists::LPush(const Slice& key,
   if (s.ok()) {
     ParsedListsMetaValue parsed_meta_value(&meta_value);
     if (parsed_meta_value.IsStale()) {
-      version = parsed_meta_value.UpdateVersion();
-      parsed_meta_value.set_timestamp(0);
+      version = parsed_meta_value.InitialMetaValue();
       for (auto value : values) {
         index = parsed_meta_value.left_index();
         parsed_meta_value.ModifyLeftIndex(1);
@@ -125,8 +124,7 @@ Status RedisLists::RPush(const Slice& key,
   if (s.ok()) {
     ParsedListsMetaValue parsed_meta_value(&meta_value);
     if (parsed_meta_value.IsStale()) {
-      version = parsed_meta_value.UpdateVersion();
-      parsed_meta_value.set_timestamp(0);
+      version = parsed_meta_value.InitialMetaValue();
       for (auto value : values) {
         index = parsed_meta_value.right_index();
         parsed_meta_value.ModifyRightIndex(1);
@@ -238,10 +236,7 @@ Status RedisLists::LTrim(const Slice& key, int64_t start, int64_t stop) {
         stop_index = parsed_meta_value.right_index() - 1;
       }
       // Update the meta of list
-      parsed_meta_value.UpdateVersion();
-      parsed_meta_value.set_count(0);
-      parsed_meta_value.set_left_index(9223372036854775807);
-      parsed_meta_value.set_right_index(9223372036854775808U);
+      parsed_meta_value.InitialMetaValue();
       s = db_->Put(default_write_options_, handles_[0], key, meta_value);
       if (!s.ok()) {
         return s;
@@ -271,7 +266,22 @@ Status RedisLists::CompactRange(const rocksdb::Slice* begin,
 }
 
 Status RedisLists::Expire(const Slice& key, int32_t ttl) {
-  Status s;
+  std::string meta_value;
+  ScopeRecordLock l(lock_mgr_, key);
+  Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
+  if (s.ok()) {
+    ParsedListsMetaValue parsed_lists_meta_value(&meta_value);
+    if (parsed_lists_meta_value.IsStale()) {
+      return Status::NotFound("Stale");
+    }
+    if (ttl > 0) {
+      parsed_lists_meta_value.SetRelativeTimestamp(ttl);
+      s = db_->Put(default_write_options_, handles_[0], key, meta_value);
+    } else {
+      parsed_lists_meta_value.InitialMetaValue();
+      s = db_->Put(default_write_options_, handles_[0], key, meta_value);
+    }
+  }
   return s;
 }
 

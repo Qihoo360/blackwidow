@@ -12,7 +12,6 @@
 namespace blackwidow {
 
 const int32_t HLL_HASH_SEED = 313;
-const int32_t KEY_MAX_LENGTH = 255;
 
 HyperLogLog::HyperLogLog(uint8_t precision, std::string origin_register) {
   b_ = precision;
