@@ -149,7 +149,7 @@ Status RedisLists::RPush(const Slice& key,
   } else if (s.IsNotFound()) {
     char str[8];
     EncodeFixed64(str, values.size());
-    ListsMetaValue lists_meta_value(std::string(str, sizeof(uint32_t)));
+    ListsMetaValue lists_meta_value(std::string(str, sizeof(uint64_t)));
     version = lists_meta_value.UpdateVersion();
     lists_meta_value.set_timestamp(0);
     for (auto value : values) {
