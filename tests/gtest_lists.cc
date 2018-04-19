@@ -11,6 +11,66 @@
 
 using namespace blackwidow;
 
+static bool elements_match(blackwidow::BlackWidow *const db,
+                           const Slice& key,
+                           const std::vector<std::string>& expect_elements) {
+  std::vector<std::string> elements_out;
+  Status s = db->LRange(key, 0, -1, &elements_out);
+  if (!s.ok() && !s.IsNotFound()) {
+    return false;
+  }
+  if (elements_out.size() != expect_elements.size()) {
+    return false;
+  }
+  if (s.IsNotFound() && expect_elements.empty()) {
+    return true;
+  }
+  for (uint64_t idx = 0; idx < elements_out.size(); ++idx) {
+    if (strcmp(elements_out[idx].c_str(), expect_elements[idx].c_str())) {
+      return false;
+    }
+  }
+  return true;
+}
+
+static bool elements_match(const std::vector<std::string>& elements_out,
+                           const std::vector<std::string>& expect_elements) {
+  if (elements_out.size() != expect_elements.size()) {
+    return false;
+  }
+  for (uint64_t idx = 0; idx < elements_out.size(); ++idx) {
+    if (strcmp(elements_out[idx].c_str(), expect_elements[idx].c_str())) {
+      return false;
+    }
+  }
+  return true;
+}
+
+static bool len_match(blackwidow::BlackWidow *const db,
+                      const Slice& key,
+                      uint64_t expect_len) {
+  uint64_t len = 0;
+  Status s = db->LLen(key, &len);
+  if (!s.ok() && !s.IsNotFound()) {
+    return false;
+  }
+  if (s.IsNotFound() && !expect_len) {
+    return true;
+  }
+  return len == expect_len;
+}
+
+static bool make_expired(blackwidow::BlackWidow *const db,
+                         const Slice& key) {
+  std::map<BlackWidow::DataType, rocksdb::Status> type_status;
+  int ret = db->Expire(key, 1, &type_status);
+  if (!ret || !type_status[BlackWidow::DataType::kLists].ok()) {
+    return false;
+  }
+  std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+  return true;
+}
+
 class ListsTest : public ::testing::Test {
  public:
   ListsTest() {
@@ -128,6 +188,187 @@ TEST_F(ListsTest, LTrimTest) {
     ASSERT_STREQ(result[i].c_str(), values[i].c_str());
   }
   result.clear();
+}
+
+// LLen
+TEST_F(ListsTest, LLenTest) {
+  uint64_t num;
+
+  // ***************** Group 1 Test *****************
+  // "l" -> "x" -> "a"
+  std::vector<std::string> gp1_nodes {"a", "x", "l"};
+  s = db.LPush("GP1_LLEN_KEY", gp1_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp1_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP1_LLEN_KEY", gp1_nodes.size()));
+
+  // The key has timeout
+  ASSERT_TRUE(make_expired(&db, "GP1_LLEN_KEY"));
+  ASSERT_TRUE(len_match(&db, "GP1_LLEN_KEY", 0));
+
+
+  // ***************** Group 1 Test *****************
+  // "p" -> "e" -> "r" -> "g"
+  std::vector<std::string> gp2_nodes {"g", "r", "e", "p"};
+  s = db.LPush("GP2_LLEN_KEY", gp2_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp2_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP2_LLEN_KEY", gp2_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP2_LLEN_KEY", {"p", "e", "r", "g"}));
+
+  // Delete the key
+  std::vector<std::string> del_keys = {"GP2_LLEN_KEY"};
+  std::map<BlackWidow::DataType, blackwidow::Status> type_status;
+  db.Del(del_keys, &type_status);
+  ASSERT_TRUE(type_status[BlackWidow::DataType::kLists].ok());
+  ASSERT_TRUE(len_match(&db, "GP2_LLEN_KEY", 0));
+  ASSERT_TRUE(elements_match(&db, "GP2_LLEN_KEY", {}));
+}
+
+// LPop
+TEST_F(ListsTest, LPopTest) {
+  uint64_t num;
+  std::string element;
+
+  // ***************** Group 1 Test *****************
+  //  "l" -> "x" -> "a"
+  std::vector<std::string> gp1_nodes {"a", "x", "l"};
+  s = db.LPush("GP1_LPOP_KEY", gp1_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp1_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP1_LPOP_KEY", gp1_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP1_LPOP_KEY", {"l", "x", "a"}));
+
+  // "x" -> "a"
+  s = db.LPop("GP1_LPOP_KEY", &element);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(element, "l");
+  ASSERT_TRUE(len_match(&db, "GP1_LPOP_KEY", 2));
+  ASSERT_TRUE(elements_match(&db, "GP1_LPOP_KEY", {"x", "a"}));
+
+  // after lpop two element, list will be empty
+  s = db.LPop("GP1_LPOP_KEY", &element);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(element, "x");
+  s = db.LPop("GP1_LPOP_KEY", &element);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(element, "a");
+  ASSERT_TRUE(len_match(&db, "GP1_LPOP_KEY", 0));
+  ASSERT_TRUE(elements_match(&db, "GP1_LPOP_KEY", {}));
+
+  // lpop empty list
+  s = db.LPop("GP1_LPOP_KEY", &element);
+  ASSERT_TRUE(s.IsNotFound());
+
+
+  // ***************** Group 2 Test *****************
+  //  "p" -> "e" -> "r" -> "g"
+  std::vector<std::string> gp2_nodes {"g", "r", "e", "p"};
+  s = db.LPush("GP2_LPOP_KEY", gp2_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp2_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP2_LPOP_KEY", gp2_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP2_LPOP_KEY", {"p", "e", "r", "g"}));
+
+  ASSERT_TRUE(make_expired(&db, "GP2_LPOP_KEY"));
+  s = db.LPop("GP2_LPOP_KEY", &element);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_TRUE(len_match(&db, "GP2_LPOP_KEY", 0));
+  ASSERT_TRUE(elements_match(&db, "GP2_LPOP_KEY", {}));
+
+
+  // ***************** Group 3 Test *****************
+  // "p" -> "o" -> "m" -> "e" -> "i" -> "i"
+  std::vector<std::string> gp3_nodes {"i", "i", "e", "m", "o", "p"};
+  s = db.LPush("GP3_LPOP_KEY", gp3_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp3_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP3_LPOP_KEY", gp3_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP3_LPOP_KEY", {"p", "o", "m", "e", "i", "i"}));
+
+  // Delete the key, then try lpop
+  std::vector<std::string> del_keys = {"GP3_LPOP_KEY"};
+  std::map<BlackWidow::DataType, blackwidow::Status> type_status;
+  db.Del(del_keys, &type_status);
+  ASSERT_TRUE(type_status[BlackWidow::DataType::kLists].ok());
+  ASSERT_TRUE(len_match(&db, "GP3_LPOP_KEY", 0));
+  ASSERT_TRUE(elements_match(&db, "GP3_LPOP_KEY", {}));
+
+  s = db.LPop("GP3_LPOP_KEY", &element);
+  ASSERT_TRUE(s.IsNotFound());
+}
+
+// RPop
+TEST_F(ListsTest, RPopTest) {
+  uint64_t num;
+  std::string element;
+
+  // ***************** Group 1 Test *****************
+  //  "a" -> "x" -> "l"
+  std::vector<std::string> gp1_nodes {"l", "x", "a"};
+  s = db.LPush("GP1_RPOP_KEY", gp1_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp1_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP1_RPOP_KEY", gp1_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP1_RPOP_KEY", {"a", "x", "l"}));
+
+  // "a" -> "x"
+  s = db.RPop("GP1_RPOP_KEY", &element);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(element, "l");
+  ASSERT_TRUE(len_match(&db, "GP1_RPOP_KEY", 2));
+  ASSERT_TRUE(elements_match(&db, "GP1_RPOP_KEY", {"a", "x"}));
+
+  // After rpop two element, list will be empty
+  s = db.RPop("GP1_RPOP_KEY", &element);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(element, "x");
+  s = db.RPop("GP1_RPOP_KEY", &element);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(element, "a");
+  ASSERT_TRUE(len_match(&db, "GP1_RPOP_KEY", 0));
+  ASSERT_TRUE(elements_match(&db, "GP1_RPOP_KEY", {}));
+
+  // lpop empty list
+  s = db.LPop("GP1_RPOP_KEY", &element);
+  ASSERT_TRUE(s.IsNotFound());
+
+
+  // ***************** Group 2 Test *****************
+  //  "g" -> "r" -> "e" -> "p"
+  std::vector<std::string> gp2_nodes {"p", "e", "r", "g"};
+  s = db.LPush("GP2_RPOP_KEY", gp2_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp2_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP2_RPOP_KEY", gp2_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP2_RPOP_KEY", {"g", "r", "e", "p"}));
+
+  ASSERT_TRUE(make_expired(&db, "GP2_RPOP_KEY"));
+  s = db.LPop("GP2_RPOP_KEY", &element);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_TRUE(len_match(&db, "GP2_RPOP_KEY", 0));
+  ASSERT_TRUE(elements_match(&db, "GP2_RPOP_KEY", {}));
+
+
+  // ***************** Group 3 Test *****************
+  // "p" -> "o" -> "m" -> "e" -> "i" -> "i"
+  std::vector<std::string> gp3_nodes {"i", "i", "e", "m", "o", "p"};
+  s = db.LPush("GP3_RPOP_KEY", gp3_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp3_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP3_RPOP_KEY", gp3_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP3_RPOP_KEY", {"p", "o", "m", "e", "i", "i"}));
+
+  // Delete the key, then try lpop
+  std::vector<std::string> del_keys = {"GP3_RPOP_KEY"};
+  std::map<BlackWidow::DataType, blackwidow::Status> type_status;
+  db.Del(del_keys, &type_status);
+  ASSERT_TRUE(type_status[BlackWidow::DataType::kLists].ok());
+  ASSERT_TRUE(len_match(&db, "GP3_RPOP_KEY", 0));
+  ASSERT_TRUE(elements_match(&db, "GP3_RPOP_KEY", {}));
+
+  s = db.RPop("GP3_LPOP_KEY", &element);
+  ASSERT_TRUE(s.IsNotFound());
 }
 
 int main(int argc, char** argv) {

@@ -362,6 +362,19 @@ Status BlackWidow::LTrim(const Slice& key, int64_t start, int64_t stop) {
   return lists_db_->LTrim(key, start, stop);
 }
 
+Status BlackWidow::LLen(const Slice& key, uint64_t* len) {
+  return lists_db_->LLen(key, len);
+}
+
+Status BlackWidow::LPop(const Slice& key, std::string* element) {
+  return lists_db_->LPop(key, element);
+}
+
+Status BlackWidow::RPop(const Slice& key, std::string* element) {
+  return lists_db_->RPop(key, element);
+}
+
+
 // Keys Commands
 int32_t BlackWidow::Expire(const Slice& key, int32_t ttl,
                            std::map<DataType, Status>* type_status) {
@@ -393,6 +406,15 @@ int32_t BlackWidow::Expire(const Slice& key, int32_t ttl,
   } else if (!s.IsNotFound()) {
     is_corruption = true;
     (*type_status)[DataType::kSets] = s;
+  }
+
+  // Lists
+  s = lists_db_->Expire(key, ttl);
+  if (s.ok()) {
+    ret++;
+  } else if(!s.IsNotFound()) {
+    is_corruption = true;
+    (*type_status)[DataType::kLists] = s;
   }
 
   if (is_corruption) {
@@ -435,7 +457,17 @@ int64_t BlackWidow::Del(const std::vector<std::string>& keys,
       is_corruption = true;
       (*type_status)[DataType::kSets] = s;
     }
-    // TODO(shq) other types
+
+    // Lists
+    s = lists_db_->Del(key);
+    if (s.ok()) {
+      count++;
+    } else if (!s.IsNotFound()) {
+      is_corruption = true;
+      (*type_status)[DataType::kLists] = s;
+    }
+
+    // TODO(wxj) other types
   }
 
   if (is_corruption) {

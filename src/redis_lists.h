@@ -28,6 +28,9 @@ class RedisLists : public Redis {
   Status LRange(const Slice& key, int64_t start, int64_t stop,
                 std::vector<std::string>* ret);
   Status LTrim(const Slice& key, int64_t start, int64_t stop);
+  Status LLen(const Slice& key, uint64_t* len);
+  Status LPop(const Slice& key, std::string* element);
+  Status RPop(const Slice& key, std::string* element);
 
   // Common commands
   virtual Status Open(const rocksdb::Options& options,

@@ -413,6 +413,17 @@ class BlackWidow {
   // following ways
   Status LTrim(const Slice& key, int64_t start, int64_t stop);
 
+  // Returns the length of the list stored at key. If key does not exist, it is
+  // interpreted as an empty list and 0 is returned. An error is returned when
+  // the value stored at key is not a list.
+  Status LLen(const Slice& key, uint64_t* len);
+
+  // Removes and returns the first element of the list stored at key.
+  Status LPop(const Slice& key, std::string* element);
+
+  // Removes and returns the last element of the list stored at key.
+  Status RPop(const Slice& key, std::string* element);
+
   // Keys Commands
   enum DataType {
     kStrings,
