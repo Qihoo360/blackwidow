@@ -389,6 +389,10 @@ class BlackWidow {
                      int32_t* ret);
 
   // Lists Commands
+  enum BeforeOrAfter {
+    Before,
+    After
+  };
 
   // Insert all the specified values at the head of the list stored at key. If
   // key does not exist, it is created as empty list before performing the push
@@ -423,6 +427,22 @@ class BlackWidow {
 
   // Removes and returns the last element of the list stored at key.
   Status RPop(const Slice& key, std::string* element);
+
+  // Returns the element at index index in the list stored at key. The index is
+  // zero-based, so 0 means the first element, 1 the second element and so on.
+  // Negative indices can be used to designate elements starting at the tail of
+  // the list. Here, -1 means the last element, -2 means the penultimate and so
+  // forth.
+  Status LIndex(const Slice& key, int64_t index, std::string* element);
+
+  // Inserts value in the list stored at key either before or after the
+  // reference value pivot.
+  // When key does not exist, it is considered an empty list and no operation is
+  // performed.
+  // An error is returned when key exists but does not hold a list value.
+  Status LInsert(const Slice& key, const BeforeOrAfter& before_or_after,
+                 const std::string& pivot, const std::string& value, int64_t* ret);
+
 
   // Keys Commands
   enum DataType {

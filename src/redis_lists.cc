@@ -330,6 +330,45 @@ Status RedisLists::RPop(const Slice& key, std::string* element) {
   return s;
 }
 
+Status RedisLists::LIndex(const Slice& key, int64_t index, std::string* element) {
+  rocksdb::ReadOptions read_options;
+  const rocksdb::Snapshot* snapshot;
+
+  ScopeSnapshot ss(db_, &snapshot);
+  read_options.snapshot = snapshot;
+  std::string meta_value;
+  Status s = db_->Get(read_options, handles_[0], key, &meta_value);
+  if (s.ok()) {
+    ParsedListsMetaValue parsed_lists_meta_value(&meta_value);
+    int32_t version = parsed_lists_meta_value.version();
+    if (parsed_lists_meta_value.IsStale()) {
+      return Status::NotFound("Stale");
+    } else if (parsed_lists_meta_value.count() == 0) {
+      return Status::NotFound();
+    } else {
+      std::string tmp_element;
+      uint64_t positive_direction_index = index >= 0 ?
+            parsed_lists_meta_value.left_index() + index + 1 :
+            parsed_lists_meta_value.right_index() + index;
+      ListsDataKey lists_data_key(key, version, positive_direction_index);
+      s = db_->Get(read_options, handles_[1], lists_data_key.Encode(), &tmp_element);
+      if (s.ok()) {
+        *element = tmp_element;
+      }
+    }
+  }
+  return s;
+}
+
+Status RedisLists::LInsert(const Slice& key,
+                           const BlackWidow::BeforeOrAfter& before_or_after,
+                           const std::string& pivot,
+                           const std::string& value,
+                           int64_t* ret) {
+  Status s;
+  return s;
+}
+
 Status RedisLists::CompactRange(const rocksdb::Slice* begin,
                                  const rocksdb::Slice* end) {
   Status s = db_->CompactRange(default_compact_range_options_,

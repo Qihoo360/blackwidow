@@ -374,6 +374,20 @@ Status BlackWidow::RPop(const Slice& key, std::string* element) {
   return lists_db_->RPop(key, element);
 }
 
+Status BlackWidow::LIndex(const Slice& key,
+                          int64_t index,
+                          std::string* element) {
+  return lists_db_->LIndex(key, index, element);
+}
+
+Status BlackWidow::LInsert(const Slice& key,
+                           const BeforeOrAfter& before_or_after,
+                           const std::string& pivot,
+                           const std::string& value,
+                           int64_t* ret) {
+  return lists_db_->LInsert(key, before_or_after, pivot, value, ret);
+}
+
 
 // Keys Commands
 int32_t BlackWidow::Expire(const Slice& key, int32_t ttl,

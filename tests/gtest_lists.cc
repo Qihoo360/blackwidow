@@ -523,6 +523,101 @@ TEST_F(ListsTest, RPopTest) {
   ASSERT_TRUE(s.IsNotFound());
 }
 
+// LIndex
+TEST_F(ListsTest, RIndexTest) {
+  uint64_t num;
+  std::string element;
+
+  // ***************** Group 1 Test *****************
+  //  "z" -> "e" -> "p" -> "p" -> "l" -> "i" -> "n"
+  //   0      1      2      3      4      5      6
+  //  -7     -6     -5     -4     -3     -2     -1
+  std::vector<std::string> gp1_nodes {"n", "i", "l", "p", "p", "e", "z"};
+  s = db.LPush("GP1_LINDEX_KEY", gp1_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp1_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP1_LINDEX_KEY", gp1_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP1_LINDEX_KEY", {"z", "e", "p", "p", "l", "i", "n"}));
+
+  s = db.LIndex("GP1_LINDEX_KEY", 0, &element);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(element, "z");
+
+  s = db.LIndex("GP1_LINDEX_KEY", 4, &element);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(element, "l");
+
+  s = db.LIndex("GP1_LINDEX_KEY", 6, &element);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(element, "n");
+
+  s = db.LIndex("GP1_LINDEX_KEY", 10, &element);
+  ASSERT_TRUE(s.IsNotFound());
+
+  s = db.LIndex("GP1_LINDEX_KEY", -1, &element);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(element, "n");
+
+  s = db.LIndex("GP1_LINDEX_KEY", -4, &element);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(element, "p");
+
+  s = db.LIndex("GP1_LINDEX_KEY", -7, &element);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(element, "z");
+
+  s = db.LIndex("GP1_LINDEX_KEY", -10000, &element);
+  ASSERT_TRUE(s.IsNotFound());
+
+
+  // ***************** Group 2 Test *****************
+  //  "b" -> "a" -> "t" -> "t" -> "l" -> "e"
+  //   0      1      2      3      4      5
+  //  -6     -5     -4     -3     -2     -1
+  //  LIndex time out list
+  std::vector<std::string> gp2_nodes {"b", "a", "t", "t", "l", "e"};
+  s = db.RPush("GP2_LINDEX_KEY", gp2_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp2_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP2_LINDEX_KEY", gp2_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP2_LINDEX_KEY", {"b", "a", "t", "t", "l", "e"}));
+
+  ASSERT_TRUE(make_expired(&db, "GP2_LINDEX_KEY"));
+  ASSERT_TRUE(len_match(&db, "GP2_LINDEX_KEY", 0));
+  ASSERT_TRUE(elements_match(&db, "GP2_LINDEX_KEY", {}));
+  s = db.LIndex("GP2_LINDEX_KEY", 0, &element);
+  ASSERT_TRUE(s.IsNotFound());
+
+
+  // ***************** Group 3 Test *****************
+  //  "m" -> "i" -> "s" -> "t" -> "y"
+  //   0      1      2      3      4
+  //  -5     -4     -3     -2     -1
+  //  LIndex the key that has been deleted
+  std::vector<std::string> gp3_nodes {"m", "i", "s", "t", "y"};
+  s = db.RPush("GP3_LINDEX_KEY", gp3_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp3_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP3_LINDEX_KEY", gp3_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP3_LINDEX_KEY", {"m", "i", "s", "t", "y"}));
+
+  std::vector<std::string> del_keys = {"GP3_LINDEX_KEY"};
+  std::map<BlackWidow::DataType, blackwidow::Status> type_status;
+  db.Del(del_keys, &type_status);
+  ASSERT_TRUE(type_status[BlackWidow::DataType::kLists].ok());
+  ASSERT_TRUE(len_match(&db, "GP3_LINDEX_KEY", 0));
+  ASSERT_TRUE(elements_match(&db, "GP3_LINDEX_KEY", {}));
+
+  s = db.LIndex("GP3_LINDEX_KEY", 0, &element);
+  ASSERT_TRUE(s.IsNotFound());
+
+
+  // ***************** Group 4 Test *****************
+  //  LIndex not exist key
+  s = db.LIndex("GP4_LINDEX_KEY", 0, &element);
+  ASSERT_TRUE(s.IsNotFound());
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

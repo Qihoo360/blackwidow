@@ -31,6 +31,9 @@ class RedisLists : public Redis {
   Status LLen(const Slice& key, uint64_t* len);
   Status LPop(const Slice& key, std::string* element);
   Status RPop(const Slice& key, std::string* element);
+  Status LIndex(const Slice& key, int64_t index, std::string* element);
+  Status LInsert(const Slice& key, const BlackWidow::BeforeOrAfter& before_or_after,
+                 const std::string& pivot, const std::string& value, int64_t* ret);
 
   // Common commands
   virtual Status Open(const rocksdb::Options& options,
