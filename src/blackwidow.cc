@@ -388,6 +388,22 @@ Status BlackWidow::LInsert(const Slice& key,
   return lists_db_->LInsert(key, before_or_after, pivot, value, ret);
 }
 
+Status BlackWidow::LPushx(const Slice& key, const Slice& value, uint64_t* len) {
+  return lists_db_->LPushx(key, value, len);
+}
+
+Status BlackWidow::RPushx(const Slice& key, const Slice& value, uint64_t* len) {
+  return lists_db_->RPushx(key, value, len);
+}
+
+Status BlackWidow::LRem(const Slice& key, int64_t count, const Slice& value) {
+  return lists_db_->LRem(key, count, value);
+}
+
+Status BlackWidow::LSet(const Slice& key, int64_t index, const Slice& value) {
+  return lists_db_->LSet(key, index, value);
+}
+
 
 // Keys Commands
 int32_t BlackWidow::Expire(const Slice& key, int32_t ttl,

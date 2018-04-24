@@ -35,6 +35,10 @@ class RedisLists : public Redis {
   Status LIndex(const Slice& key, int64_t index, std::string* element);
   Status LInsert(const Slice& key, const BlackWidow::BeforeOrAfter& before_or_after,
                  const std::string& pivot, const std::string& value, int64_t* ret);
+  Status LPushx(const Slice& key, const Slice& value, uint64_t* len);
+  Status RPushx(const Slice& key, const Slice& value, uint64_t* len);
+  Status LRem(const Slice& key, int64_t count, const Slice& value);
+  Status LSet(const Slice& key, int64_t index, const Slice& value);
 
   // Common commands
   virtual Status Open(const rocksdb::Options& options,

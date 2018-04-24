@@ -443,6 +443,36 @@ class BlackWidow {
   Status LInsert(const Slice& key, const BeforeOrAfter& before_or_after,
                  const std::string& pivot, const std::string& value, int64_t* ret);
 
+  // Inserts value at the head of the list stored at key, only if key already
+  // exists and holds a list. In contrary to LPUSH, no operation will be
+  // performed when key does not yet exist.
+  Status LPushx(const Slice& key, const Slice& value, uint64_t* len);
+
+  // Inserts value at the tail of the list stored at key, only if key already
+  // exists and holds a list. In contrary to RPUSH, no operation will be
+  // performed when key does not yet exist.
+  Status RPushx(const Slice& key, const Slice& value, uint64_t* len);
+
+  // Removes the first count occurrences of elements equal to value from the
+  // list stored at key. The count argument influences the operation in the
+  // following ways:
+  //
+  // count > 0: Remove elements equal to value moving from head to tail.
+  // count < 0: Remove elements equal to value moving from tail to head.
+  // count = 0: Remove all elements equal to value.
+  // For example, LREM list -2 "hello" will remove the last two occurrences of
+  // "hello" in the list stored at list.
+  //
+  // Note that non-existing keys are treated like empty lists, so when key does
+  // not exist, the command will always return 0.
+  Status LRem(const Slice& key, int64_t count, const Slice& value);
+
+  // Sets the list element at index to value. For more information on the index
+  // argument, see LINDEX.
+  //
+  // An error is returned for out of range indexes.
+  Status LSet(const Slice& key, int64_t index, const Slice& value);
+
 
   // Keys Commands
   enum DataType {

@@ -475,6 +475,68 @@ Status RedisLists::LInsert(const Slice& key,
   return s;
 }
 
+Status RedisLists::LPushx(const Slice& key, const Slice& value, uint64_t* len) {
+  rocksdb::WriteBatch batch;
+  ScopeRecordLock l(lock_mgr_, key);
+  std::string meta_value;
+  Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
+  if (s.ok()) {
+    ParsedListsMetaValue parsed_lists_meta_value(&meta_value);
+    if (parsed_lists_meta_value.IsStale()) {
+      return Status::NotFound("Stale");
+    } else if (parsed_lists_meta_value.count() == 0) {
+      return Status::NotFound();
+    } else {
+      uint32_t version = parsed_lists_meta_value.version();
+      uint64_t index = parsed_lists_meta_value.left_index();
+      parsed_lists_meta_value.ModifyCount(1);
+      parsed_lists_meta_value.ModifyLeftIndex(1);
+      ListsDataKey lists_data_key(key, version, index);
+      batch.Put(handles_[0], key, meta_value);
+      batch.Put(handles_[1], lists_data_key.Encode(), value);
+      *len = parsed_lists_meta_value.count();
+      return db_->Write(default_write_options_, &batch);
+    }
+  }
+  return s;
+}
+
+Status RedisLists::RPushx(const Slice& key, const Slice& value, uint64_t* len) {
+  rocksdb::WriteBatch batch;
+  ScopeRecordLock l(lock_mgr_, key);
+  std::string meta_value;
+  Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
+  if (s.ok()) {
+    ParsedListsMetaValue parsed_lists_meta_value(&meta_value);
+    if (parsed_lists_meta_value.IsStale()) {
+      return Status::NotFound("Stale");
+    } else if (parsed_lists_meta_value.count() == 0) {
+      return Status::NotFound();
+    } else {
+      uint32_t version = parsed_lists_meta_value.version();
+      uint64_t index = parsed_lists_meta_value.right_index();
+      parsed_lists_meta_value.ModifyCount(1);
+      parsed_lists_meta_value.ModifyRightIndex(1);
+      ListsDataKey lists_data_key(key, version, index);
+      batch.Put(handles_[0], key, meta_value);
+      batch.Put(handles_[1], lists_data_key.Encode(), value);
+      *len = parsed_lists_meta_value.count();
+      return db_->Write(default_write_options_, &batch);
+    }
+  }
+  return s;
+}
+
+Status RedisLists::LRem(const Slice& key, int64_t count, const Slice& value) {
+  Status s;
+  return s;
+}
+
+Status RedisLists::LSet(const Slice& key, int64_t index, const Slice& value) {
+  Status s;
+  return s;
+}
+
 Status RedisLists::CompactRange(const rocksdb::Slice* begin,
                                  const rocksdb::Slice* end) {
   Status s = db_->CompactRange(default_compact_range_options_,

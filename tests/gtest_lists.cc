@@ -805,7 +805,6 @@ TEST_F(ListsTest, RIndexTest) {
 TEST_F(ListsTest, LInsertTest) {
   int64_t ret;
   uint64_t num;
-  std::string element;
 
   // ***************** Group 1 Test *****************
   // LInsert not exist key
@@ -1002,6 +1001,171 @@ TEST_F(ListsTest, LInsertTest) {
   ASSERT_TRUE(len_match(&db, "GP10_LINSERT_KEY", 9));
   ASSERT_TRUE(elements_match(&db, "GP10_LINSERT_KEY", {"7", "1", "8", "9", "2", "4", "3", "6", "5"}));
 
+}
+
+// LPushx
+TEST_F(ListsTest, LPushxTest) {
+  int64_t ret;
+  uint64_t num;
+
+  // ***************** Group 1 Test *****************
+  //  "o" -> "o" -> "o"
+  std::vector<std::string> gp1_nodes1 {"o", "o", "o"};
+  s = db.RPush("GP1_LPUSHX_KEY", gp1_nodes1, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp1_nodes1.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP1_LPUSHX_KEY", gp1_nodes1.size()));
+  ASSERT_TRUE(elements_match(&db, "GP1_LPUSHX_KEY", {"o", "o", "o"}));
+
+  //  "x" -> "o" -> "o" -> "o"
+  s = db.LPushx("GP1_LPUSHX_KEY", "x", &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(num, 4);
+  ASSERT_TRUE(len_match(&db, "GP1_LPUSHX_KEY", 4));
+  ASSERT_TRUE(elements_match(&db, "GP1_LPUSHX_KEY", {"x", "o", "o", "o"}));
+
+  // "o" -> "o" -> "x" -> "o" -> "o" -> "o"
+  std::vector<std::string> gp1_nodes2 {"o", "o"};
+  s = db.LPush("GP1_LPUSHX_KEY", gp1_nodes2, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(num, 6);
+  ASSERT_TRUE(len_match(&db, "GP1_LPUSHX_KEY", 6));
+  ASSERT_TRUE(elements_match(&db, "GP1_LPUSHX_KEY", {"o", "o", "x", "o", "o", "o"}));
+
+  // "x" -> "o" -> "o" -> "x" -> "o" -> "o" -> "o"
+  s = db.LPushx("GP1_LPUSHX_KEY", "x", &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(num, 7);
+  ASSERT_TRUE(len_match(&db, "GP1_LPUSHX_KEY", 7));
+  ASSERT_TRUE(elements_match(&db, "GP1_LPUSHX_KEY", {"x", "o", "o", "x", "o", "o", "o"}));
+
+
+  // ***************** Group 2 Test *****************
+  // LPushx not exist key
+  s = db.LPushx("GP2_LPUSHX_KEY", "x", &num);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_TRUE(len_match(&db, "GP2_LPUSHX_KEY", 0));
+  ASSERT_TRUE(elements_match(&db, "GP2_LPUSHX_KEY", {}));
+
+
+  // ***************** Group 3 Test *****************
+  //  "o" -> "o" -> "o"
+  //  LPushx timeout key
+  std::vector<std::string> gp3_nodes {"o", "o", "o"};
+  s = db.RPush("GP3_LPUSHX_KEY", gp3_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp3_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP3_LPUSHX_KEY", gp3_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP3_LPUSHX_KEY", {"o", "o", "o"}));
+  ASSERT_TRUE(make_expired(&db, "GP3_LPUSHX_KEY"));
+
+  s = db.LPushx("GP3_LPUSHX_KEY", "x", &num);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_TRUE(len_match(&db, "GP3_LPUSHX_KEY", 0));
+  ASSERT_TRUE(elements_match(&db, "GP3_LPUSHX_KEY", {}));
+
+
+  // ***************** Group 4 Test *****************
+  // LPushx has been deleted key
+  std::vector<std::string> gp4_nodes {"o", "o", "o"};
+  s = db.RPush("GP4_LPUSHX_KEY", gp4_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp4_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP4_LPUSHX_KEY", gp4_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP4_LPUSHX_KEY", {"o", "o", "o"}));
+
+  // Delete the key
+  std::vector<std::string> del_keys = {"GP4_LPUSHX_KEY"};
+  std::map<BlackWidow::DataType, blackwidow::Status> type_status;
+  db.Del(del_keys, &type_status);
+  ASSERT_TRUE(type_status[BlackWidow::DataType::kLists].ok());
+
+  s = db.LPushx("GP4_LPUSHX_KEY", "x", &num);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_TRUE(len_match(&db, "GP4_LPUSHX_KEY", 0));
+  ASSERT_TRUE(elements_match(&db, "GP4_LPUSHX_KEY", {}));
+}
+
+// RPushx
+TEST_F(ListsTest, RPushxTest) {
+  int64_t ret;
+  uint64_t num;
+
+  // ***************** Group 1 Test *****************
+  //  "o" -> "o" -> "o"
+  std::vector<std::string> gp1_nodes1 {"o", "o", "o"};
+  s = db.LPush("GP1_RPUSHX_KEY", gp1_nodes1, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp1_nodes1.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP1_RPUSHX_KEY", gp1_nodes1.size()));
+  ASSERT_TRUE(elements_match(&db, "GP1_RPUSHX_KEY", {"o", "o", "o"}));
+
+  //  "o" -> "o" -> "o" -> "x"
+  s = db.RPushx("GP1_RPUSHX_KEY", "x", &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(num, 4);
+  ASSERT_TRUE(len_match(&db, "GP1_RPUSHX_KEY", 4));
+  ASSERT_TRUE(elements_match(&db, "GP1_RPUSHX_KEY", {"o", "o", "o", "x"}));
+
+  // "o" -> "o" -> "o" -> "x" -> "o" -> "o"
+  std::vector<std::string> gp1_nodes2 {"o", "o"};
+  s = db.RPush("GP1_RPUSHX_KEY", gp1_nodes2, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(num, 6);
+  ASSERT_TRUE(len_match(&db, "GP1_RPUSHX_KEY", 6));
+  ASSERT_TRUE(elements_match(&db, "GP1_RPUSHX_KEY", {"o", "o", "o", "x", "o", "o"}));
+
+  // "o" -> "o" -> "o" -> "x" -> "o" -> "o" -> "x"
+  s = db.RPushx("GP1_RPUSHX_KEY", "x", &num);
+  ASSERT_EQ(num, 7);
+  ASSERT_TRUE(len_match(&db, "GP1_RPUSHX_KEY", 7));
+  ASSERT_TRUE(elements_match(&db, "GP1_RPUSHX_KEY", {"o", "o", "o", "x", "o", "o", "x"}));
+
+
+  // ***************** Group 2 Test *****************
+  // RPushx not exist key
+  s = db.RPushx("GP2_RPUSHX_KEY", "x", &num);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_TRUE(len_match(&db, "GP2_RPUSHX_KEY", 0));
+  ASSERT_TRUE(elements_match(&db, "GP2_RPUSHX_KEY", {}));
+
+
+  // ***************** Group 3 Test *****************
+  //  "o" -> "o" -> "o"
+  //  RPushx timeout key
+  std::vector<std::string> gp3_nodes {"o", "o", "o"};
+  s = db.RPush("GP3_RPUSHX_KEY", gp3_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp3_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP3_RPUSHX_KEY", gp3_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP3_RPUSHX_KEY", {"o", "o", "o"}));
+  ASSERT_TRUE(make_expired(&db, "GP3_RPUSHX_KEY"));
+
+  s = db.RPushx("GP3_RPUSHX_KEY", "x", &num);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_TRUE(len_match(&db, "GP3_RPUSHX_KEY", 0));
+  ASSERT_TRUE(elements_match(&db, "GP3_RPUSHX_KEY", {}));
+
+
+  // ***************** Group 4 Test *****************
+  // RPushx has been deleted key
+  std::vector<std::string> gp4_nodes {"o", "o", "o"};
+  s = db.RPush("GP4_RPUSHX_KEY", gp4_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp4_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP4_RPUSHX_KEY", gp4_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP4_RPUSHX_KEY", {"o", "o", "o"}));
+
+  // Delete the key
+  std::vector<std::string> del_keys = {"GP4_RPUSHX_KEY"};
+  std::map<BlackWidow::DataType, blackwidow::Status> type_status;
+  db.Del(del_keys, &type_status);
+  ASSERT_TRUE(type_status[BlackWidow::DataType::kLists].ok());
+
+  s = db.RPushx("GP4_RPUSHX_KEY", "x", &num);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_TRUE(len_match(&db, "GP4_RPUSHX_KEY", 0));
+  ASSERT_TRUE(elements_match(&db, "GP4_RPUSHX_KEY", {}));
 }
 
 int main(int argc, char** argv) {
