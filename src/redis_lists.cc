@@ -14,6 +14,11 @@
 
 namespace blackwidow {
 
+const rocksdb::Comparator* ListsDataKeyComparator() {
+  static ListsDataKeyComparatorImpl ldkc;
+  return &ldkc;
+}
+
 RedisLists::~RedisLists() {
   for (auto handle : handles_) {
     delete handle;
@@ -27,8 +32,9 @@ Status RedisLists::Open(const rocksdb::Options& options,
   if (s.ok()) {
     // Create column family
     rocksdb::ColumnFamilyHandle* cf;
-    s = db_->CreateColumnFamily(rocksdb::ColumnFamilyOptions(),
-                                "data_cf", &cf);
+    rocksdb::ColumnFamilyOptions cfo;
+    cfo.comparator = ListsDataKeyComparator();
+    s = db_->CreateColumnFamily(cfo, "data_cf", &cf);
     if (!s.ok()) {
       return s;
     }
@@ -45,6 +51,7 @@ Status RedisLists::Open(const rocksdb::Options& options,
     std::make_shared<ListsMetaFilterFactory>();
   data_cf_ops.compaction_filter_factory =
     std::make_shared<ListsDataFilterFactory>(&db_, &handles_);
+  data_cf_ops.comparator = ListsDataKeyComparator();
   std::vector<rocksdb::ColumnFamilyDescriptor> column_families;
   // Meta CF
   column_families.push_back(rocksdb::ColumnFamilyDescriptor(
@@ -365,7 +372,101 @@ Status RedisLists::LInsert(const Slice& key,
                            const std::string& pivot,
                            const std::string& value,
                            int64_t* ret) {
-  Status s;
+  rocksdb::WriteBatch batch;
+  ScopeRecordLock l(lock_mgr_, key);
+  std::string meta_value;
+  Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
+  if (s.ok()) {
+    ParsedListsMetaValue parsed_lists_meta_value(&meta_value);
+    if (parsed_lists_meta_value.IsStale()) {
+      *ret = 0;
+      return Status::NotFound("Stale");
+    } else if (parsed_lists_meta_value.count() == 0) {
+      *ret = 0;
+      return Status::NotFound();
+    } else {
+      bool find_pivot = false;
+      uint64_t pivot_index = 0;
+      uint32_t version = parsed_lists_meta_value.version();
+      uint64_t current_index = parsed_lists_meta_value.left_index() + 1;
+      rocksdb::Iterator* iter = db_->NewIterator(default_read_options_, handles_[1]);
+      ListsDataKey start_data_key(key, version, current_index);
+      for (iter->Seek(start_data_key.Encode());
+           iter->Valid() && current_index < parsed_lists_meta_value.right_index();
+           iter->Next(), current_index++) {
+          if (strcmp(iter->value().ToString().data(), pivot.data()) == 0) {
+            find_pivot = true;
+            pivot_index = current_index;
+            break;
+          }
+      }
+      delete iter;
+      if (!find_pivot) {
+        *ret = -1;
+        return Status::NotFound();
+      } else {
+        uint64_t target_index;
+        std::vector<std::string> list_nodes;
+        uint64_t mid_index = parsed_lists_meta_value.left_index()
+            + (parsed_lists_meta_value.right_index() - parsed_lists_meta_value.left_index()) / 2;
+        if (pivot_index <= mid_index) {
+          target_index = (before_or_after == BlackWidow::Before) ? pivot_index - 1 : pivot_index;
+          current_index = parsed_lists_meta_value.left_index() + 1;
+          rocksdb::Iterator* first_half_iter = db_->NewIterator(default_read_options_, handles_[1]);
+          ListsDataKey start_data_key(key, version, current_index);
+          for (first_half_iter->Seek(start_data_key.Encode());
+               first_half_iter->Valid() && current_index <= pivot_index;
+               first_half_iter->Next(), current_index++) {
+              if (current_index == pivot_index) {
+                if (before_or_after == BlackWidow::After) {
+                  list_nodes.push_back(first_half_iter->value().ToString());
+                }
+                break;
+              }
+              list_nodes.push_back(first_half_iter->value().ToString());
+          }
+          delete first_half_iter;
+
+          current_index = parsed_lists_meta_value.left_index();
+          for (const auto& node : list_nodes) {
+            ListsDataKey lists_data_key(key, version, current_index++);
+            batch.Put(handles_[1], lists_data_key.Encode(), node);
+          }
+          parsed_lists_meta_value.ModifyLeftIndex(1);
+        } else {
+          target_index = (before_or_after == BlackWidow::Before) ? pivot_index : pivot_index + 1;
+          current_index = pivot_index;
+          rocksdb::Iterator* after_half_iter = db_->NewIterator(default_read_options_, handles_[1]);
+          ListsDataKey start_data_key(key, version, current_index);
+          for (after_half_iter->Seek(start_data_key.Encode());
+               after_half_iter->Valid() && current_index < parsed_lists_meta_value.right_index();
+               after_half_iter->Next(), current_index++) {
+              if (current_index == pivot_index
+                && before_or_after == BlackWidow::BeforeOrAfter::After) {
+                continue;
+              }
+              list_nodes.push_back(after_half_iter->value().ToString());
+          }
+          delete after_half_iter;
+
+          current_index = target_index + 1;
+          for (const auto& node : list_nodes) {
+            ListsDataKey lists_data_key(key, version, current_index++);
+            batch.Put(handles_[1], lists_data_key.Encode(), node);
+          }
+          parsed_lists_meta_value.ModifyRightIndex(1);
+        }
+        parsed_lists_meta_value.ModifyCount(1);
+        batch.Put(handles_[0], key, meta_value);
+        ListsDataKey lists_target_key(key, version, target_index);
+        batch.Put(handles_[1], lists_target_key.Encode(), value);
+        *ret = parsed_lists_meta_value.count();
+        return db_->Write(default_write_options_, &batch);
+      }
+    }
+  } else if (s.IsNotFound()){
+    *ret = 0;
+  }
   return s;
 }
 

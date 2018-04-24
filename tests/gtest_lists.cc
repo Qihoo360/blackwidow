@@ -618,6 +618,209 @@ TEST_F(ListsTest, RIndexTest) {
   ASSERT_TRUE(s.IsNotFound());
 }
 
+// LInsert
+TEST_F(ListsTest, LInsertTest) {
+  int64_t ret;
+  uint64_t num;
+  std::string element;
+
+  // ***************** Group 1 Test *****************
+  // LInsert not exist key
+  s = db.LInsert("GP1_LINSERT_KEY", BlackWidow::Before, "pivot", "value", &ret);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(ret, 0);
+
+
+  // ***************** Group 2 Test *****************
+  //  "w" -> "e" -> "r" -> "u" -> "n"
+  // LInsert not exist pivot value
+  std::vector<std::string> gp2_nodes {"w", "e", "r", "u", "n"};
+  s = db.RPush("GP2_LINSERT_KEY", gp2_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp2_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP2_LINSERT_KEY", gp2_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP2_LINSERT_KEY", {"w", "e", "r", "u", "n"}));
+
+  s = db.LInsert("GP2_LINSERT_KEY", BlackWidow::Before, "pivot", "value", &ret);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(ret, -1);
+
+
+  // ***************** Group 3 Test *****************
+  //  "a" -> "p" -> "p" -> "l" -> "e"
+  // LInsert expire list
+  std::vector<std::string> gp3_nodes {"a", "p", "p", "l", "e"};
+  s = db.RPush("GP3_LINSERT_KEY", gp3_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp3_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP3_LINSERT_KEY", gp3_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP3_LINSERT_KEY", {"a", "p", "p", "l", "e"}));
+  ASSERT_TRUE(make_expired(&db, "GP3_LINSERT_KEY"));
+
+  s = db.LInsert("GP3_LINSERT_KEY", BlackWidow::Before, "pivot", "value", &ret);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(ret, 0);
+
+  s = db.LInsert("GP3_LINSERT_KEY", BlackWidow::Before, "a", "value", &ret);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(ret, 0);
+
+
+  // ***************** Group 4 Test *****************
+  //  "a"
+  std::vector<std::string> gp4_nodes {"a"};
+  s = db.RPush("GP4_LINSERT_KEY", gp4_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp4_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP4_LINSERT_KEY", gp4_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP4_LINSERT_KEY", {"a"}));
+
+  // "x" -> "a"
+  s = db.LInsert("GP4_LINSERT_KEY", BlackWidow::Before, "a", "x", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 2);
+  ASSERT_TRUE(len_match(&db, "GP4_LINSERT_KEY", 2));
+  ASSERT_TRUE(elements_match(&db, "GP4_LINSERT_KEY", {"x", "a"}));
+
+
+  // ***************** Group 5 Test *****************
+  //  "a"
+  std::vector<std::string> gp5_nodes {"a"};
+  s = db.RPush("GP5_LINSERT_KEY", gp5_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp5_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP5_LINSERT_KEY", gp5_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP5_LINSERT_KEY", {"a"}));
+
+  // "a" -> "x"
+  s = db.LInsert("GP5_LINSERT_KEY", BlackWidow::After, "a", "x", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 2);
+  ASSERT_TRUE(len_match(&db, "GP5_LINSERT_KEY", 2));
+  ASSERT_TRUE(elements_match(&db, "GP5_LINSERT_KEY", {"a", "x"}));
+
+
+  // ***************** Group 6 Test *****************
+  //  "a" -> "b"
+  std::vector<std::string> gp6_nodes {"a", "b"};
+  s = db.RPush("GP6_LINSERT_KEY", gp6_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp6_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP6_LINSERT_KEY", gp6_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP6_LINSERT_KEY", {"a", "b"}));
+
+  // "x" -> "a" -> "b"
+  s = db.LInsert("GP6_LINSERT_KEY", BlackWidow::Before, "a", "x", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 3);
+  ASSERT_TRUE(len_match(&db, "GP6_LINSERT_KEY", 3));
+  ASSERT_TRUE(elements_match(&db, "GP6_LINSERT_KEY", {"x", "a", "b"}));
+
+
+  // ***************** Group 7 Test *****************
+  //  "a" -> "b"
+  std::vector<std::string> gp7_nodes {"a", "b"};
+  s = db.RPush("GP7_LINSERT_KEY", gp7_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp7_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP7_LINSERT_KEY", gp7_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP7_LINSERT_KEY", {"a", "b"}));
+
+  // "a" -> "x" -> "b"
+  s = db.LInsert("GP7_LINSERT_KEY", BlackWidow::After, "a", "x", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 3);
+  ASSERT_TRUE(len_match(&db, "GP7_LINSERT_KEY", 3));
+  ASSERT_TRUE(elements_match(&db, "GP7_LINSERT_KEY", {"a", "x", "b"}));
+
+
+  // ***************** Group 8 Test *****************
+  //  "a" -> "b"
+  std::vector<std::string> gp8_nodes {"a", "b"};
+  s = db.RPush("GP8_LINSERT_KEY", gp8_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp8_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP8_LINSERT_KEY", gp8_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP8_LINSERT_KEY", {"a", "b"}));
+
+  // "a" -> "x" -> "b"
+  s = db.LInsert("GP8_LINSERT_KEY", BlackWidow::Before, "b", "x", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 3);
+  ASSERT_TRUE(len_match(&db, "GP8_LINSERT_KEY", 3));
+  ASSERT_TRUE(elements_match(&db, "GP8_LINSERT_KEY", {"a", "x", "b"}));
+
+
+  // ***************** Group 9 Test *****************
+  //  "a" -> "b"
+  std::vector<std::string> gp9_nodes {"a", "b"};
+  s = db.RPush("GP9_LINSERT_KEY", gp9_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp9_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP9_LINSERT_KEY", gp9_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP9_LINSERT_KEY", {"a", "b"}));
+
+  // "a" -> "b" -> "x"
+  s = db.LInsert("GP9_LINSERT_KEY", BlackWidow::After, "b", "x", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 3);
+  ASSERT_TRUE(len_match(&db, "GP9_LINSERT_KEY", 3));
+  ASSERT_TRUE(elements_match(&db, "GP9_LINSERT_KEY", {"a", "b", "x"}));
+
+
+  // ***************** Group 10 Test *****************
+  //  "1" -> "2" -> "3"
+  std::vector<std::string> gp10_nodes {"1", "2", "3"};
+  s = db.RPush("GP10_LINSERT_KEY", gp10_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp10_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP10_LINSERT_KEY", gp10_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP10_LINSERT_KEY", {"1", "2", "3"}));
+
+  // "1" -> "2" -> "4" -> "3"
+  s = db.LInsert("GP10_LINSERT_KEY", BlackWidow::After, "2", "4", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 4);
+  ASSERT_TRUE(len_match(&db, "GP10_LINSERT_KEY", 4));
+  ASSERT_TRUE(elements_match(&db, "GP10_LINSERT_KEY", {"1", "2", "4", "3"}));
+
+  // "1" -> "2" -> "4" -> "3" -> "5"
+  s = db.LInsert("GP10_LINSERT_KEY", BlackWidow::After, "3", "5", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 5);
+  ASSERT_TRUE(len_match(&db, "GP10_LINSERT_KEY", 5));
+  ASSERT_TRUE(elements_match(&db, "GP10_LINSERT_KEY", {"1", "2", "4", "3", "5"}));
+
+  // "1" -> "2" -> "4" -> "3" -> "6" -> "5"
+  s = db.LInsert("GP10_LINSERT_KEY", BlackWidow::Before, "5", "6", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 6);
+  ASSERT_TRUE(len_match(&db, "GP10_LINSERT_KEY", 6));
+  ASSERT_TRUE(elements_match(&db, "GP10_LINSERT_KEY", {"1", "2", "4", "3", "6", "5"}));
+
+  // "7" -> "1" -> "2" -> "4" -> "3" -> "6" -> "5"
+  s = db.LInsert("GP10_LINSERT_KEY", BlackWidow::Before, "1", "7", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 7);
+  ASSERT_TRUE(len_match(&db, "GP10_LINSERT_KEY", 7));
+  ASSERT_TRUE(elements_match(&db, "GP10_LINSERT_KEY", {"7", "1", "2", "4", "3", "6", "5"}));
+
+  // "7" -> "1" -> "8" -> "2" -> "4" -> "3" -> "6" -> "5"
+  s = db.LInsert("GP10_LINSERT_KEY", BlackWidow::After, "1", "8", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 8);
+  ASSERT_TRUE(len_match(&db, "GP10_LINSERT_KEY", 8));
+  ASSERT_TRUE(elements_match(&db, "GP10_LINSERT_KEY", {"7", "1", "8", "2", "4", "3", "6", "5"}));
+
+  // "7" -> "1" -> "8" -> "9" -> "2" -> "4" -> "3" -> "6" -> "5"
+  s = db.LInsert("GP10_LINSERT_KEY", BlackWidow::Before, "2", "9", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+  ASSERT_TRUE(len_match(&db, "GP10_LINSERT_KEY", 9));
+  ASSERT_TRUE(elements_match(&db, "GP10_LINSERT_KEY", {"7", "1", "8", "9", "2", "4", "3", "6", "5"}));
+
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
