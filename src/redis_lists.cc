@@ -181,25 +181,30 @@ Status RedisLists::LRange(const Slice& key, int64_t start, int64_t stop,
 
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
-    ParsedListsMetaValue parsed_meta_value(&meta_value);
-    if (parsed_meta_value.IsStale()) {
-      return s;
+    ParsedListsMetaValue parsed_lists_meta_value(&meta_value);
+    if (parsed_lists_meta_value.IsStale()) {
+      return Status::NotFound("Stale");
+    } else if (parsed_lists_meta_value.count() == 0) {
+      return Status::NotFound();
     } else {
-      rocksdb::Iterator* iter = db_->NewIterator(default_read_options_,
-                                                 handles_[1]);
-      int32_t version = parsed_meta_value.version();
+      int32_t version = parsed_lists_meta_value.version();
       uint64_t start_index = start >= 0 ?
-                             parsed_meta_value.left_index() + start + 1 :
-                             parsed_meta_value.right_index() + start;
+                             parsed_lists_meta_value.left_index() + start + 1 :
+                             parsed_lists_meta_value.right_index() + start;
       uint64_t stop_index = stop >= 0 ?
-                            parsed_meta_value.left_index() + stop + 1 :
-                            parsed_meta_value.right_index() + stop;
+                            parsed_lists_meta_value.left_index() + stop + 1 :
+                            parsed_lists_meta_value.right_index() + stop;
       if (start_index > stop_index) {
         return s;
       }
-      if (stop_index >= parsed_meta_value.right_index()) {
-        stop_index = parsed_meta_value.right_index() - 1;
+      if (start_index <= parsed_lists_meta_value.left_index()) {
+        start_index = parsed_lists_meta_value.left_index() + 1;
       }
+      if (stop_index >= parsed_lists_meta_value.right_index()) {
+        stop_index = parsed_lists_meta_value.right_index() - 1;
+      }
+      rocksdb::Iterator* iter = db_->NewIterator(default_read_options_,
+              handles_[1]);
       ListsDataKey start_data_key(key, version, start_index);
       for (iter->Seek(start_data_key.Encode());
            iter->Valid() && start_index <= stop_index;

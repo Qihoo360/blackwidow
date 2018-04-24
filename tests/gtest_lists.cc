@@ -246,69 +246,252 @@ TEST_F(ListsTest, RPushTest) {
 // LRange
 TEST_F(ListsTest, LRangeTest) {
   uint64_t num;
-  std::vector<std::string> values;
-  for (int32_t i = 0; i < 100; i++) {
-    values.push_back("LRANGE_VALUE"+ std::to_string(i));
-  }
-  s = db.RPush("LRANGE_KEY", values, &num);
-  ASSERT_EQ(num, values.size());
-  ASSERT_TRUE(s.ok());
 
-  std::vector<std::string> result;
-  s = db.LRange("LRANGE_KEY", 0, 100, &result);
+  // ***************** Group 1 Test *****************
+  //  " " -> "a" -> "t" -> " "
+  std::vector<std::string> gp1_nodes1 {" ", "a", "t", " "};
+  s = db.RPush("GP1_LRANGE_KEY", gp1_nodes1, &num);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(result.size(), 100);
-  for (int32_t i = 0; i < 100; i++) {
-    ASSERT_STREQ(result[i].c_str(), values[i].c_str());
-  }
-  result.clear();
+  ASSERT_EQ(gp1_nodes1.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP1_LRANGE_KEY", gp1_nodes1.size()));
+  ASSERT_TRUE(elements_match(&db, "GP1_LRANGE_KEY", {" ", "a", "t", " "}));
 
-  // The offsetsis negative numbers
-  s = db.LRange("LRANGE_KEY", -100, 100, &result);
+  //  "l" -> "i" -> "v" -> "e" -> " " -> "a" -> "t" -> " "
+  std::vector<std::string> gp1_nodes2 {"e", "v", "i", "l"};
+  s = db.LPush("GP1_LRANGE_KEY", gp1_nodes2, &num);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(result.size(), 100);
-  for (int32_t i = 0; i < 100; i++) {
-    ASSERT_STREQ(result[i].c_str(), values[i].c_str());
-  }
-  result.clear();
+  ASSERT_EQ(gp1_nodes1.size() + gp1_nodes2.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP1_LRANGE_KEY", gp1_nodes1.size() + gp1_nodes2.size()));
+  ASSERT_TRUE(elements_match(&db, "GP1_LRANGE_KEY", {"l", "i", "v", "e", " ", "a", "t", " "}));
 
-  s = db.LRange("LRANGE_KEY", -100, -1, &result);
+  //  "l" -> "i" -> "v" -> "e" -> " " -> "a" -> "t" -> " " -> "p" -> "o" -> "m" -> "p" -> "e" -> "i" -> "i"
+  //   0      1      2      3      4      5      6      7      8      9      10     11     12     13     14
+  //  -15    -14    -13    -12    -11    -10    -9     -8     -7     -6      -5     -4     -3     -2     -1
+  std::vector<std::string> gp1_nodes3 {"p", "o", "m", "p", "e", "i", "i"};
+  s = db.RPush("GP1_LRANGE_KEY", gp1_nodes3, &num);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(result.size(), 100);
-  for (int32_t i = 0; i < 100; i++) {
-    ASSERT_STREQ(result[i].c_str(), values[i].c_str());
-  }
-  result.clear();
+  ASSERT_EQ(gp1_nodes1.size() + gp1_nodes2.size() + gp1_nodes3.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP1_LRANGE_KEY", gp1_nodes1.size() + gp1_nodes2.size() + gp1_nodes3.size()));
+  ASSERT_TRUE(elements_match(&db, "GP1_LRANGE_KEY", {"l", "i", "v", "e", " ", "a", "t", " ", "p", "o", "m", "p", "e", "i", "i"}));
 
-  s = db.LRange("LRANGE_KEY", -100, 0, &result);
+  std::vector<std::string> gp1_range_nodes;
+  s = db.LRange("GP1_LRANGE_KEY", 0, -1, &gp1_range_nodes);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(result.size(), 1);
-  ASSERT_STREQ(result[0].c_str(), values[0].c_str());
-  result.clear();
+  ASSERT_TRUE(elements_match(gp1_range_nodes, {"l", "i", "v", "e", " ", "a", "t", " ", "p", "o", "m", "p", "e", "i", "i"}));
 
-  s = db.LRange("LRANGE_KEY", -1, 100, &result);
+  gp1_range_nodes.clear();
+  s = db.LRange("GP1_LRANGE_KEY", 0, 14, &gp1_range_nodes);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(result.size(), 1);
-  ASSERT_STREQ(result[0].c_str(), values[99].c_str());
-  result.clear();
+  ASSERT_TRUE(elements_match(gp1_range_nodes, {"l", "i", "v", "e", " ", "a", "t", " ", "p", "o", "m", "p", "e", "i", "i"}));
 
-  s = db.LRange("LRANGE_KEY", -50, -20, &result);
+  gp1_range_nodes.clear();
+  s = db.LRange("GP1_LRANGE_KEY", -15, -1, &gp1_range_nodes);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(result.size(), 31);
-  for (int32_t i = 50, j = 0; i < 80 && j < result.size(); i++, j++) {
-    ASSERT_STREQ(result[j].c_str(), values[i].c_str());
-  }
-  result.clear();
+  ASSERT_TRUE(elements_match(gp1_range_nodes, {"l", "i", "v", "e", " ", "a", "t", " ", "p", "o", "m", "p", "e", "i", "i"}));
 
-  s = db.LRange("LRANGE_KEY", 0, -1, &result);
+  gp1_range_nodes.clear();
+  s = db.LRange("GP1_LRANGE_KEY", 0, 100, &gp1_range_nodes);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(result.size(), 100);
-  for (int32_t i = 0; i < 100; i++) {
-    ASSERT_STREQ(result[i].c_str(), values[i].c_str());
-  }
-  result.clear();
+  ASSERT_TRUE(elements_match(gp1_range_nodes, {"l", "i", "v", "e", " ", "a", "t", " ", "p", "o", "m", "p", "e", "i", "i"}));
 
-  // TODO(shq)
+  gp1_range_nodes.clear();
+  s = db.LRange("GP1_LRANGE_KEY", -100, -1, &gp1_range_nodes);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(elements_match(gp1_range_nodes, {"l", "i", "v", "e", " ", "a", "t", " ", "p", "o", "m", "p", "e", "i", "i"}));
+
+  gp1_range_nodes.clear();
+  s = db.LRange("GP1_LRANGE_KEY", 5, 6, &gp1_range_nodes);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(elements_match(gp1_range_nodes, {"a", "t"}));
+
+  gp1_range_nodes.clear();
+  s = db.LRange("GP1_LRANGE_KEY", -10, -9, &gp1_range_nodes);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(elements_match(gp1_range_nodes, {"a", "t"}));
+
+  gp1_range_nodes.clear();
+  s = db.LRange("GP1_LRANGE_KEY", -10, 6, &gp1_range_nodes);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(elements_match(gp1_range_nodes, {"a", "t"}));
+
+  gp1_range_nodes.clear();
+  s = db.LRange("GP1_LRANGE_KEY", -15, 6, &gp1_range_nodes);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(elements_match(gp1_range_nodes, {"l", "i", "v", "e", " ", "a", "t"}));
+
+  gp1_range_nodes.clear();
+  s = db.LRange("GP1_LRANGE_KEY", -100, 6, &gp1_range_nodes);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(elements_match(gp1_range_nodes, {"l", "i", "v", "e", " ", "a", "t"}));
+
+  gp1_range_nodes.clear();
+  s = db.LRange("GP1_LRANGE_KEY", -15, -9, &gp1_range_nodes);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(elements_match(gp1_range_nodes, {"l", "i", "v", "e", " ", "a", "t"}));
+
+  gp1_range_nodes.clear();
+  s = db.LRange("GP1_LRANGE_KEY", 8, 14, &gp1_range_nodes);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(elements_match(gp1_range_nodes, {"p", "o", "m", "p", "e", "i", "i"}));
+
+  gp1_range_nodes.clear();
+  s = db.LRange("GP1_LRANGE_KEY", -7, 14, &gp1_range_nodes);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(elements_match(gp1_range_nodes, {"p", "o", "m", "p", "e", "i", "i"}));
+
+  gp1_range_nodes.clear();
+  s = db.LRange("GP1_LRANGE_KEY", -7, -1, &gp1_range_nodes);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(elements_match(gp1_range_nodes, {"p", "o", "m", "p", "e", "i", "i"}));
+
+  gp1_range_nodes.clear();
+  s = db.LRange("GP1_LRANGE_KEY", 8, 100, &gp1_range_nodes);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(elements_match(gp1_range_nodes, {"p", "o", "m", "p", "e", "i", "i"}));
+
+  gp1_range_nodes.clear();
+  s = db.LRange("GP1_LRANGE_KEY", -100, -50, &gp1_range_nodes);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(elements_match(gp1_range_nodes, {}));
+
+  gp1_range_nodes.clear();
+  s = db.LRange("GP1_LRANGE_KEY", -100, 0, &gp1_range_nodes);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(elements_match(gp1_range_nodes, {"l"}));
+
+  gp1_range_nodes.clear();
+  s = db.LRange("GP1_LRANGE_KEY", -100, -15, &gp1_range_nodes);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(elements_match(gp1_range_nodes, {"l"}));
+
+  gp1_range_nodes.clear();
+  s = db.LRange("GP1_LRANGE_KEY", 15, 100, &gp1_range_nodes);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(elements_match(gp1_range_nodes, {}));
+
+  gp1_range_nodes.clear();
+  s = db.LRange("GP1_LRANGE_KEY", 14, 100, &gp1_range_nodes);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(elements_match(gp1_range_nodes, {"i"}));
+
+  gp1_range_nodes.clear();
+  s = db.LRange("GP1_LRANGE_KEY", -1, 100, &gp1_range_nodes);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(elements_match(gp1_range_nodes, {"i"}));
+
+
+  // ***************** Group 2 Test *****************
+  //  "a"
+  //   0
+  //  -1
+  std::vector<std::string> gp2_nodes {"a"};
+  s = db.RPush("GP2_LRANGE_KEY", gp2_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp2_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP2_LRANGE_KEY", gp2_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP2_LRANGE_KEY", {"a"}));
+
+  std::vector<std::string> gp2_range_nodes;
+  s = db.LRange("GP2_LRANGE_KEY", 0, 0, &gp2_range_nodes);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(elements_match(gp2_range_nodes, {"a"}));
+
+  gp2_range_nodes.clear();
+  s = db.LRange("GP2_LRANGE_KEY", 0, -1, &gp2_range_nodes);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(elements_match(gp2_range_nodes, {"a"}));
+
+  gp2_range_nodes.clear();
+  s = db.LRange("GP2_LRANGE_KEY", -1, -1, &gp2_range_nodes);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(elements_match(gp2_range_nodes, {"a"}));
+
+  gp2_range_nodes.clear();
+  s = db.LRange("GP2_LRANGE_KEY", -100, 0, &gp2_range_nodes);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(elements_match(gp2_range_nodes, {"a"}));
+
+  gp2_range_nodes.clear();
+  s = db.LRange("GP2_LRANGE_KEY", -100, -1, &gp2_range_nodes);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(elements_match(gp2_range_nodes, {"a"}));
+
+  gp2_range_nodes.clear();
+  s = db.LRange("GP2_LRANGE_KEY", 0, 100, &gp2_range_nodes);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(elements_match(gp2_range_nodes, {"a"}));
+
+  gp2_range_nodes.clear();
+  s = db.LRange("GP2_LRANGE_KEY", -1, 100, &gp2_range_nodes);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(elements_match(gp2_range_nodes, {"a"}));
+
+  gp2_range_nodes.clear();
+  s = db.LRange("GP2_LRANGE_KEY", -100, 100, &gp2_range_nodes);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(elements_match(gp2_range_nodes, {"a"}));
+
+  gp2_range_nodes.clear();
+  s = db.LRange("GP2_LRANGE_KEY", -10, -2, &gp2_range_nodes);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(elements_match(gp2_range_nodes, {}));
+
+  gp2_range_nodes.clear();
+  s = db.LRange("GP2_LRANGE_KEY", 1, 2, &gp2_range_nodes);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(elements_match(gp2_range_nodes, {}));
+
+
+  // ***************** Group 3 Test *****************
+  // LRange not exist key
+  std::vector<std::string> gp3_range_nodes;
+  s = db.LRange("GP3_LRANGE_KEY", 1, 5, &gp3_range_nodes);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_TRUE(elements_match(gp3_range_nodes, {}));
+
+
+  // ***************** Group 4 Test *****************
+  //  "n" -> "o" -> "w"
+  //   0      1      2
+  //  -3     -2     -1
+  // LRange timeout key
+  std::vector<std::string> gp4_nodes {"n", "o", "w"};
+  s = db.RPush("GP4_LRANGE_KEY", gp4_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp4_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP4_LRANGE_KEY", gp4_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP4_LRANGE_KEY", {"n", "o", "w"}));
+  ASSERT_TRUE(make_expired(&db, "GP4_LRANGE_KEY"));
+
+  std::vector<std::string> gp4_range_nodes;
+  s = db.LRange("GP4_LRANGE_KEY", 0, 2, &gp4_range_nodes);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_TRUE(elements_match(gp4_range_nodes, {}));
+
+
+  // ***************** Group 5 Test *****************
+  //  "t" -> "o" -> "u" -> "r"
+  //   0      1      2     3
+  //  -4     -3     -2    -1
+  // LRange has been deleted key
+  std::vector<std::string> gp5_nodes {"t", "o", "u", "r"};
+  s = db.RPush("GP5_LRANGE_KEY", gp5_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp5_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP5_LRANGE_KEY", gp5_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP5_LRANGE_KEY", {"t", "o", "u", "r"}));
+  ASSERT_TRUE(make_expired(&db, "GP5_LRANGE_KEY"));
+
+  // Delete the key
+  std::vector<std::string> del_keys = {"GP5_LRANGE_KEY"};
+  std::map<BlackWidow::DataType, blackwidow::Status> type_status;
+  db.Del(del_keys, &type_status);
+  ASSERT_TRUE(type_status[BlackWidow::DataType::kLists].ok());
+
+  std::vector<std::string> gp5_range_nodes;
+  s = db.LRange("GP5_LRANGE_KEY", 0, 2, &gp5_range_nodes);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_TRUE(elements_match(gp5_range_nodes, {}));
 }
 
 // LTrim
