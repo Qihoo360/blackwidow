@@ -465,7 +465,7 @@ class BlackWidow {
   //
   // Note that non-existing keys are treated like empty lists, so when key does
   // not exist, the command will always return 0.
-  Status LRem(const Slice& key, int64_t count, const Slice& value);
+  Status LRem(const Slice& key, int64_t count, const Slice& value, uint64_t* ret);
 
   // Sets the list element at index to value. For more information on the index
   // argument, see LINDEX.

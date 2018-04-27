@@ -396,8 +396,8 @@ Status BlackWidow::RPushx(const Slice& key, const Slice& value, uint64_t* len) {
   return lists_db_->RPushx(key, value, len);
 }
 
-Status BlackWidow::LRem(const Slice& key, int64_t count, const Slice& value) {
-  return lists_db_->LRem(key, count, value);
+Status BlackWidow::LRem(const Slice& key, int64_t count, const Slice& value, uint64_t* ret) {
+  return lists_db_->LRem(key, count, value, ret);
 }
 
 Status BlackWidow::LSet(const Slice& key, int64_t index, const Slice& value) {

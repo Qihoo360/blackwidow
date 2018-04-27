@@ -37,7 +37,7 @@ class RedisLists : public Redis {
                  const std::string& pivot, const std::string& value, int64_t* ret);
   Status LPushx(const Slice& key, const Slice& value, uint64_t* len);
   Status RPushx(const Slice& key, const Slice& value, uint64_t* len);
-  Status LRem(const Slice& key, int64_t count, const Slice& value);
+  Status LRem(const Slice& key, int64_t count, const Slice& value, uint64_t* ret);
   Status LSet(const Slice& key, int64_t index, const Slice& value);
 
   // Common commands
