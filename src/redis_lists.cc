@@ -73,48 +73,37 @@ Status RedisLists::LPush(const Slice& key,
   ScopeRecordLock l(lock_mgr_, key);
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
-    ParsedListsMetaValue parsed_meta_value(&meta_value);
-    if (parsed_meta_value.IsStale()) {
-      version = parsed_meta_value.InitialMetaValue();
-      for (auto value : values) {
-        index = parsed_meta_value.left_index();
-        parsed_meta_value.ModifyLeftIndex(1);
-        parsed_meta_value.ModifyCount(1);
-        ListsDataKey data_key(key, version, index);
-        batch.Put(handles_[1], data_key.Encode(), value);
-      }
-      batch.Put(handles_[0], key, meta_value);
-      *ret = parsed_meta_value.count();
+    ParsedListsMetaValue parsed_lists_meta_value(&meta_value);
+    if (parsed_lists_meta_value.IsStale()) {
+      version = parsed_lists_meta_value.InitialMetaValue();
     } else {
-      version = parsed_meta_value.version();
-      for (auto value : values) {
-        index = parsed_meta_value.left_index();
-        parsed_meta_value.ModifyLeftIndex(1);
-        parsed_meta_value.ModifyCount(1);
-        ListsDataKey data_key(key, version, index);
-        batch.Put(handles_[1], data_key.Encode(), value);
-      }
-      batch.Put(handles_[0], key, meta_value);
-      *ret = parsed_meta_value.count();
+      version = parsed_lists_meta_value.version();
     }
+    for (const auto& value : values) {
+      index = parsed_lists_meta_value.left_index();
+      parsed_lists_meta_value.ModifyLeftIndex(1);
+      parsed_lists_meta_value.ModifyCount(1);
+      ListsDataKey lists_data_key(key, version, index);
+      batch.Put(handles_[1], lists_data_key.Encode(), value);
+    }
+    batch.Put(handles_[0], key, meta_value);
+    *ret = parsed_lists_meta_value.count();
   } else if (s.IsNotFound()) {
     char str[8];
     EncodeFixed64(str, values.size());
     ListsMetaValue lists_meta_value(std::string(str, sizeof(uint64_t)));
     version = lists_meta_value.UpdateVersion();
-    lists_meta_value.set_timestamp(0);
-    for (auto value : values) {
+    for (const auto& value : values) {
       index = lists_meta_value.left_index();
       lists_meta_value.ModifyLeftIndex(1);
-      ListsDataKey data_key(key, version, index);
-      batch.Put(handles_[1], data_key.Encode(), value);
+      ListsDataKey lists_data_key(key, version, index);
+      batch.Put(handles_[1], lists_data_key.Encode(), value);
     }
     batch.Put(handles_[0], key, lists_meta_value.Encode());
     *ret = lists_meta_value.right_index() - lists_meta_value.left_index() - 1;
   } else {
     return s;
   }
-
   return db_->Write(default_write_options_, &batch);
 }
 
@@ -129,30 +118,21 @@ Status RedisLists::RPush(const Slice& key,
   ScopeRecordLock l(lock_mgr_, key);
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
-    ParsedListsMetaValue parsed_meta_value(&meta_value);
-    if (parsed_meta_value.IsStale()) {
-      version = parsed_meta_value.InitialMetaValue();
-      for (auto value : values) {
-        index = parsed_meta_value.right_index();
-        parsed_meta_value.ModifyRightIndex(1);
-        parsed_meta_value.ModifyCount(1);
-        ListsDataKey data_key(key, version, index);
-        batch.Put(handles_[1], data_key.Encode(), value);
-      }
-      batch.Put(handles_[0], key, meta_value);
-      *ret = parsed_meta_value.count();
+    ParsedListsMetaValue parsed_lists_meta_value(&meta_value);
+    if (parsed_lists_meta_value.IsStale()) {
+      version = parsed_lists_meta_value.InitialMetaValue();
     } else {
-      version = parsed_meta_value.version();
-      for (auto value : values) {
-        index = parsed_meta_value.right_index();
-        parsed_meta_value.ModifyRightIndex(1);
-        parsed_meta_value.ModifyCount(1);
-        ListsDataKey data_key(key, version, index);
-        batch.Put(handles_[1], data_key.Encode(), value);
-      }
-      batch.Put(handles_[0], key, meta_value);
-      *ret = parsed_meta_value.count();
+      version = parsed_lists_meta_value.version();
     }
+    for (const auto& value : values) {
+      index = parsed_lists_meta_value.right_index();
+      parsed_lists_meta_value.ModifyRightIndex(1);
+      parsed_lists_meta_value.ModifyCount(1);
+      ListsDataKey lists_data_key(key, version, index);
+      batch.Put(handles_[1], lists_data_key.Encode(), value);
+    }
+    batch.Put(handles_[0], key, meta_value);
+    *ret = parsed_lists_meta_value.count();
   } else if (s.IsNotFound()) {
     char str[8];
     EncodeFixed64(str, values.size());
@@ -162,15 +142,14 @@ Status RedisLists::RPush(const Slice& key,
     for (auto value : values) {
       index = lists_meta_value.right_index();
       lists_meta_value.ModifyRightIndex(1);
-      ListsDataKey data_key(key, version, index);
-      batch.Put(handles_[1], data_key.Encode(), value);
+      ListsDataKey lists_data_key(key, version, index);
+      batch.Put(handles_[1], lists_data_key.Encode(), value);
     }
     batch.Put(handles_[0], key, lists_meta_value.Encode());
     *ret = lists_meta_value.right_index() - lists_meta_value.left_index() - 1;
   } else {
     return s;
   }
-
   return db_->Write(default_write_options_, &batch);
 }
 

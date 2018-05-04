@@ -97,6 +97,7 @@ class ParsedListsMetaValue : public ParsedInternalValue {
   // Use this constructor after rocksdb::DB::Get();
   explicit ParsedListsMetaValue(std::string* internal_value_str) :
     ParsedInternalValue(internal_value_str) {
+    assert(internal_value_str->size() >= kListsMetaValueSuffixLength);
     if (internal_value_str->size() >= kListsMetaValueSuffixLength) {
       user_value_ = Slice(internal_value_str->data(),
           internal_value_str->size() - kListsMetaValueSuffixLength);
@@ -117,6 +118,7 @@ class ParsedListsMetaValue : public ParsedInternalValue {
   // Use this constructor in rocksdb::CompactionFilter::Filter();
   explicit ParsedListsMetaValue(const Slice& internal_value_slice) :
     ParsedInternalValue(internal_value_slice) {
+    assert(internal_value_slice.size() >= kListsMetaValueSuffixLength);
     if (internal_value_slice.size() >= kListsMetaValueSuffixLength) {
       user_value_ = Slice(internal_value_slice.data(),
           internal_value_slice.size() - kListsMetaValueSuffixLength);
@@ -256,8 +258,8 @@ class ParsedListsMetaValue : public ParsedInternalValue {
 
  private:
   uint64_t count_;
-  uint64_t left_index_ = 9223372036854775807;
-  uint64_t right_index_ = 9223372036854775808U;
+  uint64_t left_index_;
+  uint64_t right_index_;
 };
 
 }  //  namespace blackwidow

@@ -80,6 +80,10 @@ class ListsTest : public ::testing::Test {
     }
     options.create_if_missing = true;
     s = db.Open(options, path);
+    if (!s.ok()) {
+      printf("Open db failed, exit...\n");
+      exit(1);
+    }
   }
   virtual ~ListsTest() { }
 
