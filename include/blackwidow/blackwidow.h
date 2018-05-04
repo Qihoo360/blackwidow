@@ -473,6 +473,23 @@ class BlackWidow {
   // An error is returned for out of range indexes.
   Status LSet(const Slice& key, int64_t index, const Slice& value);
 
+  // Atomically returns and removes the last element (tail) of the list stored
+  // at source, and pushes the element at the first element (head) of the list
+  // stored at destination.
+  //
+  // For example: consider source holding the list a,b,c, and destination
+  // holding the list x,y,z. Executing RPOPLPUSH results in source holding a,b
+  // and destination holding c,x,y,z.
+  //
+  // If source does not exist, the value nil is returned and no operation is
+  // performed. If source and destination are the same, the operation is
+  // equivalent to removing the last element from the list and pushing it as
+  // first element of the list, so it can be considered as a list rotation
+  // command.
+  Status RPoplpush(const Slice& source,
+                   const Slice& destination,
+                   std::string* element);
+
 
   // Keys Commands
   enum DataType {

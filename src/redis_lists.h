@@ -39,6 +39,7 @@ class RedisLists : public Redis {
   Status RPushx(const Slice& key, const Slice& value, uint64_t* len);
   Status LRem(const Slice& key, int64_t count, const Slice& value, uint64_t* ret);
   Status LSet(const Slice& key, int64_t index, const Slice& value);
+  Status RPoplpush(const Slice& source, const Slice& destination, std::string* element);
 
   // Common commands
   virtual Status Open(const rocksdb::Options& options,

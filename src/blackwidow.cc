@@ -404,6 +404,12 @@ Status BlackWidow::LSet(const Slice& key, int64_t index, const Slice& value) {
   return lists_db_->LSet(key, index, value);
 }
 
+Status BlackWidow::RPoplpush(const Slice& source,
+                             const Slice& destination,
+                             std::string* element) {
+  return lists_db_->RPoplpush(source, destination, element);
+}
+
 
 // Keys Commands
 int32_t BlackWidow::Expire(const Slice& key, int32_t ttl,
