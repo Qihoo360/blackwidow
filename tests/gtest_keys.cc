@@ -82,7 +82,22 @@ TEST_F(KeysTest, ScanTest) {
   s = db.SAdd("SCAN_KEY15", members, &ret);
   ASSERT_TRUE(s.ok());
 
-  // TODO(shq) other data types
+  // Lists
+  uint64_t list_len;
+  std::vector<std::string> nodes;
+  nodes.push_back("NODE1");
+  nodes.push_back("NODE2");
+  nodes.push_back("NODE3");
+  nodes.push_back("NODE4");
+  nodes.push_back("NODE5");
+  s = db.RPush("SCAN_KEY16", nodes, &list_len);
+  s = db.RPush("SCAN_KEY17", nodes, &list_len);
+  s = db.RPush("SCAN_KEY18", nodes, &list_len);
+  s = db.RPush("SCAN_KEY19", nodes, &list_len);
+  s = db.RPush("SCAN_KEY20", nodes, &list_len);
+  ASSERT_TRUE(s.ok());
+
+  // TODO(wxj) other data types
 
   // Iterate by data types and check data type
   std::vector<std::string> keys;
@@ -116,6 +131,17 @@ TEST_F(KeysTest, ScanTest) {
   ASSERT_STREQ(keys[2].c_str(), "SCAN_KEY13");
   ASSERT_STREQ(keys[3].c_str(), "SCAN_KEY14");
   ASSERT_STREQ(keys[4].c_str(), "SCAN_KEY15");
+
+  keys.clear();
+  ASSERT_EQ(cursor_ret, 20);
+  cursor_ret = db.Scan(cursor_ret, "SCAN*", 5, &keys);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(keys.size(), 5);
+  ASSERT_STREQ(keys[0].c_str(), "SCAN_KEY16");
+  ASSERT_STREQ(keys[1].c_str(), "SCAN_KEY17");
+  ASSERT_STREQ(keys[2].c_str(), "SCAN_KEY18");
+  ASSERT_STREQ(keys[3].c_str(), "SCAN_KEY19");
+  ASSERT_STREQ(keys[4].c_str(), "SCAN_KEY20");
 
   keys.clear();
   cursor_ret = db.Scan(cursor_ret, "SCAN*", 5, &keys);
@@ -179,8 +205,14 @@ TEST_F(KeysTest, ExpireTest) {
   s = db.SAdd("EXPIRE_KEY", members, &ret);
   ASSERT_TRUE(s.ok());
 
+  // Lists
+  uint64_t llen;
+  std::vector<std::string> nodes {"NODE"};
+  s = db.RPush("EXPIRE_KEY", nodes, &llen);
+  ASSERT_TRUE(s.ok());
+
   ret = db.Expire("EXPIRE_KEY", 1, &type_status);
-  ASSERT_EQ(ret, 3);
+  ASSERT_EQ(ret, 4);
 
   std::this_thread::sleep_for(std::chrono::milliseconds(2000));
   // Strings
@@ -195,7 +227,11 @@ TEST_F(KeysTest, ExpireTest) {
   s = db.SCard("EXPIRE_KEY", &ret);
   ASSERT_TRUE(s.IsNotFound());
 
-  // TODO(shq) other types
+  // Lists
+  s = db.LLen("EXPIRE_KEY", &llen);
+  ASSERT_TRUE(s.IsNotFound());
+
+  // TODO(wxj) other types
 }
 
 // Del
@@ -218,8 +254,14 @@ TEST_F(KeysTest, DelTest) {
   s = db.SAdd("DEL_KEY", members, &ret);
   ASSERT_TRUE(s.ok());
 
+  // Lists
+  uint64_t llen;
+  std::vector<std::string> nodes {"NODE"};
+  s = db.RPush("DEL_KEY", nodes, &llen);
+  ASSERT_TRUE(s.ok());
+
   ret = db.Del(keys, &type_status);
-  ASSERT_EQ(ret, 3);
+  ASSERT_EQ(ret, 4);
 
   // Strings
   s = db.Get("DEL_KEY", &value);
@@ -233,12 +275,17 @@ TEST_F(KeysTest, DelTest) {
   s = db.SCard("DEL_KEY", &ret);
   ASSERT_TRUE(s.IsNotFound());
 
-  // TODO(shq) other types
+  // Lists
+  s = db.LLen("DEL_KEY", &llen);
+  ASSERT_TRUE(s.IsNotFound());
+
+  // TODO(wxj) other types
 }
 
 // Exists
 TEST_F(KeysTest, ExistsTest) {
   int32_t ret;
+  uint64_t llen;
   std::map<BlackWidow::DataType, Status> type_status;
   std::vector<std::string> keys {"EXISTS_KEY"};
 
@@ -255,9 +302,15 @@ TEST_F(KeysTest, ExistsTest) {
   s = db.SAdd("EXISTS_KEY", members, &ret);
   ASSERT_TRUE(s.ok());
 
+  // Lists
+  std::vector<std::string> nodes {"NODE"};
+  s = db.RPush("EXISTS_KEY", nodes, &llen);
+  ASSERT_TRUE(s.ok());
+
   ret = db.Exists(keys, &type_status);
-  ASSERT_EQ(ret, 3);
-  // TODO(shq) other types
+  ASSERT_EQ(ret, 4);
+
+  // TODO(wxj) other types
 }
 
 // Expireat
@@ -326,19 +379,26 @@ TEST_F(KeysTest, PersistTest) {
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 3);
 
-  // TODO(shq) other types
+  // Lists
+  uint64_t llen;
+  std::vector<std::string> nodes {"NODE"};
+  s = db.LPush("PERSIST_KEY", nodes, &llen);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(llen, 1);
+
+  // TODO(wxj) other types
   ret = db.Persist("PERSIST_KEY", &type_status);
   ASSERT_EQ(ret, 0);
 
   // If the timeout was set
   ret = db.Expire("PERSIST_KEY", 1000, &type_status);
-  ASSERT_EQ(ret, 3);
+  ASSERT_EQ(ret, 4);
   ret = db.Persist("PERSIST_KEY", &type_status);
-  ASSERT_EQ(ret, 3);
+  ASSERT_EQ(ret, 4);
 
   std::map<BlackWidow::DataType, int64_t> ttl_ret;
   ttl_ret = db.TTL("PERSIST_KEY", &type_status);
-  ASSERT_EQ(ttl_ret.size(), 3);
+  ASSERT_EQ(ttl_ret.size(), 4);
   for (auto it = ttl_ret.begin(); it != ttl_ret.end(); it++) {
     ASSERT_EQ(it->second, -1);
   }
@@ -350,7 +410,7 @@ TEST_F(KeysTest, TTLTest) {
   std::map<BlackWidow::DataType, Status> type_status;
   std::map<BlackWidow::DataType, int64_t> ttl_ret;
   ttl_ret = db.TTL("TTL_KEY", &type_status);
-  ASSERT_EQ(ttl_ret.size(), 3);
+  ASSERT_EQ(ttl_ret.size(), 4);
   for (auto it = ttl_ret.begin(); it != ttl_ret.end(); it++) {
     ASSERT_EQ(it->second, -2);
   }
@@ -367,23 +427,30 @@ TEST_F(KeysTest, TTLTest) {
   ASSERT_TRUE(s.ok());
 
   // Sets
-  std::vector<std::string> members1 {"MM1", "MM2", "MM3", "MM2"};
-  s = db.SAdd("TTL_KEY", members1, &ret);
+  std::vector<std::string> members {"MM1", "MM2", "MM3", "MM2"};
+  s = db.SAdd("TTL_KEY", members, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 3);
 
-  // TODO(shq) other types
+  // Lists
+  uint64_t llen;
+  std::vector<std::string> nodes {"NODE"};
+  s = db.RPush("TTL_KEY", nodes, &llen);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(llen, 1);
+
+  // TODO(wxj) other types
   ttl_ret = db.TTL("TTL_KEY", &type_status);
-  ASSERT_EQ(ttl_ret.size(), 3);
+  ASSERT_EQ(ttl_ret.size(), 4);
   for (auto it = ttl_ret.begin(); it != ttl_ret.end(); it++) {
     ASSERT_EQ(it->second, -1);
   }
 
   // If the timeout was set
   ret = db.Expire("TTL_KEY", 10, &type_status);
-  ASSERT_EQ(ret, 3);
+  ASSERT_EQ(ret, 4);
   ttl_ret = db.TTL("TTL_KEY", &type_status);
-  ASSERT_EQ(ttl_ret.size(), 3);
+  ASSERT_EQ(ttl_ret.size(), 4);
   for (auto it = ttl_ret.begin(); it != ttl_ret.end(); it++) {
     ASSERT_GT(it->second, 0);
     ASSERT_LE(it->second, 10);

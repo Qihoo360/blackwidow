@@ -517,6 +517,7 @@ int64_t BlackWidow::Exists(const std::vector<std::string>& keys,
                        std::map<DataType, Status>* type_status) {
   int64_t count = 0;
   int32_t ret;
+  uint64_t llen;
   std::string value;
   Status s;
   bool is_corruption = false;
@@ -545,7 +546,16 @@ int64_t BlackWidow::Exists(const std::vector<std::string>& keys,
       is_corruption = true;
       (*type_status)[DataType::kSets] = s;
     }
-    // TODO(shq) other types
+
+    s = lists_db_->LLen(key, &llen);
+    if (s.ok()) {
+      count++;
+    } else if (!s.IsNotFound()) {
+      is_corruption = true;
+      (*type_status)[DataType::kLists] = s;
+    }
+
+    // TODO(wxj) other types
   }
 
   if (is_corruption) {
@@ -610,7 +620,20 @@ int64_t BlackWidow::Scan(int64_t cursor, const std::string& pattern,
                                        std::string("s") + next_key);
         break;
       }
-    // TODO(shq) other data types
+      start_key = "";
+    case 'l':
+      is_finish = lists_db_->Scan(start_key, pattern, keys,
+                                    &count, &next_key);
+      if (count == 0 && is_finish) {
+        cursor_ret = StoreAndGetCursor(cursor + count_origin, std::string("z"));
+        break;
+      } else if (count == 0 && !is_finish) {
+        cursor_ret = StoreAndGetCursor(cursor + count_origin,
+                                       std::string("l") + next_key);
+        break;
+      }
+      start_key = "";
+    // TODO(wxj) other data types
   }
 
   return cursor_ret;
@@ -684,8 +707,16 @@ int32_t BlackWidow::Persist(const Slice& key,
     (*type_status)[DataType::kSets] = s;
   }
 
+  s = lists_db_->Persist(key);
+  if (s.ok()) {
+    count++;
+  } else if (!s.IsNotFound()) {
+    is_corruption = true;
+    (*type_status)[DataType::kLists] = s;
+  }
 
-  // TODO(shq) other types
+
+  // TODO(wxj) other types
   if (is_corruption) {
     return -1;
   } else {
@@ -723,7 +754,15 @@ std::map<BlackWidow::DataType, int64_t> BlackWidow::TTL(const Slice& key,
     (*type_status)[DataType::kSets] = s;
   }
 
-  // TODO(shq) other types
+  s = lists_db_->TTL(key, &timestamp);
+  if (s.ok() || s.IsNotFound()) {
+    ret[DataType::kLists] = timestamp;
+  } else if (!s.IsNotFound()) {
+    ret[DataType::kLists] = -3;
+    (*type_status)[DataType::kLists] = s;
+  }
+
+  // TODO(wxj) other types
   return ret;
 }
 

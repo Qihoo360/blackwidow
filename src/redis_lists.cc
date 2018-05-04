@@ -798,21 +798,101 @@ bool RedisLists::Scan(const std::string& start_key,
                       std::vector<std::string>* keys,
                       int64_t* count,
                       std::string* next_key) {
-  return true;
+  std::string meta_key, meta_value;
+  bool is_finish = true;
+  rocksdb::ReadOptions iterator_options;
+  const rocksdb::Snapshot* snapshot;
+  ScopeSnapshot ss(db_, &snapshot);
+  iterator_options.snapshot = snapshot;
+  iterator_options.fill_cache = false;
+
+  rocksdb::Iterator* it = db_->NewIterator(iterator_options, handles_[0]);
+
+  it->Seek(start_key);
+  while (it->Valid() && (*count) > 0) {
+    ParsedListsMetaValue parsed_lists_meta_value(it->value());
+    if (parsed_lists_meta_value.IsStale()) {
+      it->Next();
+      continue;
+    } else {
+      meta_key = it->key().ToString();
+      if (StringMatch(pattern.data(), pattern.size(),
+                         meta_key.data(), meta_key.size(), 0)) {
+        keys->push_back(meta_key);
+      }
+      (*count)--;
+      it->Next();
+    }
+  }
+
+  if (it->Valid()) {
+    *next_key = it->key().ToString();
+    is_finish = false;
+  } else {
+    *next_key = "";
+  }
+  delete it;
+  return is_finish;
 }
 
 Status RedisLists::Expireat(const Slice& key, int32_t timestamp) {
-  Status s;
+  std::string meta_value;
+  ScopeRecordLock l(lock_mgr_, key);
+  Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
+  if (s.ok()) {
+    ParsedListsMetaValue parsed_lists_meta_value(&meta_value);
+    if (parsed_lists_meta_value.IsStale()) {
+      return Status::NotFound("Stale");
+    } else {
+      parsed_lists_meta_value.set_timestamp(timestamp);
+      return db_->Put(default_write_options_, handles_[0], key, meta_value);
+    }
+  }
   return s;
 }
 
 Status RedisLists::Persist(const Slice& key) {
-  Status s;
+  std::string meta_value;
+  ScopeRecordLock l(lock_mgr_, key);
+  Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
+  if (s.ok()) {
+    ParsedListsMetaValue parsed_lists_meta_value(&meta_value);
+    if (parsed_lists_meta_value.IsStale()) {
+      return Status::NotFound("Stale");
+    } else {
+      int32_t timestamp = parsed_lists_meta_value.timestamp();
+      if (timestamp == 0) {
+        return Status::NotFound("Not have an associated timeout");
+      } else {
+        parsed_lists_meta_value.set_timestamp(0);
+        return db_->Put(default_write_options_, handles_[0], key, meta_value);
+      }
+    }
+  }
   return s;
 }
 
 Status RedisLists::TTL(const Slice& key, int64_t* timestamp) {
-  Status s;
+  std::string meta_value;
+  Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
+  if (s.ok()) {
+    ParsedListsMetaValue parsed_lists_meta_value(&meta_value);
+    if (parsed_lists_meta_value.IsStale()) {
+      *timestamp = -2;
+      return Status::NotFound("Stale");
+    } else {
+      *timestamp = parsed_lists_meta_value.timestamp();
+      if (*timestamp == 0) {
+        *timestamp = -1;
+      } else {
+        int64_t curtime;
+        rocksdb::Env::Default()->GetCurrentTime(&curtime);
+        *timestamp = *timestamp - curtime > 0 ? *timestamp - curtime : -1;
+      }
+    }
+  } else if (s.IsNotFound()) {
+    *timestamp = -2;
+  }
   return s;
 }
 
