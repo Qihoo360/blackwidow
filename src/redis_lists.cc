@@ -91,7 +91,7 @@ Status RedisLists::LPush(const Slice& key,
   } else if (s.IsNotFound()) {
     char str[8];
     EncodeFixed64(str, values.size());
-    ListsMetaValue lists_meta_value(std::string(str, sizeof(uint64_t)));
+    ListsMetaValue lists_meta_value(Slice(str, sizeof(uint64_t)));
     version = lists_meta_value.UpdateVersion();
     for (const auto& value : values) {
       index = lists_meta_value.left_index();
@@ -136,9 +136,8 @@ Status RedisLists::RPush(const Slice& key,
   } else if (s.IsNotFound()) {
     char str[8];
     EncodeFixed64(str, values.size());
-    ListsMetaValue lists_meta_value(std::string(str, sizeof(uint64_t)));
+    ListsMetaValue lists_meta_value(Slice(str, sizeof(uint64_t)));
     version = lists_meta_value.UpdateVersion();
-    lists_meta_value.set_timestamp(0);
     for (auto value : values) {
       index = lists_meta_value.right_index();
       lists_meta_value.ModifyRightIndex(1);
@@ -729,7 +728,7 @@ Status RedisLists::RPoplpush(const Slice& source,
   } else if (s.IsNotFound()) {
     char str[8];
     EncodeFixed64(str, 1);
-    ListsMetaValue lists_meta_value(std::string(str, sizeof(uint64_t)));
+    ListsMetaValue lists_meta_value(Slice(str, sizeof(uint64_t)));
     version = lists_meta_value.UpdateVersion();
     uint64_t target_index = lists_meta_value.left_index();
     ListsDataKey lists_data_key(destination, version, target_index);
