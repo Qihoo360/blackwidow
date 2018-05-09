@@ -438,6 +438,13 @@ Status BlackWidow::ZRange(const Slice& key,
   return zsets_db_->ZRange(key, start, stop, score_members);
 }
 
+Status BlackWidow::ZCount(const Slice& key,
+                          double min,
+                          double max,
+                          int32_t* ret) {
+  return zsets_db_->ZCount(key, min, max, ret);
+}
+
 
 // Keys Commands
 int32_t BlackWidow::Expire(const Slice& key, int32_t ttl,

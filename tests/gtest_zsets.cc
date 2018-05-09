@@ -11,9 +11,9 @@
 
 using namespace blackwidow;
 
-class ZsetsTest : public ::testing::Test {
+class ZSetsTest : public ::testing::Test {
  public:
-  ZsetsTest() {
+  ZSetsTest() {
     std::string path = "./db/zsets";
     if (access(path.c_str(), F_OK)) {
       mkdir(path.c_str(), 0755);
@@ -25,7 +25,7 @@ class ZsetsTest : public ::testing::Test {
       exit(1);
     }
   }
-  virtual ~ZsetsTest() { }
+  virtual ~ZSetsTest() { }
 
   static void SetUpTestCase() { }
   static void TearDownTestCase() { }
@@ -106,7 +106,7 @@ static bool delete_key(blackwidow::BlackWidow *const db,
 }
 
 // ZAdd
-TEST_F(ZsetsTest, ZAddTest) {
+TEST_F(ZSetsTest, ZAddTest) {
   int32_t ret;
 
   // ***************** Group 1 Test *****************
@@ -128,21 +128,21 @@ TEST_F(ZsetsTest, ZAddTest) {
 
 
   // ***************** Group 3 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp3_sm {{1/1.0f, "MM1"}, {1/3.0f, "MM2"}, {1/6.0f, "MM3"}, {1/7.0f, "MM4"}};
+  std::vector<BlackWidow::ScoreMember> gp3_sm {{1/1.0, "MM1"}, {1/3.0, "MM2"}, {1/6.0, "MM3"}, {1/7.0, "MM4"}};
   s = db.ZAdd("GP3_ZADD_KEY", gp3_sm, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(4, ret);
   ASSERT_TRUE(size_match(&db, "GP3_ZADD_KEY", 4));
-  ASSERT_TRUE(score_members_match(&db, "GP3_ZADD_KEY", {{1/7.0f, "MM4"}, {1/6.0f, "MM3"}, {1/3.0f, "MM2"}, {1/1.0f, "MM1"}}));
+  ASSERT_TRUE(score_members_match(&db, "GP3_ZADD_KEY", {{1/7.0, "MM4"}, {1/6.0, "MM3"}, {1/3.0, "MM2"}, {1/1.0, "MM1"}}));
 
 
   // ***************** Group 4 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp4_sm {{-1/1.0f, "MM1"}, {-1/3.0f, "MM2"}, {-1/6.0f, "MM3"}, {-1/7.0f, "MM4"}};
+  std::vector<BlackWidow::ScoreMember> gp4_sm {{-1/1.0, "MM1"}, {-1/3.0, "MM2"}, {-1/6.0, "MM3"}, {-1/7.0, "MM4"}};
   s = db.ZAdd("GP4_ZADD_KEY", gp4_sm, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(4, ret);
   ASSERT_TRUE(size_match(&db, "GP4_ZADD_KEY", 4));
-  ASSERT_TRUE(score_members_match(&db, "GP4_ZADD_KEY", {{-1/1.0f, "MM1"}, {-1/3.0f, "MM2"}, {-1/6.0f, "MM3"}, {-1/7.0f, "MM4"}}));
+  ASSERT_TRUE(score_members_match(&db, "GP4_ZADD_KEY", {{-1/1.0, "MM1"}, {-1/3.0, "MM2"}, {-1/6.0, "MM3"}, {-1/7.0, "MM4"}}));
 
 
   // ***************** Group 5 Test *****************
@@ -247,13 +247,13 @@ TEST_F(ZsetsTest, ZAddTest) {
   // [50000,         MM4]
   // [100000,        MM6]
   // [1.79769e+308,  MM3]
-  s = db.ZAdd("GP5_ZADD_KEY", {{-1/3.0f, "MM8"}}, &ret);
+  s = db.ZAdd("GP5_ZADD_KEY", {{-1/3.0, "MM8"}}, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(8, ret);
   ASSERT_TRUE(size_match(&db, "GP5_ZADD_KEY", 8));
   ASSERT_TRUE(score_members_match(&db, "GP5_ZADD_KEY",
         {{-1.79769e+308, "MM5"}, {-0.5333,      "MM2"}, {-0.5333, "MM7"},
-         {-1/3.0f,       "MM8"}, {0,            "MM1"}, {50000,   "MM4"},
+         {-1/3.0,       "MM8"},  {0,            "MM1"}, {50000,   "MM4"},
          {100000,        "MM6"}, {1.79769e+308, "MM3"}}));
 
   // [-1.79769e+308, MM5]
@@ -265,13 +265,13 @@ TEST_F(ZsetsTest, ZAddTest) {
   // [50000,         MM4]
   // [100000,        MM6]
   // [1.79769e+308,  MM3]
-  s = db.ZAdd("GP5_ZADD_KEY", {{1/3.0f, "MM9"}}, &ret);
+  s = db.ZAdd("GP5_ZADD_KEY", {{1/3.0, "MM9"}}, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(9, ret);
   ASSERT_TRUE(size_match(&db, "GP5_ZADD_KEY", 9));
   ASSERT_TRUE(score_members_match(&db, "GP5_ZADD_KEY",
         {{-1.79769e+308, "MM5"}, {-0.5333, "MM2"}, {-0.5333,      "MM7"},
-         {-1/3.0f,       "MM8"}, {0,       "MM1"}, {1/3.0f,       "MM9"},
+         {-1/3.0,        "MM8"}, {0,       "MM1"}, {1/3.0,        "MM9"},
          {50000,         "MM4"}, {100000,  "MM6"}, {1.79769e+308, "MM3"}}));
 
   // [0,  MM1]
@@ -340,35 +340,46 @@ TEST_F(ZsetsTest, ZAddTest) {
 }
 
 // ZSCORE
-TEST_F(ZsetsTest, ZScoreTest) {
+TEST_F(ZSetsTest, ZScoreTest) {
   int32_t ret;
   double score;
 
   // ***************** Group 1 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp1_sm {{54354.497895352f, "MM1"}, {100.987654321f, "MM2"}, {-100.00001f, "MM3"}, {-100.00002f, "MM4"}};
+  std::vector<BlackWidow::ScoreMember> gp1_sm {{54354.497895352, "MM1"}, {100.987654321,  "MM2"},
+                                               {-100.000000001,  "MM3"}, {-100.000000002, "MM4"},
+                                               {-100.000000001,  "MM5"}, {-100.000000002, "MM6"}};
   s = db.ZAdd("GP1_ZSCORE_KEY", gp1_sm, &ret);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(4, ret);
-  ASSERT_TRUE(size_match(&db, "GP1_ZSCORE_KEY", 4));
-  ASSERT_TRUE(score_members_match(&db, "GP1_ZSCORE_KEY", {{-100.00002f,    "MM4"}, {-100.00001f,      "MM3"},
-                                                          {100.987654321f, "MM2"}, {54354.497895352f, "MM1"}}));
+  ASSERT_EQ(6, ret);
+  ASSERT_TRUE(size_match(&db, "GP1_ZSCORE_KEY", 6));
+  ASSERT_TRUE(score_members_match(&db, "GP1_ZSCORE_KEY", {{-100.000000002, "MM4"}, {-100.000000002, "MM6"},
+                                                          {-100.000000001, "MM3"}, {-100.000000001, "MM5"},
+                                                          {100.987654321,  "MM2"}, {54354.497895352,"MM1"}}));
   s = db.ZScore("GP1_ZSCORE_KEY", "MM1", &score);
   ASSERT_TRUE(s.ok());
-  ASSERT_DOUBLE_EQ(54354.497895352f, score);
+  ASSERT_DOUBLE_EQ(54354.497895352, score);
 
   s = db.ZScore("GP1_ZSCORE_KEY", "MM2", &score);
   ASSERT_TRUE(s.ok());
-  ASSERT_DOUBLE_EQ(100.987654321f, score);
+  ASSERT_DOUBLE_EQ(100.987654321, score);
 
   s = db.ZScore("GP1_ZSCORE_KEY", "MM3", &score);
   ASSERT_TRUE(s.ok());
-  ASSERT_DOUBLE_EQ(-100.00001f, score);
+  ASSERT_DOUBLE_EQ(-100.000000001, score);
 
   s = db.ZScore("GP1_ZSCORE_KEY", "MM4", &score);
   ASSERT_TRUE(s.ok());
-  ASSERT_DOUBLE_EQ(-100.00002f, score);
+  ASSERT_DOUBLE_EQ(-100.000000002, score);
 
   s = db.ZScore("GP1_ZSCORE_KEY", "MM5", &score);
+  ASSERT_TRUE(s.ok());
+  ASSERT_DOUBLE_EQ(-100.000000001, score);
+
+  s = db.ZScore("GP1_ZSCORE_KEY", "MM6", &score);
+  ASSERT_TRUE(s.ok());
+  ASSERT_DOUBLE_EQ(-100.000000002, score);
+
+  s = db.ZScore("GP1_ZSCORE_KEY", "MM7", &score);
   ASSERT_TRUE(s.IsNotFound());
   ASSERT_DOUBLE_EQ(0, score);
 
@@ -393,7 +404,7 @@ TEST_F(ZsetsTest, ZScoreTest) {
 }
 
 // ZCard
-TEST_F(ZsetsTest, ZCardTest) {
+TEST_F(ZSetsTest, ZCardTest) {
   int32_t ret;
   double score;
 
@@ -441,7 +452,7 @@ TEST_F(ZsetsTest, ZCardTest) {
 }
 
 // ZRange
-TEST_F(ZsetsTest, ZRangeTest) {
+TEST_F(ZSetsTest, ZRangeTest) {
   int32_t ret;
   std::vector<BlackWidow::ScoreMember> score_members;
 
@@ -630,6 +641,118 @@ TEST_F(ZsetsTest, ZRangeTest) {
   ASSERT_TRUE(score_members_match(score_members, {}));
 }
 
+// ZCount
+TEST_F(ZSetsTest, ZCountTest) {
+  int32_t ret;
+
+  // ***************** Group 1 Test *****************
+  std::vector<BlackWidow::ScoreMember> gp1_sm {{101010.1010101, "MM1"}, {101010.0101010, "MM2"},
+                                               {-100.000000001, "MM3"}, {-100.000000002, "MM4"},
+                                               {-100.000000001, "MM5"}, {-100.000000002, "MM6"}};
+  s = db.ZAdd("GP1_ZCOUNT_KEY", gp1_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(6, ret);
+  ASSERT_TRUE(size_match(&db, "GP1_ZCOUNT_KEY", 6));
+  ASSERT_TRUE(score_members_match(&db, "GP1_ZCOUNT_KEY", {{-100.000000002, "MM4"}, {-100.000000002, "MM6"},
+                                                          {-100.000000001, "MM3"}, {-100.000000001, "MM5"},
+                                                          {101010.0101010, "MM2"}, {101010.1010101, "MM1"}}));
+
+  s = db.ZCount("GP1_ZCOUNT_KEY", -100.000000002, 101010.1010101, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 6);
+
+  s = db.ZCount("GP1_ZCOUNT_KEY", -100000000, 100000000, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 6);
+
+  s = db.ZCount("GP1_ZCOUNT_KEY", -100.000000002, -100.000000002, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 2);
+
+  s = db.ZCount("GP1_ZCOUNT_KEY", -100.000000001, -100.000000001, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 2);
+
+  s = db.ZCount("GP1_ZCOUNT_KEY", -100000000, 100, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 4);
+
+  s = db.ZCount("GP1_ZCOUNT_KEY", -100.000000001, 100000000, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 4);
+
+
+  // ***************** Group 2 Test *****************
+  std::vector<BlackWidow::ScoreMember> gp2_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                               {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                               {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
+  s = db.ZAdd("GP2_ZCOUNT_KEY", gp2_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP2_ZCOUNT_KEY", 9));
+  ASSERT_TRUE(score_members_match(&db, "GP2_ZCOUNT_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                          {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                          {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+  ASSERT_TRUE(make_expired(&db, "GP2_ZCOUNT_KEY"));
+  s = db.ZCount("GP2_ZCOUNT_KEY", -100000000, 100000000, &ret);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(ret, 0);
+
+
+  // ***************** Group 3 Test *****************
+  s = db.ZCount("GP3_ZCOUNT_KEY", -100000000, 100000000, &ret);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(ret, 0);
+
+
+  // ***************** Group 4 Test *****************
+  std::vector<BlackWidow::ScoreMember> gp4_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                               {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                               {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
+  s = db.ZAdd("GP4_ZCOUNT_KEY", gp4_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP4_ZCOUNT_KEY", 9));
+  ASSERT_TRUE(score_members_match(&db, "GP4_ZCOUNT_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                          {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                          {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+
+  s = db.ZCount("GP4_ZCOUNT_KEY", -100, -50, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 0);
+
+  s = db.ZCount("GP4_ZCOUNT_KEY", -100, 0, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+
+  s = db.ZCount("GP4_ZCOUNT_KEY", -100, 4, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 5);
+
+  s = db.ZCount("GP4_ZCOUNT_KEY", 0, 8, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  s = db.ZCount("GP4_ZCOUNT_KEY", 3, 5, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 3);
+
+  s = db.ZCount("GP4_ZCOUNT_KEY", 100, 100, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 0);
+
+  s = db.ZCount("GP4_ZCOUNT_KEY", 0, 0, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+
+  s = db.ZCount("GP4_ZCOUNT_KEY", 8, 8, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+
+  s = db.ZCount("GP4_ZCOUNT_KEY", 7, 8, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 2);
+}
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
