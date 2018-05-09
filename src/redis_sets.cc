@@ -120,7 +120,7 @@ Status RedisSets::SAdd(const Slice& key,
   } else if (s.IsNotFound()) {
     char str[4];
     EncodeFixed32(str, filtered_members.size());
-    SetsMetaValue sets_meta_value(std::string(str, sizeof(int32_t)));
+    SetsMetaValue sets_meta_value(Slice(str, sizeof(int32_t)));
     version = sets_meta_value.UpdateVersion();
     batch.Put(handles_[0], key, sets_meta_value.Encode());
     for (const auto& member : filtered_members) {
@@ -304,7 +304,7 @@ Status RedisSets::SDiffstore(const Slice& destination,
   } else if (s.IsNotFound()) {
     char str[4];
     EncodeFixed32(str, members.size());
-    SetsMetaValue sets_meta_value(std::string(str, sizeof(int32_t)));
+    SetsMetaValue sets_meta_value(Slice(str, sizeof(int32_t)));
     version = sets_meta_value.UpdateVersion();
     batch.Put(handles_[0], destination, sets_meta_value.Encode());
   } else {
@@ -498,7 +498,7 @@ Status RedisSets::SInterstore(const Slice& destination,
   } else if (s.IsNotFound()) {
     char str[4];
     EncodeFixed32(str, members.size());
-    SetsMetaValue sets_meta_value(std::string(str, sizeof(int32_t)));
+    SetsMetaValue sets_meta_value(Slice(str, sizeof(int32_t)));
     version = sets_meta_value.UpdateVersion();
     batch.Put(handles_[0], destination, sets_meta_value.Encode());
   } else {
@@ -648,7 +648,7 @@ Status RedisSets::SMove(const Slice& source, const Slice& destination,
   } else if (s.IsNotFound()) {
     char str[4];
     EncodeFixed32(str, 1);
-    SetsMetaValue sets_meta_value(std::string(str, sizeof(int32_t)));
+    SetsMetaValue sets_meta_value(Slice(str, sizeof(int32_t)));
     version = sets_meta_value.UpdateVersion();
     batch.Put(handles_[0], destination, sets_meta_value.Encode());
     SetsMemberKey sets_member_key(destination, version, member);
@@ -915,7 +915,7 @@ Status RedisSets::SUnionstore(const Slice& destination,
   } else if (s.IsNotFound()) {
     char str[4];
     EncodeFixed32(str, members.size());
-    SetsMetaValue sets_meta_value(std::string(str, sizeof(int32_t)));
+    SetsMetaValue sets_meta_value(Slice(str, sizeof(int32_t)));
     version = sets_meta_value.UpdateVersion();
     batch.Put(handles_[0], destination, sets_meta_value.Encode());
   } else {

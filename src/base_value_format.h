@@ -24,7 +24,7 @@ class InternalValue {
   }
   virtual ~InternalValue() {
     if (start_ != space_) {
-      delete start_;
+      delete[] start_;
     }
   }
   void set_timestamp(int32_t timestamp = 0) {

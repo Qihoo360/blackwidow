@@ -10,6 +10,7 @@
 #include "src/redis_hashes.h"
 #include "src/redis_sets.h"
 #include "src/redis_lists.h"
+#include "src/redis_zsets.h"
 #include "src/redis_hyperloglog.h"
 
 namespace blackwidow {
@@ -28,6 +29,7 @@ BlackWidow::~BlackWidow() {
   delete hashes_db_;
   delete sets_db_;
   delete lists_db_;
+  delete zsets_db_;
 }
 
 Status BlackWidow::Compact() {
@@ -57,6 +59,8 @@ Status BlackWidow::Open(const rocksdb::Options& options,
   s = sets_db_->Open(options, AppendSubDirectory(db_path, "sets"));
   lists_db_ = new RedisLists();
   s = lists_db_->Open(options, AppendSubDirectory(db_path, "lists"));
+  zsets_db_ = new RedisZSets();
+  s = zsets_db_->Open(options, AppendSubDirectory(db_path, "zsets"));
   return s;
 }
 
@@ -410,6 +414,30 @@ Status BlackWidow::RPoplpush(const Slice& source,
   return lists_db_->RPoplpush(source, destination, element);
 }
 
+Status BlackWidow::ZAdd(const Slice& key,
+                        const std::vector<ScoreMember>& score_members,
+                        int32_t* ret) {
+  return zsets_db_->ZAdd(key, score_members, ret);
+}
+
+Status BlackWidow::ZScore(const Slice& key,
+                          const Slice& member,
+                          double* ret) {
+  return zsets_db_->ZScore(key, member, ret);
+}
+
+Status BlackWidow::ZCard(const Slice& key,
+                         int32_t* ret) {
+  return zsets_db_->ZCard(key, ret);
+}
+
+Status BlackWidow::ZRange(const Slice& key,
+                          int32_t start,
+                          int32_t stop,
+                          std::vector<ScoreMember>* score_members) {
+  return zsets_db_->ZRange(key, start, stop, score_members);
+}
+
 
 // Keys Commands
 int32_t BlackWidow::Expire(const Slice& key, int32_t ttl,
@@ -451,6 +479,15 @@ int32_t BlackWidow::Expire(const Slice& key, int32_t ttl,
   } else if(!s.IsNotFound()) {
     is_corruption = true;
     (*type_status)[DataType::kLists] = s;
+  }
+
+  // Zsets
+  s = zsets_db_->Expire(key, ttl);
+  if (s.ok()) {
+    ret++;
+  } else if (!s.IsNotFound()) {
+    is_corruption = true;
+    (*type_status)[DataType::kZSets] = s;
   }
 
   if (is_corruption) {
@@ -503,7 +540,14 @@ int64_t BlackWidow::Del(const std::vector<std::string>& keys,
       (*type_status)[DataType::kLists] = s;
     }
 
-    // TODO(wxj) other types
+    // ZSets
+    s = zsets_db_->Del(key);
+    if (s.ok()) {
+      count++;
+    } else if (!s.IsNotFound()) {
+      is_corruption = true;
+      (*type_status)[DataType::kZSets] = s;
+    }
   }
 
   if (is_corruption) {

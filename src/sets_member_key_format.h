@@ -19,7 +19,7 @@ class SetsMemberKey {
 
     ~SetsMemberKey() {
       if (start_ != space_) {
-        delete start_;
+        delete[] start_;
       }
     }
 

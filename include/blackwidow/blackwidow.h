@@ -24,6 +24,7 @@ class RedisStrings;
 class RedisHashes;
 class RedisSets;
 class RedisLists;
+class RedisZSets;
 class HyperLogLog;
 class MutexFactory;
 class Mutex;
@@ -490,6 +491,68 @@ class BlackWidow {
                    const Slice& destination,
                    std::string* element);
 
+  // Zsets Commands
+  struct ScoreMember {
+    double score;
+    std::string member;
+  };
+
+  // Adds all the specified members with the specified scores to the sorted set
+  // stored at key. It is possible to specify multiple score / member pairs. If
+  // a specified member is already a member of the sorted set, the score is
+  // updated and the element reinserted at the right position to ensure the
+  // correct ordering.
+  //
+  // If key does not exist, a new sorted set with the specified members as sole
+  // members is created, like if the sorted set was empty. If the key exists but
+  // does not hold a sorted set, an error is returned.
+  //
+  // The score values should be the string representation of a double precision
+  // floating point number. +inf and -inf values are valid values as well.
+  Status ZAdd(const Slice& key,
+              const std::vector<ScoreMember>& score_members,
+              int32_t* ret);
+
+  // Returns the score of member in the sorted set at key.
+  //
+  // If member does not exist in the sorted set, or key does not exist, nil is
+  // returned.
+  Status ZScore(const Slice& key, const Slice& member, double* ret);
+
+  // Returns the sorted set cardinality (number of elements) of the sorted set
+  // stored at key.
+  Status ZCard(const Slice& key, int32_t* ret);
+
+  // Returns the specified range of elements in the sorted set stored at key.
+  // The elements are considered to be ordered from the lowest to the highest
+  // score. Lexicographical order is used for elements with equal score.
+  //
+  // See ZREVRANGE when you need the elements ordered from highest to lowest
+  // score (and descending lexicographical order for elements with equal score).
+  //
+  // Both start and stop are zero-based indexes, where 0 is the first element, 1
+  // is the next element and so on. They can also be negative numbers indicating
+  // offsets from the end of the sorted set, with -1 being the last element of
+  // the sorted set, -2 the penultimate element and so on.
+  //
+  // start and stop are inclusive ranges, so for example ZRANGE myzset 0 1 will
+  // return both the first and the second element of the sorted set.
+  //
+  // Out of range indexes will not produce an error. If start is larger than the
+  // largest index in the sorted set, or start > stop, an empty list is
+  // returned. If stop is larger than the end of the sorted set Redis will treat
+  // it like it is the last element of the sorted set.
+  //
+  // It is possible to pass the WITHSCORES option in order to return the scores
+  // of the elements together with the elements. The returned list will contain
+  // value1,score1,...,valueN,scoreN instead of value1,...,valueN. Client
+  // libraries are free to return a more appropriate data type (suggestion: an
+  // array with (value, score) arrays/tuples).
+  Status ZRange(const Slice& key,
+                int32_t start,
+                int32_t stop,
+                std::vector<ScoreMember>* score_members);
+
 
   // Keys Commands
   enum DataType {
@@ -580,6 +643,7 @@ class BlackWidow {
   RedisHashes* hashes_db_;
   RedisSets* sets_db_;
   RedisLists* lists_db_;
+  RedisZSets* zsets_db_;
 
   MutexFactory* mutex_factory_;
 

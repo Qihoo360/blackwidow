@@ -3,8 +3,8 @@
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 
-#ifndef SRC_SETS_META_VALUE_FORMAT_H_
-#define SRC_SETS_META_VALUE_FORMAT_H_
+#ifndef SRC_BASE_META_VALUE_FORMAT_H_
+#define SRC_BASE_META_VALUE_FORMAT_H_
 
 #include <string>
 
@@ -12,9 +12,9 @@
 
 namespace blackwidow {
 
-class SetsMetaValue : public InternalValue {
+class BaseMetaValue : public InternalValue {
  public:
-  explicit SetsMetaValue(const Slice& user_value) :
+  explicit BaseMetaValue(const Slice& user_value) :
     InternalValue(user_value) {
   }
   virtual size_t AppendTimestampAndVersion() override {
@@ -40,14 +40,14 @@ class SetsMetaValue : public InternalValue {
   }
 };
 
-class ParsedSetsMetaValue : public ParsedInternalValue {
+class ParsedBaseMetaValue : public ParsedInternalValue {
  public:
   // Use this constructor after rocksdb::DB::Get();
-  explicit ParsedSetsMetaValue(std::string* internal_value_str) :
+  explicit ParsedBaseMetaValue(std::string* internal_value_str) :
     ParsedInternalValue(internal_value_str) {
-    if (internal_value_str->size() >= kSetsMetaValueSuffixLength) {
+    if (internal_value_str->size() >= kBaseMetaValueSuffixLength) {
       user_value_ = Slice(internal_value_str->data(),
-          internal_value_str->size() - kSetsMetaValueSuffixLength);
+          internal_value_str->size() - kBaseMetaValueSuffixLength);
       version_ = DecodeFixed32(internal_value_str->data() +
             internal_value_str->size() - sizeof(int32_t) * 2);
       timestamp_ = DecodeFixed32(internal_value_str->data() +
@@ -57,11 +57,11 @@ class ParsedSetsMetaValue : public ParsedInternalValue {
   }
 
   // Use this constructor in rocksdb::CompactionFilter::Filter();
-  explicit ParsedSetsMetaValue(const Slice& internal_value_slice) :
+  explicit ParsedBaseMetaValue(const Slice& internal_value_slice) :
     ParsedInternalValue(internal_value_slice) {
-    if (internal_value_slice.size() >= kSetsMetaValueSuffixLength) {
+    if (internal_value_slice.size() >= kBaseMetaValueSuffixLength) {
       user_value_ = Slice(internal_value_slice.data(),
-          internal_value_slice.size() - kSetsMetaValueSuffixLength);
+          internal_value_slice.size() - kBaseMetaValueSuffixLength);
       version_ = DecodeFixed32(internal_value_slice.data() +
             internal_value_slice.size() - sizeof(int32_t) * 2);
       timestamp_ = DecodeFixed32(internal_value_slice.data() +
@@ -72,15 +72,15 @@ class ParsedSetsMetaValue : public ParsedInternalValue {
 
   virtual void StripSuffix() override {
     if (value_ != nullptr) {
-      value_->erase(value_->size() - kSetsMetaValueSuffixLength,
-          kSetsMetaValueSuffixLength);
+      value_->erase(value_->size() - kBaseMetaValueSuffixLength,
+          kBaseMetaValueSuffixLength);
     }
   }
 
   virtual void SetVersionToValue() override {
     if (value_ != nullptr) {
       char* dst = const_cast<char*>(value_->data()) + value_->size() -
-        kSetsMetaValueSuffixLength;
+        kBaseMetaValueSuffixLength;
       EncodeFixed32(dst, version_);
     }
   }
@@ -92,7 +92,13 @@ class ParsedSetsMetaValue : public ParsedInternalValue {
       EncodeFixed32(dst, timestamp_);
     }
   }
-  static const size_t kSetsMetaValueSuffixLength = 2 * sizeof(int32_t);
+  static const size_t kBaseMetaValueSuffixLength = 2 * sizeof(int32_t);
+
+  int32_t InitialMetaValue() {
+    this->set_count(0);
+    this->set_timestamp(0);
+    return this->UpdateVersion();
+  }
 
   int32_t count() {
     return count_;
@@ -130,5 +136,12 @@ class ParsedSetsMetaValue : public ParsedInternalValue {
   int32_t count_;
 };
 
+typedef BaseMetaValue HashesMetaValue;
+typedef ParsedBaseMetaValue ParsedHashesMetaValue;
+typedef BaseMetaValue SetsMetaValue;
+typedef ParsedBaseMetaValue ParsedSetsMetaValue;
+typedef BaseMetaValue ZSetsMetaValue;
+typedef ParsedBaseMetaValue ParsedZSetsMetaValue;
+
 }  //  namespace blackwidow
-#endif  // SRC_SETS_META_VALUE_FORMAT_H_
+#endif  // SRC_BASE_META_VALUE_FORMAT_H_

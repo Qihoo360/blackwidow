@@ -10,7 +10,7 @@
 #include <memory>
 #include <vector>
 
-#include "src/sets_meta_value_format.h"
+#include "src/base_meta_value_format.h"
 #include "src/sets_member_key_format.h"
 #include "src/debug.h"
 #include "rocksdb/compaction_filter.h"
