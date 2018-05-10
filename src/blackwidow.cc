@@ -445,6 +445,13 @@ Status BlackWidow::ZCount(const Slice& key,
   return zsets_db_->ZCount(key, min, max, ret);
 }
 
+Status BlackWidow::ZIncrby(const Slice& key,
+                           const Slice& member,
+                           double increment,
+                           double* ret) {
+  return zsets_db_->ZIncrby(key, member, increment, ret);
+}
+
 
 // Keys Commands
 int32_t BlackWidow::Expire(const Slice& key, int32_t ttl,

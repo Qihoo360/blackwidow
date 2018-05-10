@@ -753,6 +753,115 @@ TEST_F(ZSetsTest, ZCountTest) {
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 2);
 }
+
+// ZIncrby
+TEST_F(ZSetsTest, ZIncrbyTest) {
+  int32_t ret;
+  double score;
+
+  // ***************** Group 1 Test *****************
+  std::vector<BlackWidow::ScoreMember> gp1_sm {{101010.1010101, "MM1"}, {101010.0101010, "MM2"}};
+  s = db.ZAdd("GP1_ZINCRBY_KEY", gp1_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(2, ret);
+  ASSERT_TRUE(size_match(&db, "GP1_ZINCRBY_KEY", 2));
+  ASSERT_TRUE(score_members_match(&db, "GP1_ZINCRBY_KEY",{{101010.0101010, "MM2"}, {101010.1010101, "MM1"}}));
+
+  s = db.ZIncrby("GP1_ZINCRBY_KEY", "MM1", -0.1010101, &score);
+  ASSERT_TRUE(s.ok());
+  ASSERT_DOUBLE_EQ(score, 101010);
+
+  s = db.ZIncrby("GP1_ZINCRBY_KEY", "MM2", -0.0101010, &score);
+  ASSERT_TRUE(s.ok());
+  ASSERT_DOUBLE_EQ(score, 101010);
+
+  s = db.ZIncrby("GP1_ZINCRBY_KEY", "MM3", 101010, &score);
+  ASSERT_TRUE(s.ok());
+  ASSERT_DOUBLE_EQ(score, 101010);
+
+  ASSERT_TRUE(size_match(&db, "GP1_ZINCRBY_KEY", 3));
+  ASSERT_TRUE(score_members_match(&db, "GP1_ZINCRBY_KEY", {{101010, "MM1"}, {101010, "MM2"}, {101010, "MM3"}}));
+
+
+  // ***************** Group 2 Test *****************
+  std::vector<BlackWidow::ScoreMember> gp2_sm {{101010.1010101010, "MM1"}};
+  s = db.ZAdd("GP2_ZINCRBY_KEY", gp2_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(1, ret);
+  ASSERT_TRUE(size_match(&db, "GP2_ZINCRBY_KEY", 1));
+  ASSERT_TRUE(score_members_match(&db, "GP2_ZINCRBY_KEY",{{101010.1010101010, "MM1"}}));
+
+  s = db.ZIncrby("GP2_ZINCRBY_KEY", "MM1", 0.0101010101, &score);
+  ASSERT_TRUE(s.ok());
+  ASSERT_DOUBLE_EQ(score, 101010.1111111111);
+
+  s = db.ZIncrby("GP2_ZINCRBY_KEY", "MM1", -0.11111, &score);
+  ASSERT_TRUE(s.ok());
+  ASSERT_DOUBLE_EQ(score, 101010.0000011111);
+
+  s = db.ZIncrby("GP2_ZINCRBY_KEY", "MM1", -0.0000011111, &score);
+  ASSERT_TRUE(s.ok());
+  ASSERT_DOUBLE_EQ(score, 101010);
+
+  s = db.ZIncrby("GP2_ZINCRBY_KEY", "MM1", 101010, &score);
+  ASSERT_TRUE(s.ok());
+  ASSERT_DOUBLE_EQ(score, 202020);
+
+  ASSERT_TRUE(size_match(&db, "GP2_ZINCRBY_KEY", 1));
+  ASSERT_TRUE(score_members_match(&db, "GP2_ZINCRBY_KEY", {{202020, "MM1"}}));
+
+
+  // ***************** Group 3 Test *****************
+  std::vector<BlackWidow::ScoreMember> gp3_sm {{1, "MM1"}, {2, "MM2"}, {3, "MM3"}};
+  s = db.ZAdd("GP3_ZINCRBY_KEY", gp3_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(3, ret);
+  ASSERT_TRUE(size_match(&db, "GP3_ZINCRBY_KEY", 3));
+  ASSERT_TRUE(score_members_match(&db, "GP3_ZINCRBY_KEY",{{1, "MM1"}, {2, "MM2"}, {3, "MM3"}}));
+
+  ASSERT_TRUE(make_expired(&db, "GP3_ZINCRBY_KEY"));
+  ASSERT_TRUE(size_match(&db, "GP3_ZINCRBY_KEY", 0));
+  ASSERT_TRUE(score_members_match(&db, "GP3_ZINCRBY_KEY", {}));
+
+  s = db.ZIncrby("GP3_ZINCRBY_KEY", "MM1", 101010.010101, &score);
+  ASSERT_TRUE(s.ok());
+  ASSERT_DOUBLE_EQ(score, 101010.010101);
+  ASSERT_TRUE(size_match(&db, "GP3_ZINCRBY_KEY", 1));
+  ASSERT_TRUE(score_members_match(&db, "GP3_ZINCRBY_KEY", {{101010.010101, "MM1"}}));
+
+  s = db.ZIncrby("GP3_ZINCRBY_KEY", "MM2", 202020.020202, &score);
+  ASSERT_TRUE(s.ok());
+  ASSERT_DOUBLE_EQ(score, 202020.020202);
+  ASSERT_TRUE(size_match(&db, "GP3_ZINCRBY_KEY", 2));
+  ASSERT_TRUE(score_members_match(&db, "GP3_ZINCRBY_KEY", {{101010.010101, "MM1"}, {202020.020202, "MM2"}}));
+
+  s = db.ZIncrby("GP3_ZINCRBY_KEY", "MM3", 303030.030303, &score);
+  ASSERT_TRUE(s.ok());
+  ASSERT_DOUBLE_EQ(score, 303030.030303);
+  ASSERT_TRUE(size_match(&db, "GP3_ZINCRBY_KEY", 3));
+  ASSERT_TRUE(score_members_match(&db, "GP3_ZINCRBY_KEY", {{101010.010101, "MM1"}, {202020.020202, "MM2"}, {303030.030303, "MM3"}}));
+
+  s = db.ZIncrby("GP3_ZINCRBY_KEY", "MM1", 303030.030303, &score);
+  ASSERT_TRUE(s.ok());
+  ASSERT_DOUBLE_EQ(score, 404040.040404);
+  ASSERT_TRUE(size_match(&db, "GP3_ZINCRBY_KEY", 3));
+  ASSERT_TRUE(score_members_match(&db, "GP3_ZINCRBY_KEY", {{202020.020202, "MM2"}, {303030.030303, "MM3"}, {404040.040404, "MM1"}}));
+
+
+  // ***************** Group 4 Test *****************
+  s = db.ZIncrby("GP4_ZINCRBY_KEY", "MM1", -101010.010101, &score);
+  ASSERT_TRUE(s.ok());
+  ASSERT_DOUBLE_EQ(score, -101010.010101);
+  ASSERT_TRUE(size_match(&db, "GP4_ZINCRBY_KEY", 1));
+  ASSERT_TRUE(score_members_match(&db, "GP4_ZINCRBY_KEY", {{-101010.010101, "MM1"}}));
+
+  s = db.ZIncrby("GP4_ZINCRBY_KEY", "MM2", 101010.010101, &score);
+  ASSERT_TRUE(s.ok());
+  ASSERT_DOUBLE_EQ(score, 101010.010101);
+  ASSERT_TRUE(size_match(&db, "GP4_ZINCRBY_KEY", 2));
+  ASSERT_TRUE(score_members_match(&db, "GP4_ZINCRBY_KEY", {{-101010.010101, "MM1"}, {101010.010101, "MM2"}}));
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

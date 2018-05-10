@@ -316,6 +316,69 @@ Status RedisZSets::ZCount(const Slice& key,
   return s;
 }
 
+Status RedisZSets::ZIncrby(const Slice& key,
+                           const Slice& member,
+                           double increment,
+                           double* ret) {
+  *ret = 0;
+  double score = 0; 
+  char score_buf[8];
+  int32_t version = 0;
+  std::string meta_value;
+  rocksdb::WriteBatch batch;
+  ScopeRecordLock l(lock_mgr_, key);
+  Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
+  if (s.ok()) {
+    ParsedZSetsMetaValue parsed_zsets_meta_value(&meta_value);
+    if (parsed_zsets_meta_value.IsStale()) {
+      version = parsed_zsets_meta_value.InitialMetaValue();
+    } else {
+      version = parsed_zsets_meta_value.version();
+    }
+    std::string data_value;
+    ZSetsDataKey zsets_data_key(key, version, member);
+    s = db_->Get(default_read_options_, handles_[1], zsets_data_key.Encode(), &data_value);
+    if (s.ok()) {
+      uint64_t tmp = DecodeFixed64(data_value.data());
+      const void* ptr_tmp = reinterpret_cast<const void*>(&tmp);
+      double old_score = *reinterpret_cast<const double*>(ptr_tmp);
+      score = old_score + increment;
+      ZSetsScoreKey zsets_score_key(key, version, old_score, member);
+      batch.Delete(handles_[2], zsets_score_key.Encode());
+    } else if (s.IsNotFound()) {
+      score = increment;
+      parsed_zsets_meta_value.ModifyCount(1);
+      batch.Put(handles_[0], key, meta_value);
+    } else {
+      return s;
+    }
+    const void* ptr_score = reinterpret_cast<const void*>(&score);
+    EncodeFixed64(score_buf, *reinterpret_cast<const uint64_t*>(ptr_score));
+    batch.Put(handles_[1], zsets_data_key.Encode(), Slice(score_buf, sizeof(uint64_t)));
+
+    ZSetsScoreKey zsets_score_key(key, version, score, member);
+    batch.Put(handles_[2], zsets_score_key.Encode(), Slice());
+  } else if (s.IsNotFound()) {
+    char buf[8];
+    EncodeFixed32(buf, 1);
+    ZSetsMetaValue zsets_meta_value(Slice(buf, sizeof(int32_t)));
+    version = zsets_meta_value.UpdateVersion();
+    batch.Put(handles_[0], key, zsets_meta_value.Encode());
+    ZSetsDataKey zsets_data_key(key, version, member);
+    score = increment;
+    const void* ptr_score = reinterpret_cast<const void*>(&score);
+    EncodeFixed64(score_buf, *reinterpret_cast<const uint64_t*>(ptr_score));
+    batch.Put(handles_[1], zsets_data_key.Encode(), Slice(score_buf, sizeof(uint64_t)));
+
+    ZSetsScoreKey zsets_score_key(key, version, score, member);
+    batch.Put(handles_[2], zsets_score_key.Encode(), Slice());
+  } else {
+    return s;
+  }
+  *ret = score;
+  return db_->Write(default_write_options_, &batch);
+}
+
 Status RedisZSets::Expire(const Slice& key, int32_t ttl) {
   std::string meta_value;
   ScopeRecordLock l(lock_mgr_, key);

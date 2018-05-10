@@ -33,6 +33,10 @@ class RedisZSets : public Redis {
                 double min,
                 double max,
                 int32_t* ret);
+  Status ZIncrby(const Slice& key,
+                 const Slice& member,
+                 double increment,
+                 double* ret);
 
   // Common Commands
   virtual Status Open(const rocksdb::Options& options,
