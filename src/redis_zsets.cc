@@ -352,29 +352,23 @@ Status RedisZSets::ZIncrby(const Slice& key,
     } else {
       return s;
     }
-    const void* ptr_score = reinterpret_cast<const void*>(&score);
-    EncodeFixed64(score_buf, *reinterpret_cast<const uint64_t*>(ptr_score));
-    batch.Put(handles_[1], zsets_data_key.Encode(), Slice(score_buf, sizeof(uint64_t)));
-
-    ZSetsScoreKey zsets_score_key(key, version, score, member);
-    batch.Put(handles_[2], zsets_score_key.Encode(), Slice());
   } else if (s.IsNotFound()) {
     char buf[8];
     EncodeFixed32(buf, 1);
     ZSetsMetaValue zsets_meta_value(Slice(buf, sizeof(int32_t)));
     version = zsets_meta_value.UpdateVersion();
     batch.Put(handles_[0], key, zsets_meta_value.Encode());
-    ZSetsDataKey zsets_data_key(key, version, member);
     score = increment;
-    const void* ptr_score = reinterpret_cast<const void*>(&score);
-    EncodeFixed64(score_buf, *reinterpret_cast<const uint64_t*>(ptr_score));
-    batch.Put(handles_[1], zsets_data_key.Encode(), Slice(score_buf, sizeof(uint64_t)));
-
-    ZSetsScoreKey zsets_score_key(key, version, score, member);
-    batch.Put(handles_[2], zsets_score_key.Encode(), Slice());
   } else {
     return s;
   }
+  ZSetsDataKey zsets_data_key(key, version, member);
+  const void* ptr_score = reinterpret_cast<const void*>(&score);
+  EncodeFixed64(score_buf, *reinterpret_cast<const uint64_t*>(ptr_score));
+  batch.Put(handles_[1], zsets_data_key.Encode(), Slice(score_buf, sizeof(uint64_t)));
+
+  ZSetsScoreKey zsets_score_key(key, version, score, member);
+  batch.Put(handles_[2], zsets_score_key.Encode(), Slice());
   *ret = score;
   return db_->Write(default_write_options_, &batch);
 }
