@@ -452,6 +452,25 @@ Status BlackWidow::ZIncrby(const Slice& key,
   return zsets_db_->ZIncrby(key, member, increment, ret);
 }
 
+Status BlackWidow::ZRank(const Slice& key,
+                         const Slice& member,
+                         int32_t* rank) {
+  return zsets_db_->ZRank(key, member, rank);
+}
+
+Status BlackWidow::ZRem(const Slice& key,
+                        std::vector<std::string> members,
+                        int32_t* ret) {
+  return zsets_db_->ZRem(key, members, ret);
+}
+
+Status BlackWidow::ZRemrangebyrank(const Slice& key,
+                                   int32_t start,
+                                   int32_t stop,
+                                   int32_t* ret) {
+  return zsets_db_->ZRemrangebyrank(key, start, stop, ret);
+}
+
 
 // Keys Commands
 int32_t BlackWidow::Expire(const Slice& key, int32_t ttl,

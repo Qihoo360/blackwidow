@@ -583,6 +583,35 @@ class BlackWidow {
                  double increment,
                  double* ret);
 
+  // Returns the rank of member in the sorted set stored at key, with the scores
+  // ordered from low to high. The rank (or index) is 0-based, which means that
+  // the member with the lowest score has rank 0.
+  //
+  // Use ZREVRANK to get the rank of an element with the scores ordered from
+  // high to low.
+  Status ZRank(const Slice& key,
+               const Slice& member,
+               int32_t* rank);
+
+  // Removes the specified members from the sorted set stored at key. Non
+  // existing members are ignored.
+  //
+  // An error is returned when key exists and does not hold a sorted set.
+  Status ZRem(const Slice& key,
+              std::vector<std::string> members,
+              int32_t* ret);
+
+  // Removes all elements in the sorted set stored at key with rank between
+  // start and stop. Both start and stop are 0 -based indexes with 0 being the
+  // element with the lowest score. These indexes can be negative numbers, where
+  // they indicate offsets starting at the element with the highest score. For
+  // example: -1 is the element with the highest score, -2 the element with the
+  // second highest score and so forth.
+  Status ZRemrangebyrank(const Slice& key,
+                         int32_t start,
+                         int32_t stop,
+                         int32_t* ret);
+
 
   // Keys Commands
   enum DataType {

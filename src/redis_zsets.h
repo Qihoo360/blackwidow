@@ -37,6 +37,16 @@ class RedisZSets : public Redis {
                  const Slice& member,
                  double increment,
                  double* ret);
+  Status ZRank(const Slice& key,
+               const Slice& member,
+               int32_t* rank);
+  Status ZRem(const Slice& key,
+              std::vector<std::string> members,
+              int32_t* ret);
+  Status ZRemrangebyrank(const Slice& key,
+                         int32_t start,
+                         int32_t stop,
+                         int32_t* ret);
 
   // Common Commands
   virtual Status Open(const rocksdb::Options& options,

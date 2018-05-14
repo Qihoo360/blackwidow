@@ -862,6 +862,822 @@ TEST_F(ZSetsTest, ZIncrbyTest) {
   ASSERT_TRUE(score_members_match(&db, "GP4_ZINCRBY_KEY", {{-101010.010101, "MM1"}, {101010.010101, "MM2"}}));
 }
 
+// ZRank
+TEST_F(ZSetsTest, ZRankTest) {
+  int32_t ret, rank;
+
+  // ***************** Group 1 Test *****************
+  // {-5, MM0} {-3, MM1} {-1, MM2} {0, MM3} {1, MM4} {3, MM5} {5, MM6}
+  //     0         1         2        3        4        5        6
+  std::vector<BlackWidow::ScoreMember> gp1_sm {{-5, "MM0"}, {-3, "MM1"}, {-1, "MM2"}, {0, "MM3"}, {1, "MM4"}, {3, "MM5"}, {5, "MM6"}};
+  s = db.ZAdd("GP1_ZRANK_KEY", gp1_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(7, ret);
+
+  s = db.ZRank("GP1_ZRANK_KEY", "MM0", &rank);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(rank, 0);
+
+  s = db.ZRank("GP1_ZRANK_KEY", "MM2", &rank);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(rank, 2);
+
+  s = db.ZRank("GP1_ZRANK_KEY", "MM4", &rank);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(rank, 4);
+
+  s = db.ZRank("GP1_ZRANK_KEY", "MM6", &rank);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(rank, 6);
+
+  s = db.ZRank("GP1_ZRANK_KEY", "MM", &rank);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(rank, -1);
+
+
+  // ***************** Group 2 Test *****************
+  std::vector<BlackWidow::ScoreMember> gp2_sm {{-5, "MM0"}, {-3, "MM1"}, {-1, "MM2"}, {0, "MM3"}, {1, "MM4"}, {3, "MM5"}, {5, "MM6"}};
+  s = db.ZAdd("GP2_ZRANK_KEY", gp2_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(7, ret);
+  ASSERT_TRUE(make_expired(&db, "GP2_ZRANGE_KEY"));
+
+  s = db.ZRank("GP2_ZRANGE_KEY", "MM0", &rank);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(-1, rank);
+
+
+  // ***************** Group 3 Test *****************
+  s = db.ZRank("GP3_ZRANGE_KEY", "MM0", &rank);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(-1, rank);
+}
+
+// ZRem
+TEST_F(ZSetsTest, ZRemTest) {
+  int32_t ret;
+
+  // ***************** Group 1 Test *****************
+  // {-5, MM0} {-3, MM1} {-1, MM2} {0, MM3} {1, MM4} {3, MM5} {5, MM6}
+  //     0         1         2        3        4        5        6
+  std::vector<BlackWidow::ScoreMember> gp1_sm {{-5, "MM0"}, {-3, "MM1"}, {-1, "MM2"}, {0, "MM3"}, {1, "MM4"}, {3, "MM5"}, {5, "MM6"}};
+  s = db.ZAdd("GP1_ZREM_KEY", gp1_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(7, ret);
+  ASSERT_TRUE(size_match(&db, "GP1_ZREM_KEY", 7));
+  ASSERT_TRUE(score_members_match(&db, "GP1_ZREM_KEY", {{-5, "MM0"}, {-3, "MM1"}, {-1, "MM2"}, {0, "MM3"}, {1, "MM4"}, {3, "MM5"}, {5, "MM6"}}));
+
+  s = db.ZRem("GP1_ZREM_KEY", {"MM1", "MM3", "MM5"}, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(3, ret);
+  ASSERT_TRUE(size_match(&db, "GP1_ZREM_KEY", 4));
+  ASSERT_TRUE(score_members_match(&db, "GP1_ZREM_KEY", {{-5, "MM0"}, {-1, "MM2"}, {1, "MM4"}, {5, "MM6"}}));
+
+
+  // ***************** Group 2 Test *****************
+  // {-5, MM0} {-3, MM1} {-1, MM2} {0, MM3} {1, MM4} {3, MM5} {5, MM6}
+  //     0         1         2        3        4        5        6
+  std::vector<BlackWidow::ScoreMember> gp2_sm {{-5, "MM0"}, {-3, "MM1"}, {-1, "MM2"}, {0, "MM3"}, {1, "MM4"}, {3, "MM5"}, {5, "MM6"}};
+  s = db.ZAdd("GP2_ZREM_KEY", gp2_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(7, ret);
+  ASSERT_TRUE(size_match(&db, "GP2_ZREM_KEY", 7));
+  ASSERT_TRUE(score_members_match(&db, "GP2_ZREM_KEY", {{-5, "MM0"}, {-3, "MM1"}, {-1, "MM2"}, {0, "MM3"}, {1, "MM4"}, {3, "MM5"}, {5, "MM6"}}));
+
+  s = db.ZRem("GP2_ZREM_KEY", {"MM0", "MM1", "MM2", "MM3", "MM4", "MM5", "MM6"}, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(7, ret);
+  ASSERT_TRUE(size_match(&db, "GP2_ZREM_KEY", 0));
+  ASSERT_TRUE(score_members_match(&db, "GP2_ZREM_KEY", {}));
+
+  s = db.ZRem("GP2_ZREM_KEY", {"MM0", "MM1", "MM2"}, &ret);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(0, ret);
+  ASSERT_TRUE(size_match(&db, "GP2_ZREM_KEY", 0));
+  ASSERT_TRUE(score_members_match(&db, "GP2_ZREM_KEY", {}));
+
+
+  // ***************** Group 3 Test *****************
+  // {-5, MM0} {-3, MM1} {-1, MM2} {0, MM3} {1, MM4} {3, MM5} {5, MM6}
+  //     0         1         2        3        4        5        6
+  std::vector<BlackWidow::ScoreMember> gp3_sm {{-5, "MM0"}, {-3, "MM1"}, {-1, "MM2"}, {0, "MM3"}, {1, "MM4"}, {3, "MM5"}, {5, "MM6"}};
+  s = db.ZAdd("GP3_ZREM_KEY", gp3_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(7, ret);
+  ASSERT_TRUE(size_match(&db, "GP3_ZREM_KEY", 7));
+  ASSERT_TRUE(score_members_match(&db, "GP3_ZREM_KEY", {{-5, "MM0"}, {-3, "MM1"}, {-1, "MM2"}, {0, "MM3"}, {1, "MM4"}, {3, "MM5"}, {5, "MM6"}}));
+
+  s = db.ZRem("GP3_ZREM_KEY", {"MM0", "MM0", "MM1", "MM1", "MM2", "MM2"}, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(3, ret);
+  ASSERT_TRUE(size_match(&db, "GP3_ZREM_KEY", 4));
+  ASSERT_TRUE(score_members_match(&db, "GP3_ZREM_KEY", {{0, "MM3"}, {1, "MM4"}, {3, "MM5"}, {5, "MM6"}}));
+
+
+  // ***************** Group 4 Test *****************
+  // {-5, MM0} {-3, MM1} {-1, MM2} {0, MM3} {1, MM4} {3, MM5} {5, MM6}
+  //     0         1         2        3        4        5        6
+  std::vector<BlackWidow::ScoreMember> gp4_sm {{-5, "MM0"}, {-3, "MM1"}, {-1, "MM2"}, {0, "MM3"}, {1, "MM4"}, {3, "MM5"}, {5, "MM6"}};
+  s = db.ZAdd("GP4_ZREM_KEY", gp4_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(7, ret);
+  ASSERT_TRUE(size_match(&db, "GP4_ZREM_KEY", 7));
+  ASSERT_TRUE(score_members_match(&db, "GP4_ZREM_KEY", {{-5, "MM0"}, {-3, "MM1"}, {-1, "MM2"}, {0, "MM3"}, {1, "MM4"}, {3, "MM5"}, {5, "MM6"}}));
+
+  s = db.ZRem("GP4_ZREM_KEY", {"MM", "YY", "CC"}, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(0, ret);
+  ASSERT_TRUE(size_match(&db, "GP4_ZREM_KEY", 7));
+  ASSERT_TRUE(score_members_match(&db, "GP4_ZREM_KEY", {{-5, "MM0"}, {-3, "MM1"}, {-1, "MM2"}, {0, "MM3"}, {1, "MM4"}, {3, "MM5"}, {5, "MM6"}}));
+
+
+  // ***************** Group 5 Test *****************
+  // {-5, MM0} {-3, MM1} {-1, MM2} {0, MM3} {1, MM4} {3, MM5} {5, MM6}
+  //     0         1         2        3        4        5        6
+  std::vector<BlackWidow::ScoreMember> gp5_sm {{-5, "MM0"}, {-3, "MM1"}, {-1, "MM2"}, {0, "MM3"}, {1, "MM4"}, {3, "MM5"}, {5, "MM6"}};
+  s = db.ZAdd("GP5_ZREM_KEY", gp4_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(7, ret);
+  ASSERT_TRUE(size_match(&db, "GP5_ZREM_KEY", 7));
+  ASSERT_TRUE(score_members_match(&db, "GP5_ZREM_KEY", {{-5, "MM0"}, {-3, "MM1"}, {-1, "MM2"}, {0, "MM3"}, {1, "MM4"}, {3, "MM5"}, {5, "MM6"}}));
+  ASSERT_TRUE(make_expired(&db, "GP5_ZREM_KEY"));
+
+  s = db.ZRem("GP5_ZREM_KEY", {"MM0", "MM1", "MM2"}, &ret);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(0, ret);
+  ASSERT_TRUE(size_match(&db, "GP5_ZREM_KEY", 0));
+  ASSERT_TRUE(score_members_match(&db, "GP5_ZREM_KEY", {}));
+
+
+  // ***************** Group 5 Test *****************
+  // Not exist ZSet
+  s = db.ZRem("GP6_ZREM_KEY", {"MM0", "MM1", "MM2"}, &ret);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(0, ret);
+  ASSERT_TRUE(size_match(&db, "GP6_ZREM_KEY", 0));
+  ASSERT_TRUE(score_members_match(&db, "GP6_ZREM_KEY", {}));
+
+}
+
+// ZRemrangebyrank
+TEST_F(ZSetsTest, ZRemrangebyrankTest) {
+  int32_t ret;
+  std::vector<BlackWidow::ScoreMember> score_members;
+
+  // ***************** Group 1 Test *****************
+  std::vector<BlackWidow::ScoreMember> gp1_sm {{0, "MM1"}};
+  s = db.ZAdd("GP1_ZREMMRANGEBYRANK_KEY", gp1_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(1, ret);
+  ASSERT_TRUE(size_match(&db, "GP1_ZREMMRANGEBYRANK_KEY", 1));
+  ASSERT_TRUE(score_members_match(&db, "GP1_ZREMMRANGEBYRANK_KEY", {{0, "MM1"}}));
+
+  s = db.ZRemrangebyrank("GP1_ZREMMRANGEBYRANK_KEY", 0, -1, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(1, ret);
+  ASSERT_TRUE(score_members_match(score_members, {}));
+
+
+  // ***************** Group 2 Test *****************
+  //
+  // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
+  //    0        1        2        3        4        5        6        7        8
+  //   -9       -8       -7       -6       -5       -4       -3       -2       -1
+  std::vector<BlackWidow::ScoreMember> gp2_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                               {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                               {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
+  s = db.ZAdd("GP2_ZREMRANGEBYRANK_KEY", gp2_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP2_ZREMRANGEBYRANK_KEY", 9));
+  ASSERT_TRUE(score_members_match(&db, "GP2_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                                   {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                                   {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+
+  s = db.ZRemrangebyrank("GP2_ZREMRANGEBYRANK_KEY", 0, 8, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP2_ZREMRANGEBYRANK_KEY", 0));
+  ASSERT_TRUE(score_members_match(score_members, {}));
+
+
+  // ***************** Group 3 Test *****************
+  //
+  // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
+  //    0        1        2        3        4        5        6        7        8
+  //   -9       -8       -7       -6       -5       -4       -3       -2       -1
+  std::vector<BlackWidow::ScoreMember> gp3_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                               {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                               {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
+  s = db.ZAdd("GP3_ZREMRANGEBYRANK_KEY", gp3_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP3_ZREMRANGEBYRANK_KEY", 9));
+  ASSERT_TRUE(score_members_match(&db, "GP3_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                                   {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                                   {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+
+  s = db.ZRemrangebyrank("GP3_ZREMRANGEBYRANK_KEY", -9, -1, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP3_ZREMRANGEBYRANK_KEY", 0));
+  ASSERT_TRUE(score_members_match(score_members, {}));
+
+
+  // ***************** Group 4 Test *****************
+  //
+  // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
+  //    0        1        2        3        4        5        6        7        8
+  //   -9       -8       -7       -6       -5       -4       -3       -2       -1
+  std::vector<BlackWidow::ScoreMember> gp4_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                               {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                               {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
+  s = db.ZAdd("GP4_ZREMRANGEBYRANK_KEY", gp4_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP4_ZREMRANGEBYRANK_KEY", 9));
+  ASSERT_TRUE(score_members_match(&db, "GP4_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                                   {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                                   {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+  s = db.ZRemrangebyrank("GP4_ZREMRANGEBYRANK_KEY", 0, -1, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP4_ZREMRANGEBYRANK_KEY", 0));
+  ASSERT_TRUE(score_members_match(score_members, {}));
+
+
+  // ***************** Group 5 Test *****************
+  //
+  // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
+  //    0        1        2        3        4        5        6        7        8
+  //   -9       -8       -7       -6       -5       -4       -3       -2       -1
+  std::vector<BlackWidow::ScoreMember> gp5_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                               {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                               {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
+  s = db.ZAdd("GP5_ZREMRANGEBYRANK_KEY", gp5_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP5_ZREMRANGEBYRANK_KEY", 9));
+  ASSERT_TRUE(score_members_match(&db, "GP5_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                                   {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                                   {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+  s = db.ZRemrangebyrank("GP5_ZREMRANGEBYRANK_KEY", -9, 8, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP5_ZREMRANGEBYRANK_KEY", 0));
+  ASSERT_TRUE(score_members_match(score_members, {}));
+
+
+  // ***************** Group 6 Test *****************
+  //
+  // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
+  //    0        1        2        3        4        5        6        7        8
+  //   -9       -8       -7       -6       -5       -4       -3       -2       -1
+  std::vector<BlackWidow::ScoreMember> gp6_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                               {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                               {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
+  s = db.ZAdd("GP6_ZREMRANGEBYRANK_KEY", gp6_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP6_ZREMRANGEBYRANK_KEY", 9));
+  ASSERT_TRUE(score_members_match(&db, "GP6_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                                   {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                                   {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+  s = db.ZRemrangebyrank("GP6_ZREMRANGEBYRANK_KEY", -100, 8, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP6_ZREMRANGEBYRANK_KEY", 0));
+  ASSERT_TRUE(score_members_match(score_members, {}));
+
+
+  // ***************** Group 7 Test *****************
+  //
+  // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
+  //    0        1        2        3        4        5        6        7        8
+  //   -9       -8       -7       -6       -5       -4       -3       -2       -1
+  std::vector<BlackWidow::ScoreMember> gp7_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                               {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                               {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
+  s = db.ZAdd("GP7_ZREMRANGEBYRANK_KEY", gp7_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP7_ZREMRANGEBYRANK_KEY", 9));
+  ASSERT_TRUE(score_members_match(&db, "GP7_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                                   {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                                   {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+  s = db.ZRemrangebyrank("GP7_ZREMRANGEBYRANK_KEY", 0, 100, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP7_ZREMRANGEBYRANK_KEY", 0));
+  ASSERT_TRUE(score_members_match(score_members, {}));
+
+
+  // ***************** Group 8 Test *****************
+  //
+  // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
+  //    0        1        2        3        4        5        6        7        8
+  //   -9       -8       -7       -6       -5       -4       -3       -2       -1
+  std::vector<BlackWidow::ScoreMember> gp8_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                               {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                               {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
+  s = db.ZAdd("GP8_ZREMRANGEBYRANK_KEY", gp8_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP8_ZREMRANGEBYRANK_KEY", 9));
+  ASSERT_TRUE(score_members_match(&db, "GP8_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                                   {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                                   {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+  s = db.ZRemrangebyrank("GP8_ZREMRANGEBYRANK_KEY", -100, 100, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP8_ZREMRANGEBYRANK_KEY", 0));
+  ASSERT_TRUE(score_members_match(score_members, {}));
+
+
+  // ***************** Group 9 Test *****************
+  //
+  // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
+  //    0        1        2        3        4        5        6        7        8
+  //   -9       -8       -7       -6       -5       -4       -3       -2       -1
+  std::vector<BlackWidow::ScoreMember> gp9_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                               {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                               {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
+  s = db.ZAdd("GP9_ZREMRANGEBYRANK_KEY", gp9_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP9_ZREMRANGEBYRANK_KEY", 9));
+  ASSERT_TRUE(score_members_match(&db, "GP9_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                                   {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                                   {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+  s = db.ZRemrangebyrank("GP9_ZREMRANGEBYRANK_KEY", 0, 0, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(1, ret);
+  ASSERT_TRUE(size_match(&db, "GP9_ZREMRANGEBYRANK_KEY", 8));
+  ASSERT_TRUE(score_members_match(&db, "GP9_ZREMRANGEBYRANK_KEY", {{1, "MM1"}, {2, "MM2"}, {3, "MM3"},
+                                                                   {4, "MM4"}, {5, "MM5"}, {6, "MM6"},
+                                                                   {7, "MM7"}, {8, "MM8"}}));
+
+
+  // ***************** Group 10 Test *****************
+  //
+  // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
+  //    0        1        2        3        4        5        6        7        8
+  //   -9       -8       -7       -6       -5       -4       -3       -2       -1
+  std::vector<BlackWidow::ScoreMember> gp10_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
+  s = db.ZAdd("GP10_ZREMRANGEBYRANK_KEY", gp10_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP10_ZREMRANGEBYRANK_KEY", 9));
+  ASSERT_TRUE(score_members_match(&db, "GP10_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                                    {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                                    {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+  s = db.ZRemrangebyrank("GP10_ZREMRANGEBYRANK_KEY", -9, -9, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(1, ret);
+  ASSERT_TRUE(size_match(&db, "GP10_ZREMRANGEBYRANK_KEY", 8));
+  ASSERT_TRUE(score_members_match(&db, "GP10_ZREMRANGEBYRANK_KEY", {{1, "MM1"}, {2, "MM2"}, {3, "MM3"},
+                                                                    {4, "MM4"}, {5, "MM5"}, {6, "MM6"},
+                                                                    {7, "MM7"}, {8, "MM8"}}));
+
+
+  // ***************** Group 11 Test *****************
+  //
+  // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
+  //    0        1        2        3        4        5        6        7        8
+  //   -9       -8       -7       -6       -5       -4       -3       -2       -1
+  std::vector<BlackWidow::ScoreMember> gp11_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
+  s = db.ZAdd("GP11_ZREMRANGEBYRANK_KEY", gp11_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP11_ZREMRANGEBYRANK_KEY", 9));
+  ASSERT_TRUE(score_members_match(&db, "GP11_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                                    {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                                    {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+  s = db.ZRemrangebyrank("GP11_ZREMRANGEBYRANK_KEY", 8, 8, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(1, ret);
+  ASSERT_TRUE(size_match(&db, "GP11_ZREMRANGEBYRANK_KEY", 8));
+  ASSERT_TRUE(score_members_match(&db, "GP11_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                                    {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                                    {6, "MM6"}, {7, "MM7"}}));
+
+
+  // ***************** Group 12 Test *****************
+  //
+  // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
+  //    0        1        2        3        4        5        6        7        8
+  //   -9       -8       -7       -6       -5       -4       -3       -2       -1
+  std::vector<BlackWidow::ScoreMember> gp12_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
+  s = db.ZAdd("GP12_ZREMRANGEBYRANK_KEY", gp12_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP12_ZREMRANGEBYRANK_KEY", 9));
+  ASSERT_TRUE(score_members_match(&db, "GP12_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                                    {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                                    {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+  s = db.ZRemrangebyrank("GP12_ZREMRANGEBYRANK_KEY", -1, -1, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(1, ret);
+  ASSERT_TRUE(size_match(&db, "GP12_ZREMRANGEBYRANK_KEY", 8));
+  ASSERT_TRUE(score_members_match(&db, "GP12_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                                    {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                                    {6, "MM6"}, {7, "MM7"}}));
+
+
+  // ***************** Group 13 Test *****************
+  //
+  // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
+  //    0        1        2        3        4        5        6        7        8
+  //   -9       -8       -7       -6       -5       -4       -3       -2       -1
+  std::vector<BlackWidow::ScoreMember> gp13_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
+  s = db.ZAdd("GP13_ZREMRANGEBYRANK_KEY", gp13_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP13_ZREMRANGEBYRANK_KEY", 9));
+  ASSERT_TRUE(score_members_match(&db, "GP13_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                                    {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                                    {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+  s = db.ZRemrangebyrank("GP13_ZREMRANGEBYRANK_KEY", 0, 5, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(6, ret);
+  ASSERT_TRUE(size_match(&db, "GP13_ZREMRANGEBYRANK_KEY", 3));
+  ASSERT_TRUE(score_members_match(&db, "GP13_ZREMRANGEBYRANK_KEY", {{6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+
+
+  // ***************** Group 14 Test *****************
+  //
+  // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
+  //    0        1        2        3        4        5        6        7        8
+  //   -9       -8       -7       -6       -5       -4       -3       -2       -1
+  std::vector<BlackWidow::ScoreMember> gp14_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
+  s = db.ZAdd("GP14_ZREMRANGEBYRANK_KEY", gp14_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP14_ZREMRANGEBYRANK_KEY", 9));
+  ASSERT_TRUE(score_members_match(&db, "GP14_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                                    {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                                    {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+  s = db.ZRemrangebyrank("GP14_ZREMRANGEBYRANK_KEY", 0, -4, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(6, ret);
+  ASSERT_TRUE(size_match(&db, "GP14_ZREMRANGEBYRANK_KEY", 3));
+  ASSERT_TRUE(score_members_match(&db, "GP14_ZREMRANGEBYRANK_KEY", {{6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+     
+
+  // ***************** Group 15 Test *****************
+  //
+  // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
+  //    0        1        2        3        4        5        6        7        8
+  //   -9       -8       -7       -6       -5       -4       -3       -2       -1
+  std::vector<BlackWidow::ScoreMember> gp15_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
+  s = db.ZAdd("GP15_ZREMRANGEBYRANK_KEY", gp15_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP15_ZREMRANGEBYRANK_KEY", 9));
+  ASSERT_TRUE(score_members_match(&db, "GP15_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                                    {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                                    {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+  s = db.ZRemrangebyrank("GP15_ZREMRANGEBYRANK_KEY", -9, -4, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(6, ret);
+  ASSERT_TRUE(size_match(&db, "GP15_ZREMRANGEBYRANK_KEY", 3));
+  ASSERT_TRUE(score_members_match(&db, "GP15_ZREMRANGEBYRANK_KEY", {{6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+
+
+  // ***************** Group 16 Test *****************
+  //
+  // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
+  //    0        1        2        3        4        5        6        7        8
+  //   -9       -8       -7       -6       -5       -4       -3       -2       -1
+  std::vector<BlackWidow::ScoreMember> gp16_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
+  s = db.ZAdd("GP16_ZREMRANGEBYRANK_KEY", gp16_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP16_ZREMRANGEBYRANK_KEY", 9));
+  ASSERT_TRUE(score_members_match(&db, "GP16_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                                    {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                                    {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+  s = db.ZRemrangebyrank("GP16_ZREMRANGEBYRANK_KEY", -9, 5, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(6, ret);
+  ASSERT_TRUE(size_match(&db, "GP16_ZREMRANGEBYRANK_KEY", 3));
+  ASSERT_TRUE(score_members_match(&db, "GP16_ZREMRANGEBYRANK_KEY", {{6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+
+
+  // ***************** Group 17 Test *****************
+  //
+  // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
+  //    0        1        2        3        4        5        6        7        8
+  //   -9       -8       -7       -6       -5       -4       -3       -2       -1
+  std::vector<BlackWidow::ScoreMember> gp17_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
+  s = db.ZAdd("GP17_ZREMRANGEBYRANK_KEY", gp17_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP17_ZREMRANGEBYRANK_KEY", 9));
+  ASSERT_TRUE(score_members_match(&db, "GP17_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                                    {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                                    {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+  s = db.ZRemrangebyrank("GP17_ZREMRANGEBYRANK_KEY", -100, 5, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(6, ret);
+  ASSERT_TRUE(size_match(&db, "GP17_ZREMRANGEBYRANK_KEY", 3));
+  ASSERT_TRUE(score_members_match(&db, "GP17_ZREMRANGEBYRANK_KEY", {{6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+
+
+  // ***************** Group 18 Test *****************
+  //
+  // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
+  //    0        1        2        3        4        5        6        7        8
+  //   -9       -8       -7       -6       -5       -4       -3       -2       -1
+  std::vector<BlackWidow::ScoreMember> gp18_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
+  s = db.ZAdd("GP18_ZREMRANGEBYRANK_KEY", gp18_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP18_ZREMRANGEBYRANK_KEY", 9));
+  ASSERT_TRUE(score_members_match(&db, "GP18_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                                    {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                                    {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+  s = db.ZRemrangebyrank("GP18_ZREMRANGEBYRANK_KEY", -100, -4, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(6, ret);
+  ASSERT_TRUE(size_match(&db, "GP18_ZREMRANGEBYRANK_KEY", 3));
+  ASSERT_TRUE(score_members_match(&db, "GP18_ZREMRANGEBYRANK_KEY", {{6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+
+
+  // ***************** Group 19 Test *****************
+  //
+  // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
+  //    0        1        2        3        4        5        6        7        8
+  //   -9       -8       -7       -6       -5       -4       -3       -2       -1
+  std::vector<BlackWidow::ScoreMember> gp19_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
+  s = db.ZAdd("GP19_ZREMRANGEBYRANK_KEY", gp19_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP19_ZREMRANGEBYRANK_KEY", 9));
+  ASSERT_TRUE(score_members_match(&db, "GP19_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                                    {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                                    {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+  s = db.ZRemrangebyrank("GP19_ZREMRANGEBYRANK_KEY", 3, 5, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(3, ret);
+  ASSERT_TRUE(size_match(&db, "GP19_ZREMRANGEBYRANK_KEY", 6));
+  ASSERT_TRUE(score_members_match(&db, "GP19_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                                    {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+
+
+  // ***************** Group 20 Test *****************
+  //
+  // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
+  //    0        1        2        3        4        5        6        7        8
+  //   -9       -8       -7       -6       -5       -4       -3       -2       -1
+  std::vector<BlackWidow::ScoreMember> gp20_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
+  s = db.ZAdd("GP20_ZREMRANGEBYRANK_KEY", gp20_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP20_ZREMRANGEBYRANK_KEY", 9));
+  ASSERT_TRUE(score_members_match(&db, "GP20_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                                    {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                                    {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+  s = db.ZRemrangebyrank("GP20_ZREMRANGEBYRANK_KEY", -6, -4, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(3, ret);
+  ASSERT_TRUE(size_match(&db, "GP20_ZREMRANGEBYRANK_KEY", 6));
+  ASSERT_TRUE(score_members_match(&db, "GP20_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                                    {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+
+
+  // ***************** Group 21 Test *****************
+  //
+  // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
+  //    0        1        2        3        4        5        6        7        8
+  //   -9       -8       -7       -6       -5       -4       -3       -2       -1
+  std::vector<BlackWidow::ScoreMember> gp21_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
+  s = db.ZAdd("GP21_ZREMRANGEBYRANK_KEY", gp21_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP21_ZREMRANGEBYRANK_KEY", 9));
+  ASSERT_TRUE(score_members_match(&db, "GP21_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                                    {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                                    {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+  s = db.ZRemrangebyrank("GP21_ZREMRANGEBYRANK_KEY", 3, -4, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(3, ret);
+  ASSERT_TRUE(size_match(&db, "GP21_ZREMRANGEBYRANK_KEY", 6));
+  ASSERT_TRUE(score_members_match(&db, "GP21_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                                    {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+
+
+  // ***************** Group 22 Test *****************
+  //
+  // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
+  //    0        1        2        3        4        5        6        7        8
+  //   -9       -8       -7       -6       -5       -4       -3       -2       -1
+  std::vector<BlackWidow::ScoreMember> gp22_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
+  s = db.ZAdd("GP22_ZREMRANGEBYRANK_KEY", gp22_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP22_ZREMRANGEBYRANK_KEY", 9));
+  ASSERT_TRUE(score_members_match(&db, "GP22_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                                    {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                                    {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+  s = db.ZRemrangebyrank("GP22_ZREMRANGEBYRANK_KEY", -6, 5, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(3, ret);
+  ASSERT_TRUE(size_match(&db, "GP22_ZREMRANGEBYRANK_KEY", 6));
+  ASSERT_TRUE(score_members_match(&db, "GP22_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                                    {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+
+
+  // ***************** Group 23 Test *****************
+  //
+  // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
+  //    0        1        2        3        4        5        6        7        8
+  //   -9       -8       -7       -6       -5       -4       -3       -2       -1
+  std::vector<BlackWidow::ScoreMember> gp23_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
+  s = db.ZAdd("GP23_ZREMRANGEBYRANK_KEY", gp23_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP23_ZREMRANGEBYRANK_KEY", 9));
+  ASSERT_TRUE(score_members_match(&db, "GP23_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                                    {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                                    {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+  s = db.ZRemrangebyrank("GP23_ZREMRANGEBYRANK_KEY", 3, 8, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(6, ret);
+  ASSERT_TRUE(size_match(&db, "GP23_ZREMRANGEBYRANK_KEY", 3));
+  ASSERT_TRUE(score_members_match(&db, "GP23_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"}}));
+
+
+  // ***************** Group 24 Test *****************
+  //
+  // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
+  //    0        1        2        3        4        5        6        7        8
+  //   -9       -8       -7       -6       -5       -4       -3       -2       -1
+  std::vector<BlackWidow::ScoreMember> gp24_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
+  s = db.ZAdd("GP24_ZREMRANGEBYRANK_KEY", gp24_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP24_ZREMRANGEBYRANK_KEY", 9));
+  ASSERT_TRUE(score_members_match(&db, "GP24_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                                    {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                                    {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+  s = db.ZRemrangebyrank("GP24_ZREMRANGEBYRANK_KEY", -6, -1, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(6, ret);
+  ASSERT_TRUE(size_match(&db, "GP24_ZREMRANGEBYRANK_KEY", 3));
+  ASSERT_TRUE(score_members_match(&db, "GP24_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"}}));
+
+
+  // ***************** Group 25 Test *****************
+  //
+  // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
+  //    0        1        2        3        4        5        6        7        8
+  //   -9       -8       -7       -6       -5       -4       -3       -2       -1
+  std::vector<BlackWidow::ScoreMember> gp25_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
+  s = db.ZAdd("GP25_ZREMRANGEBYRANK_KEY", gp25_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP25_ZREMRANGEBYRANK_KEY", 9));
+  ASSERT_TRUE(score_members_match(&db, "GP25_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                                    {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                                    {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+  s = db.ZRemrangebyrank("GP25_ZREMRANGEBYRANK_KEY", 3, -1, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(6, ret);
+  ASSERT_TRUE(size_match(&db, "GP25_ZREMRANGEBYRANK_KEY", 3));
+  ASSERT_TRUE(score_members_match(&db, "GP25_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"}}));
+
+
+  // ***************** Group 26 Test *****************
+  //
+  // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
+  //    0        1        2        3        4        5        6        7        8
+  //   -9       -8       -7       -6       -5       -4       -3       -2       -1
+  std::vector<BlackWidow::ScoreMember> gp26_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
+  s = db.ZAdd("GP26_ZREMRANGEBYRANK_KEY", gp26_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP26_ZREMRANGEBYRANK_KEY", 9));
+  ASSERT_TRUE(score_members_match(&db, "GP26_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                                    {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                                    {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+  s = db.ZRemrangebyrank("GP26_ZREMRANGEBYRANK_KEY", -6, 8, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(6, ret);
+  ASSERT_TRUE(size_match(&db, "GP26_ZREMRANGEBYRANK_KEY", 3));
+  ASSERT_TRUE(score_members_match(&db, "GP26_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"}}));
+
+
+  // ***************** Group 27 Test *****************
+  //
+  // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
+  //    0        1        2        3        4        5        6        7        8
+  //   -9       -8       -7       -6       -5       -4       -3       -2       -1
+  std::vector<BlackWidow::ScoreMember> gp27_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
+  s = db.ZAdd("GP27_ZREMRANGEBYRANK_KEY", gp27_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP27_ZREMRANGEBYRANK_KEY", 9));
+  ASSERT_TRUE(score_members_match(&db, "GP27_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                                    {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                                    {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+  s = db.ZRemrangebyrank("GP27_ZREMRANGEBYRANK_KEY", -6, 100, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(6, ret);
+  ASSERT_TRUE(size_match(&db, "GP27_ZREMRANGEBYRANK_KEY", 3));
+  ASSERT_TRUE(score_members_match(&db, "GP27_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"}}));
+
+
+  // ***************** Group 28 Test *****************
+  //
+  // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
+  //    0        1        2        3        4        5        6        7        8
+  //   -9       -8       -7       -6       -5       -4       -3       -2       -1
+  std::vector<BlackWidow::ScoreMember> gp28_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
+  s = db.ZAdd("GP28_ZREMRANGEBYRANK_KEY", gp28_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP28_ZREMRANGEBYRANK_KEY", 9));
+  ASSERT_TRUE(score_members_match(&db, "GP28_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                                    {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                                    {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+  s = db.ZRemrangebyrank("GP28_ZREMRANGEBYRANK_KEY", 3, 100, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(6, ret);
+  ASSERT_TRUE(size_match(&db, "GP28_ZREMRANGEBYRANK_KEY", 3));
+  ASSERT_TRUE(score_members_match(&db, "GP28_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"}}));
+
+
+  // ***************** Group 29 Test *****************
+  //
+  // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
+  //    0        1        2        3        4        5        6        7        8
+  //   -9       -8       -7       -6       -5       -4       -3       -2       -1
+  std::vector<BlackWidow::ScoreMember> gp29_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
+  s = db.ZAdd("GP29_ZREMRANGEBYRANK_KEY", gp29_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP29_ZREMRANGEBYRANK_KEY", 9));
+  ASSERT_TRUE(score_members_match(&db, "GP29_ZREMRANGEBYRANK_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                                    {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                                    {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+  ASSERT_TRUE(make_expired(&db, "GP29_ZREMRANGEBYRANK_KEY"));
+  s = db.ZRemrangebyrank("GP29_ZREMRANGEBYRANK_KEY", 0, 0, &ret);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(0, ret);
+  ASSERT_TRUE(size_match(&db, "GP29_ZREMRANGEBYRANK_KEY", 0));
+  ASSERT_TRUE(score_members_match(&db, "GP29_ZREMRANGEBYRANK_KEY", {}));
+
+
+  // ***************** Group 30 Test *****************
+  s = db.ZRemrangebyrank("GP30_ZREMRANGEBYRANK_KEY", 0, 0, &ret);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(0, ret);
+  ASSERT_TRUE(size_match(&db, "GP30_ZREMRANGEBYRANK_KEY", 0));
+  ASSERT_TRUE(score_members_match(&db, "GP30_ZREMRANGEBYRANK_KEY", {}));
+
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
