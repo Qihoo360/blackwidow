@@ -612,6 +612,32 @@ class BlackWidow {
                          int32_t stop,
                          int32_t* ret);
 
+  // Removes all elements in the sorted set stored at key with a score between
+  // min and max (inclusive).
+  Status ZRemrangebyscore(const Slice& key,
+                          double min,
+                          double max,
+                          int32_t* ret);
+
+  // Returns the specified range of elements in the sorted set stored at key.
+  // The elements are considered to be ordered from the highest to the lowest
+  // score. Descending lexicographical order is used for elements with equal
+  // score.
+  //
+  // Apart from the reversed ordering, ZREVRANGE is similar to ZRANGE.
+  Status ZRevrange(const Slice& key,
+                   int32_t start,
+                   int32_t stop,
+                   std::vector<ScoreMember>* score_members);
+
+  // Returns the rank of member in the sorted set stored at key, with the scores
+  // ordered from high to low. The rank (or index) is 0-based, which means that
+  // the member with the highest score has rank 0.
+  Status ZRevrank(const Slice& key,
+                  const Slice& member,
+                  int32_t* rank);
+
+
 
   // Keys Commands
   enum DataType {

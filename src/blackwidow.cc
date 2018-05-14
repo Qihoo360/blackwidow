@@ -471,6 +471,26 @@ Status BlackWidow::ZRemrangebyrank(const Slice& key,
   return zsets_db_->ZRemrangebyrank(key, start, stop, ret);
 }
 
+Status BlackWidow::ZRemrangebyscore(const Slice& key,
+                                    double min,
+                                    double max,
+                                    int32_t* ret) {
+  return zsets_db_->ZRemrangebyscore(key, min, max, ret);
+}
+
+Status BlackWidow::ZRevrange(const Slice& key,
+                             int32_t start,
+                             int32_t stop,
+                             std::vector<ScoreMember>* score_members) {
+  return zsets_db_->ZRevrange(key, start, stop, score_members);
+}
+
+Status BlackWidow::ZRevrank(const Slice& key,
+                            const Slice& member,
+                            int32_t* rank) {
+  return zsets_db_->ZRevrank(key, member, rank);
+}
+
 
 // Keys Commands
 int32_t BlackWidow::Expire(const Slice& key, int32_t ttl,

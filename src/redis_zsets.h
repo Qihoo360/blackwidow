@@ -47,6 +47,17 @@ class RedisZSets : public Redis {
                          int32_t start,
                          int32_t stop,
                          int32_t* ret);
+  Status ZRemrangebyscore(const Slice& key,
+                          double min,
+                          double max,
+                          int32_t* ret);
+  Status ZRevrange(const Slice& key,
+                   int32_t start,
+                   int32_t stop,
+                   std::vector<BlackWidow::ScoreMember>* score_members);
+  Status ZRevrank(const Slice& key,
+                  const Slice& member,
+                  int32_t* rank);
 
   // Common Commands
   virtual Status Open(const rocksdb::Options& options,
