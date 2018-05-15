@@ -36,6 +36,12 @@ class RedisZSets : public Redis {
                 int32_t start,
                 int32_t stop,
                 std::vector<BlackWidow::ScoreMember>* score_members);
+  Status ZRangebyscore(const Slice& key,
+                       double min,
+                       double max,
+                       bool left_close,
+                       bool right_close,
+                       std::vector<BlackWidow::ScoreMember>* score_members);
   Status ZRank(const Slice& key,
                const Slice& member,
                int32_t* rank);
@@ -54,6 +60,12 @@ class RedisZSets : public Redis {
                    int32_t start,
                    int32_t stop,
                    std::vector<BlackWidow::ScoreMember>* score_members);
+  Status ZRevrangebyscore(const Slice& key,
+                          double min,
+                          double max,
+                          bool left_close,
+                          bool right_close,
+                          std::vector<BlackWidow::ScoreMember>* score_members);
   Status ZRevrank(const Slice& key,
                   const Slice& member,
                   int32_t* rank);
