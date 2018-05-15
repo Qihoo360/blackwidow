@@ -339,69 +339,6 @@ TEST_F(ZSetsTest, ZAddTest) {
   ASSERT_TRUE(score_members_match(&db, "GP7_ZADD_KEY", {{0, "MM2"}, {1234.56789, "MM1"}, {1234.56789, "MM3"}}));
 }
 
-// ZSCORE
-TEST_F(ZSetsTest, ZScoreTest) {
-  int32_t ret;
-  double score;
-
-  // ***************** Group 1 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp1_sm {{54354.497895352, "MM1"}, {100.987654321,  "MM2"},
-                                               {-100.000000001,  "MM3"}, {-100.000000002, "MM4"},
-                                               {-100.000000001,  "MM5"}, {-100.000000002, "MM6"}};
-  s = db.ZAdd("GP1_ZSCORE_KEY", gp1_sm, &ret);
-  ASSERT_TRUE(s.ok());
-  ASSERT_EQ(6, ret);
-  ASSERT_TRUE(size_match(&db, "GP1_ZSCORE_KEY", 6));
-  ASSERT_TRUE(score_members_match(&db, "GP1_ZSCORE_KEY", {{-100.000000002, "MM4"}, {-100.000000002, "MM6"},
-                                                          {-100.000000001, "MM3"}, {-100.000000001, "MM5"},
-                                                          {100.987654321,  "MM2"}, {54354.497895352,"MM1"}}));
-  s = db.ZScore("GP1_ZSCORE_KEY", "MM1", &score);
-  ASSERT_TRUE(s.ok());
-  ASSERT_DOUBLE_EQ(54354.497895352, score);
-
-  s = db.ZScore("GP1_ZSCORE_KEY", "MM2", &score);
-  ASSERT_TRUE(s.ok());
-  ASSERT_DOUBLE_EQ(100.987654321, score);
-
-  s = db.ZScore("GP1_ZSCORE_KEY", "MM3", &score);
-  ASSERT_TRUE(s.ok());
-  ASSERT_DOUBLE_EQ(-100.000000001, score);
-
-  s = db.ZScore("GP1_ZSCORE_KEY", "MM4", &score);
-  ASSERT_TRUE(s.ok());
-  ASSERT_DOUBLE_EQ(-100.000000002, score);
-
-  s = db.ZScore("GP1_ZSCORE_KEY", "MM5", &score);
-  ASSERT_TRUE(s.ok());
-  ASSERT_DOUBLE_EQ(-100.000000001, score);
-
-  s = db.ZScore("GP1_ZSCORE_KEY", "MM6", &score);
-  ASSERT_TRUE(s.ok());
-  ASSERT_DOUBLE_EQ(-100.000000002, score);
-
-  s = db.ZScore("GP1_ZSCORE_KEY", "MM7", &score);
-  ASSERT_TRUE(s.IsNotFound());
-  ASSERT_DOUBLE_EQ(0, score);
-
-
-  // ***************** Group 2 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp2_sm {{4, "MM1"}, {3, "MM2"}, {2, "MM3"}, {1, "MM4"}};
-  s = db.ZAdd("GP2_ZSCORE_KEY", gp2_sm, &ret);
-  ASSERT_TRUE(s.ok());
-  ASSERT_EQ(4, ret);
-  ASSERT_TRUE(size_match(&db, "GP2_ZSCORE_KEY", 4));
-  ASSERT_TRUE(score_members_match(&db, "GP2_ZSCORE_KEY", {{1,"MM4"}, {2,"MM3"}, {3, "MM2"}, {4, "MM1"}}));
-  ASSERT_TRUE(make_expired(&db, "GP2_ZSCORE_KEY"));
-  s = db.ZScore("GP2_ZSCORE_KEY", "MM1", &score);
-  ASSERT_TRUE(s.IsNotFound());
-  ASSERT_DOUBLE_EQ(0, score);
-
-
-  // ***************** Group 3 Test *****************
-  s = db.ZScore("GP3_ZSCORE_KEY", "MM1", &score);
-  ASSERT_TRUE(s.IsNotFound());
-  ASSERT_DOUBLE_EQ(0, score);
-}
 
 // ZCard
 TEST_F(ZSetsTest, ZCardTest) {
@@ -451,195 +388,6 @@ TEST_F(ZSetsTest, ZCardTest) {
   ASSERT_EQ(0, ret);
 }
 
-// ZRange
-TEST_F(ZSetsTest, ZRangeTest) {
-  int32_t ret;
-  std::vector<BlackWidow::ScoreMember> score_members;
-
-  // ***************** Group 1 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp1_sm {{0, "MM1"}};
-  s = db.ZAdd("GP1_ZRANGE_KEY", gp1_sm, &ret);
-  ASSERT_TRUE(s.ok());
-  ASSERT_EQ(1, ret);
-  ASSERT_TRUE(size_match(&db, "GP1_ZRANGE_KEY", 1));
-  ASSERT_TRUE(score_members_match(&db, "GP1_ZRANGE_KEY", {{0, "MM1"}}));
-
-  s = db.ZRange("GP1_ZRANGE_KEY", 0, -1, &score_members);
-  ASSERT_TRUE(s.ok());
-  ASSERT_TRUE(score_members_match(score_members, {{0, "MM1"}}));
-
-
-  // ***************** Group 2 Test *****************
-  //
-  // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
-  //    0        1        2        3        4        5        6        7        8
-  //   -9       -8       -7       -6       -5       -4       -3       -2       -1
-  std::vector<BlackWidow::ScoreMember> gp2_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
-                                               {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
-                                               {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
-  s = db.ZAdd("GP2_ZRANGE_KEY", gp2_sm, &ret);
-  ASSERT_TRUE(s.ok());
-  ASSERT_EQ(9, ret);
-  ASSERT_TRUE(size_match(&db, "GP2_ZRANGE_KEY", 9));
-  ASSERT_TRUE(score_members_match(&db, "GP2_ZRANGE_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
-                                                          {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
-                                                          {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
-
-  s = db.ZRange("GP2_ZRANGE_KEY", 0, 8, &score_members);
-  ASSERT_TRUE(s.ok());
-  ASSERT_TRUE(score_members_match(score_members, {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
-                                                  {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
-                                                  {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
-
-  s = db.ZRange("GP2_ZRANGE_KEY", -9, -1, &score_members);
-  ASSERT_TRUE(s.ok());
-  ASSERT_TRUE(score_members_match(score_members, {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
-                                                  {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
-                                                  {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
-
-  s = db.ZRange("GP2_ZRANGE_KEY", 0, -1, &score_members);
-  ASSERT_TRUE(s.ok());
-  ASSERT_TRUE(score_members_match(score_members, {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
-                                                  {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
-                                                  {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
-
-  s = db.ZRange("GP2_ZRANGE_KEY", -9, 8, &score_members);
-  ASSERT_TRUE(s.ok());
-  ASSERT_TRUE(score_members_match(score_members, {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
-                                                  {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
-                                                  {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
-
-
-  s = db.ZRange("GP2_ZRANGE_KEY", -100, 8, &score_members);
-  ASSERT_TRUE(s.ok());
-  ASSERT_TRUE(score_members_match(score_members, {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
-                                                  {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
-                                                  {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
-
-  s = db.ZRange("GP2_ZRANGE_KEY", 0, 100, &score_members);
-  ASSERT_TRUE(s.ok());
-  ASSERT_TRUE(score_members_match(score_members, {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
-                                                  {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
-                                                  {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
-
-  s = db.ZRange("GP2_ZRANGE_KEY", -100, 100, &score_members);
-  ASSERT_TRUE(s.ok());
-  ASSERT_TRUE(score_members_match(score_members, {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
-                                                  {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
-                                                  {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
-
-  s = db.ZRange("GP2_ZRANGE_KEY", 0, 0, &score_members);
-  ASSERT_TRUE(s.ok());
-  ASSERT_TRUE(score_members_match(score_members, {{0, "MM0"}}));
-
-  s = db.ZRange("GP2_ZRANGE_KEY", -9, -9, &score_members);
-  ASSERT_TRUE(s.ok());
-  ASSERT_TRUE(score_members_match(score_members, {{0, "MM0"}}));
-
-  s = db.ZRange("GP2_ZRANGE_KEY", 8, 8, &score_members);
-  ASSERT_TRUE(s.ok());
-  ASSERT_TRUE(score_members_match(score_members, {{8, "MM8"}}));
-
-  s = db.ZRange("GP2_ZRANGE_KEY", -1, -1, &score_members);
-  ASSERT_TRUE(s.ok());
-  ASSERT_TRUE(score_members_match(score_members, {{8, "MM8"}}));
-
-  s = db.ZRange("GP2_ZRANGE_KEY", 0, 5, &score_members);
-  ASSERT_TRUE(s.ok());
-  ASSERT_TRUE(score_members_match(score_members, {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
-                                                  {3, "MM3"}, {4, "MM4"}, {5, "MM5"}}));
-
-  s = db.ZRange("GP2_ZRANGE_KEY", 0, -4, &score_members);
-  ASSERT_TRUE(s.ok());
-  ASSERT_TRUE(score_members_match(score_members, {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
-                                                  {3, "MM3"}, {4, "MM4"}, {5, "MM5"}}));
-
-  s = db.ZRange("GP2_ZRANGE_KEY", -9, -4, &score_members);
-  ASSERT_TRUE(s.ok());
-  ASSERT_TRUE(score_members_match(score_members, {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
-                                                  {3, "MM3"}, {4, "MM4"}, {5, "MM5"}}));
-
-  s = db.ZRange("GP2_ZRANGE_KEY", -9, 5, &score_members);
-  ASSERT_TRUE(s.ok());
-  ASSERT_TRUE(score_members_match(score_members, {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
-                                                  {3, "MM3"}, {4, "MM4"}, {5, "MM5"}}));
-
-  s = db.ZRange("GP2_ZRANGE_KEY", -100, 5, &score_members);
-  ASSERT_TRUE(s.ok());
-  ASSERT_TRUE(score_members_match(score_members, {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
-                                                  {3, "MM3"}, {4, "MM4"}, {5, "MM5"}}));
-
-  s = db.ZRange("GP2_ZRANGE_KEY", -100, -4, &score_members);
-  ASSERT_TRUE(s.ok());
-  ASSERT_TRUE(score_members_match(score_members, {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
-                                                  {3, "MM3"}, {4, "MM4"}, {5, "MM5"}}));
-
-  s = db.ZRange("GP2_ZRANGE_KEY", 3, 5, &score_members);
-  ASSERT_TRUE(s.ok());
-  ASSERT_TRUE(score_members_match(score_members, {{3, "MM3"}, {4, "MM4"}, {5, "MM5"}}));
-
-  s = db.ZRange("GP2_ZRANGE_KEY", -6, -4, &score_members);
-  ASSERT_TRUE(s.ok());
-  ASSERT_TRUE(score_members_match(score_members, {{3, "MM3"}, {4, "MM4"}, {5, "MM5"}}));
-
-  s = db.ZRange("GP2_ZRANGE_KEY", 3, -4, &score_members);
-  ASSERT_TRUE(s.ok());
-  ASSERT_TRUE(score_members_match(score_members, {{3, "MM3"}, {4, "MM4"}, {5, "MM5"}}));
-
-  s = db.ZRange("GP2_ZRANGE_KEY", -6, 5, &score_members);
-  ASSERT_TRUE(s.ok());
-  ASSERT_TRUE(score_members_match(score_members, {{3, "MM3"}, {4, "MM4"}, {5, "MM5"}}));
-
-  s = db.ZRange("GP2_ZRANGE_KEY", 3, 8, &score_members);
-  ASSERT_TRUE(s.ok());
-  ASSERT_TRUE(score_members_match(score_members, {{3, "MM3"}, {4, "MM4"}, {5, "MM5"},
-                                                  {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
-
-  s = db.ZRange("GP2_ZRANGE_KEY", -6, -1, &score_members);
-  ASSERT_TRUE(s.ok());
-  ASSERT_TRUE(score_members_match(score_members, {{3, "MM3"}, {4, "MM4"}, {5, "MM5"},
-                                                  {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
-
-  s = db.ZRange("GP2_ZRANGE_KEY", 3, -1, &score_members);
-  ASSERT_TRUE(s.ok());
-  ASSERT_TRUE(score_members_match(score_members, {{3, "MM3"}, {4, "MM4"}, {5, "MM5"},
-                                                  {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
-
-  s = db.ZRange("GP2_ZRANGE_KEY", -6, 8, &score_members);
-  ASSERT_TRUE(s.ok());
-  ASSERT_TRUE(score_members_match(score_members, {{3, "MM3"}, {4, "MM4"}, {5, "MM5"},
-                                                  {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
-
-  s = db.ZRange("GP2_ZRANGE_KEY", -6, 100, &score_members);
-  ASSERT_TRUE(s.ok());
-  ASSERT_TRUE(score_members_match(score_members, {{3, "MM3"}, {4, "MM4"}, {5, "MM5"},
-                                                  {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
-
-  s = db.ZRange("GP2_ZRANGE_KEY", 3, 100, &score_members);
-  ASSERT_TRUE(s.ok());
-  ASSERT_TRUE(score_members_match(score_members, {{3, "MM3"}, {4, "MM4"}, {5, "MM5"},
-                                                  {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
-
-
-  // ***************** Group 3 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp3_sm {{0, "MM1"}};
-  s = db.ZAdd("GP3_ZRANGE_KEY", gp3_sm, &ret);
-  ASSERT_TRUE(s.ok());
-  ASSERT_EQ(1, ret);
-  ASSERT_TRUE(size_match(&db, "GP3_ZRANGE_KEY", 1));
-  ASSERT_TRUE(score_members_match(&db, "GP3_ZRANGE_KEY", {{0, "MM1"}}));
-  ASSERT_TRUE(make_expired(&db, "GP3_ZRANGE_KEY"));
-
-  s = db.ZRange("GP3_ZRANGE_KEY", 0, -1, &score_members);
-  ASSERT_TRUE(s.IsNotFound());
-  ASSERT_TRUE(score_members_match(score_members, {}));
-
-
-  // ***************** Group 4 Test *****************
-  s = db.ZRange("GP4_ZRANGE_KEY", 0, -1, &score_members);
-  ASSERT_TRUE(s.IsNotFound());
-  ASSERT_TRUE(score_members_match(score_members, {}));
-}
 
 // ZCount
 TEST_F(ZSetsTest, ZCountTest) {
@@ -860,6 +608,196 @@ TEST_F(ZSetsTest, ZIncrbyTest) {
   ASSERT_DOUBLE_EQ(score, 101010.010101);
   ASSERT_TRUE(size_match(&db, "GP4_ZINCRBY_KEY", 2));
   ASSERT_TRUE(score_members_match(&db, "GP4_ZINCRBY_KEY", {{-101010.010101, "MM1"}, {101010.010101, "MM2"}}));
+}
+
+// ZRange
+TEST_F(ZSetsTest, ZRangeTest) {
+  int32_t ret;
+  std::vector<BlackWidow::ScoreMember> score_members;
+
+  // ***************** Group 1 Test *****************
+  std::vector<BlackWidow::ScoreMember> gp1_sm {{0, "MM1"}};
+  s = db.ZAdd("GP1_ZRANGE_KEY", gp1_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(1, ret);
+  ASSERT_TRUE(size_match(&db, "GP1_ZRANGE_KEY", 1));
+  ASSERT_TRUE(score_members_match(&db, "GP1_ZRANGE_KEY", {{0, "MM1"}}));
+
+  s = db.ZRange("GP1_ZRANGE_KEY", 0, -1, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {{0, "MM1"}}));
+
+
+  // ***************** Group 2 Test *****************
+  //
+  // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
+  //    0        1        2        3        4        5        6        7        8
+  //   -9       -8       -7       -6       -5       -4       -3       -2       -1
+  std::vector<BlackWidow::ScoreMember> gp2_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                               {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                               {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
+  s = db.ZAdd("GP2_ZRANGE_KEY", gp2_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(9, ret);
+  ASSERT_TRUE(size_match(&db, "GP2_ZRANGE_KEY", 9));
+  ASSERT_TRUE(score_members_match(&db, "GP2_ZRANGE_KEY", {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                          {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                          {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+
+  s = db.ZRange("GP2_ZRANGE_KEY", 0, 8, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                  {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                  {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+
+  s = db.ZRange("GP2_ZRANGE_KEY", -9, -1, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                  {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                  {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+
+  s = db.ZRange("GP2_ZRANGE_KEY", 0, -1, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                  {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                  {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+
+  s = db.ZRange("GP2_ZRANGE_KEY", -9, 8, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                  {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                  {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+
+
+  s = db.ZRange("GP2_ZRANGE_KEY", -100, 8, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                  {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                  {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+
+  s = db.ZRange("GP2_ZRANGE_KEY", 0, 100, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                  {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                  {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+
+  s = db.ZRange("GP2_ZRANGE_KEY", -100, 100, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                  {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                  {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+
+  s = db.ZRange("GP2_ZRANGE_KEY", 0, 0, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {{0, "MM0"}}));
+
+  s = db.ZRange("GP2_ZRANGE_KEY", -9, -9, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {{0, "MM0"}}));
+
+  s = db.ZRange("GP2_ZRANGE_KEY", 8, 8, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {{8, "MM8"}}));
+
+  s = db.ZRange("GP2_ZRANGE_KEY", -1, -1, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {{8, "MM8"}}));
+
+  s = db.ZRange("GP2_ZRANGE_KEY", 0, 5, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                  {3, "MM3"}, {4, "MM4"}, {5, "MM5"}}));
+
+  s = db.ZRange("GP2_ZRANGE_KEY", 0, -4, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                  {3, "MM3"}, {4, "MM4"}, {5, "MM5"}}));
+
+  s = db.ZRange("GP2_ZRANGE_KEY", -9, -4, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                  {3, "MM3"}, {4, "MM4"}, {5, "MM5"}}));
+
+  s = db.ZRange("GP2_ZRANGE_KEY", -9, 5, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                  {3, "MM3"}, {4, "MM4"}, {5, "MM5"}}));
+
+  s = db.ZRange("GP2_ZRANGE_KEY", -100, 5, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                  {3, "MM3"}, {4, "MM4"}, {5, "MM5"}}));
+
+  s = db.ZRange("GP2_ZRANGE_KEY", -100, -4, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+                                                  {3, "MM3"}, {4, "MM4"}, {5, "MM5"}}));
+
+  s = db.ZRange("GP2_ZRANGE_KEY", 3, 5, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {{3, "MM3"}, {4, "MM4"}, {5, "MM5"}}));
+
+  s = db.ZRange("GP2_ZRANGE_KEY", -6, -4, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {{3, "MM3"}, {4, "MM4"}, {5, "MM5"}}));
+
+  s = db.ZRange("GP2_ZRANGE_KEY", 3, -4, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {{3, "MM3"}, {4, "MM4"}, {5, "MM5"}}));
+
+  s = db.ZRange("GP2_ZRANGE_KEY", -6, 5, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {{3, "MM3"}, {4, "MM4"}, {5, "MM5"}}));
+
+  s = db.ZRange("GP2_ZRANGE_KEY", 3, 8, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {{3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                  {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+
+  s = db.ZRange("GP2_ZRANGE_KEY", -6, -1, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {{3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                  {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+
+  s = db.ZRange("GP2_ZRANGE_KEY", 3, -1, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {{3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                  {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+
+  s = db.ZRange("GP2_ZRANGE_KEY", -6, 8, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {{3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                  {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+
+  s = db.ZRange("GP2_ZRANGE_KEY", -6, 100, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {{3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                  {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+
+  s = db.ZRange("GP2_ZRANGE_KEY", 3, 100, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {{3, "MM3"}, {4, "MM4"}, {5, "MM5"},
+                                                  {6, "MM6"}, {7, "MM7"}, {8, "MM8"}}));
+
+
+  // ***************** Group 3 Test *****************
+  std::vector<BlackWidow::ScoreMember> gp3_sm {{0, "MM1"}};
+  s = db.ZAdd("GP3_ZRANGE_KEY", gp3_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(1, ret);
+  ASSERT_TRUE(size_match(&db, "GP3_ZRANGE_KEY", 1));
+  ASSERT_TRUE(score_members_match(&db, "GP3_ZRANGE_KEY", {{0, "MM1"}}));
+  ASSERT_TRUE(make_expired(&db, "GP3_ZRANGE_KEY"));
+
+  s = db.ZRange("GP3_ZRANGE_KEY", 0, -1, &score_members);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_TRUE(score_members_match(score_members, {}));
+
+
+  // ***************** Group 4 Test *****************
+  s = db.ZRange("GP4_ZRANGE_KEY", 0, -1, &score_members);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_TRUE(score_members_match(score_members, {}));
 }
 
 // ZRank
@@ -2171,17 +2109,81 @@ TEST_F(ZSetsTest, ZRevrankTest) {
   s = db.ZAdd("GP2_ZREVRANK_KEY", gp2_sm, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(7, ret);
-  ASSERT_TRUE(make_expired(&db, "GP2_ZREVRANGE_KEY"));
+  ASSERT_TRUE(make_expired(&db, "GP2_ZREVRANK_KEY"));
 
-  s = db.ZRevrank("GP2_ZREVRANGE_KEY", "MM0", &rank);
+  s = db.ZRevrank("GP2_ZREVRANK_KEY", "MM0", &rank);
   ASSERT_TRUE(s.IsNotFound());
   ASSERT_EQ(-1, rank);
 
 
   // ***************** Group 3 Test *****************
-  s = db.ZRevrank("GP3_ZREVRANGE_KEY", "MM0", &rank);
+  s = db.ZRevrank("GP3_ZREVRANK_KEY", "MM0", &rank);
   ASSERT_TRUE(s.IsNotFound());
   ASSERT_EQ(-1, rank);
+}
+
+// ZSCORE
+TEST_F(ZSetsTest, ZScoreTest) {
+  int32_t ret;
+  double score;
+
+  // ***************** Group 1 Test *****************
+  std::vector<BlackWidow::ScoreMember> gp1_sm {{54354.497895352, "MM1"}, {100.987654321,  "MM2"},
+                                               {-100.000000001,  "MM3"}, {-100.000000002, "MM4"},
+                                               {-100.000000001,  "MM5"}, {-100.000000002, "MM6"}};
+  s = db.ZAdd("GP1_ZSCORE_KEY", gp1_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(6, ret);
+  ASSERT_TRUE(size_match(&db, "GP1_ZSCORE_KEY", 6));
+  ASSERT_TRUE(score_members_match(&db, "GP1_ZSCORE_KEY", {{-100.000000002, "MM4"}, {-100.000000002, "MM6"},
+                                                          {-100.000000001, "MM3"}, {-100.000000001, "MM5"},
+                                                          {100.987654321,  "MM2"}, {54354.497895352,"MM1"}}));
+  s = db.ZScore("GP1_ZSCORE_KEY", "MM1", &score);
+  ASSERT_TRUE(s.ok());
+  ASSERT_DOUBLE_EQ(54354.497895352, score);
+
+  s = db.ZScore("GP1_ZSCORE_KEY", "MM2", &score);
+  ASSERT_TRUE(s.ok());
+  ASSERT_DOUBLE_EQ(100.987654321, score);
+
+  s = db.ZScore("GP1_ZSCORE_KEY", "MM3", &score);
+  ASSERT_TRUE(s.ok());
+  ASSERT_DOUBLE_EQ(-100.000000001, score);
+
+  s = db.ZScore("GP1_ZSCORE_KEY", "MM4", &score);
+  ASSERT_TRUE(s.ok());
+  ASSERT_DOUBLE_EQ(-100.000000002, score);
+
+  s = db.ZScore("GP1_ZSCORE_KEY", "MM5", &score);
+  ASSERT_TRUE(s.ok());
+  ASSERT_DOUBLE_EQ(-100.000000001, score);
+
+  s = db.ZScore("GP1_ZSCORE_KEY", "MM6", &score);
+  ASSERT_TRUE(s.ok());
+  ASSERT_DOUBLE_EQ(-100.000000002, score);
+
+  s = db.ZScore("GP1_ZSCORE_KEY", "MM7", &score);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_DOUBLE_EQ(0, score);
+
+
+  // ***************** Group 2 Test *****************
+  std::vector<BlackWidow::ScoreMember> gp2_sm {{4, "MM1"}, {3, "MM2"}, {2, "MM3"}, {1, "MM4"}};
+  s = db.ZAdd("GP2_ZSCORE_KEY", gp2_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(4, ret);
+  ASSERT_TRUE(size_match(&db, "GP2_ZSCORE_KEY", 4));
+  ASSERT_TRUE(score_members_match(&db, "GP2_ZSCORE_KEY", {{1,"MM4"}, {2,"MM3"}, {3, "MM2"}, {4, "MM1"}}));
+  ASSERT_TRUE(make_expired(&db, "GP2_ZSCORE_KEY"));
+  s = db.ZScore("GP2_ZSCORE_KEY", "MM1", &score);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_DOUBLE_EQ(0, score);
+
+
+  // ***************** Group 3 Test *****************
+  s = db.ZScore("GP3_ZSCORE_KEY", "MM1", &score);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_DOUBLE_EQ(0, score);
 }
 
 int main(int argc, char** argv) {

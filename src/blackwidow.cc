@@ -420,22 +420,9 @@ Status BlackWidow::ZAdd(const Slice& key,
   return zsets_db_->ZAdd(key, score_members, ret);
 }
 
-Status BlackWidow::ZScore(const Slice& key,
-                          const Slice& member,
-                          double* ret) {
-  return zsets_db_->ZScore(key, member, ret);
-}
-
 Status BlackWidow::ZCard(const Slice& key,
                          int32_t* ret) {
   return zsets_db_->ZCard(key, ret);
-}
-
-Status BlackWidow::ZRange(const Slice& key,
-                          int32_t start,
-                          int32_t stop,
-                          std::vector<ScoreMember>* score_members) {
-  return zsets_db_->ZRange(key, start, stop, score_members);
 }
 
 Status BlackWidow::ZCount(const Slice& key,
@@ -451,6 +438,14 @@ Status BlackWidow::ZIncrby(const Slice& key,
                            double* ret) {
   return zsets_db_->ZIncrby(key, member, increment, ret);
 }
+
+Status BlackWidow::ZRange(const Slice& key,
+                          int32_t start,
+                          int32_t stop,
+                          std::vector<ScoreMember>* score_members) {
+  return zsets_db_->ZRange(key, start, stop, score_members);
+}
+
 
 Status BlackWidow::ZRank(const Slice& key,
                          const Slice& member,
@@ -490,6 +485,13 @@ Status BlackWidow::ZRevrank(const Slice& key,
                             int32_t* rank) {
   return zsets_db_->ZRevrank(key, member, rank);
 }
+
+Status BlackWidow::ZScore(const Slice& key,
+                          const Slice& member,
+                          double* ret) {
+  return zsets_db_->ZScore(key, member, ret);
+}
+
 
 
 // Keys Commands

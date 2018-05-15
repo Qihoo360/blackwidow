@@ -23,12 +23,7 @@ class RedisZSets : public Redis {
   Status ZAdd(const Slice& key,
               const std::vector<BlackWidow::ScoreMember>& score_members,
               int32_t* ret);
-  Status ZScore(const Slice& key, const Slice& member, double* score);
   Status ZCard(const Slice& key, int32_t* card);
-  Status ZRange(const Slice& key,
-                int32_t start,
-                int32_t stop,
-                std::vector<BlackWidow::ScoreMember>* score_members);
   Status ZCount(const Slice& key,
                 double min,
                 double max,
@@ -37,6 +32,10 @@ class RedisZSets : public Redis {
                  const Slice& member,
                  double increment,
                  double* ret);
+  Status ZRange(const Slice& key,
+                int32_t start,
+                int32_t stop,
+                std::vector<BlackWidow::ScoreMember>* score_members);
   Status ZRank(const Slice& key,
                const Slice& member,
                int32_t* rank);
@@ -58,6 +57,7 @@ class RedisZSets : public Redis {
   Status ZRevrank(const Slice& key,
                   const Slice& member,
                   int32_t* rank);
+  Status ZScore(const Slice& key, const Slice& member, double* score);
 
   // Common Commands
   virtual Status Open(const rocksdb::Options& options,
