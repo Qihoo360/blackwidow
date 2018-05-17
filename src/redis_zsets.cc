@@ -143,7 +143,7 @@ Status RedisZSets::ZAdd(const Slice& key,
     batch.Put(handles_[0], key, meta_value);
     *ret = old_size + new_add;
   } else if (s.IsNotFound()) {
-    char buf[8];
+    char buf[4];
     EncodeFixed32(buf, filtered_score_members.size());
     ZSetsMetaValue zsets_meta_value(Slice(buf, sizeof(int32_t)));
     version = zsets_meta_value.UpdateVersion();
@@ -775,6 +775,212 @@ Status RedisZSets::ZScore(const Slice& key, const Slice& member, double* score) 
     return s;
   }
   return s;
+}
+
+Status RedisZSets::ZUnionstore(const Slice& destination,
+                               const std::vector<std::string>& keys,
+                               const std::vector<double>& weights,
+                               const BlackWidow::AGGREGATE agg,
+                               int32_t* ret) {
+  *ret = 0;
+  rocksdb::WriteBatch batch;
+  rocksdb::ReadOptions read_options;
+  const rocksdb::Snapshot* snapshot = nullptr;
+
+  int32_t version;
+  std::string meta_value;
+  BlackWidow::ScoreMember sm;
+  ScopeSnapshot ss(db_, &snapshot);
+  read_options.snapshot = snapshot;
+  ScopeRecordLock l(lock_mgr_, destination);
+  std::map<std::string, double> member_score_map;
+
+  Status s;
+  for (size_t idx = 0; idx < keys.size(); ++idx) {
+    s = db_->Get(read_options, handles_[0], keys[idx], &meta_value);
+    if (s.ok()) {
+      ParsedZSetsMetaValue parsed_zsets_meta_value(&meta_value);
+      if (!parsed_zsets_meta_value.IsStale()
+        && parsed_zsets_meta_value.count() != 0) {
+        int32_t cur_index = 0;
+        int32_t stop_index = parsed_zsets_meta_value.count() - 1;
+        double weight = idx < weights.size() ? weights[idx] : 1;
+        version = parsed_zsets_meta_value.version();
+        ZSetsScoreKey zsets_score_key(keys[idx], version, std::numeric_limits<double>::lowest(), Slice());
+        rocksdb::Iterator* iter = db_->NewIterator(read_options, handles_[2]);
+        for (iter->Seek(zsets_score_key.Encode());
+             iter->Valid() && cur_index <= stop_index;
+             iter->Next(), ++cur_index) {
+          ParsedZSetsScoreKey parsed_zsets_score_key(iter->key());
+          sm.score = parsed_zsets_score_key.score();
+          sm.member = parsed_zsets_score_key.member().ToString();
+          if (member_score_map.find(sm.member) == member_score_map.end()) {
+            member_score_map[sm.member] = weight * sm.score;
+          } else {
+            double score = member_score_map[sm.member];
+            switch (agg) {
+              case BlackWidow::SUM: score += weight * sm.score; break;
+              case BlackWidow::MIN: score  = std::min(score, weight * sm.score); break;
+              case BlackWidow::MAX: score  = std::max(score, weight * sm.score); break;
+            }
+            member_score_map[sm.member] = score;
+          }
+        }
+        delete iter;
+      }
+    } else if (!s.IsNotFound()) {
+      return s;
+    }
+  }
+
+  s = db_->Get(read_options, handles_[0], destination, &meta_value);
+  if (s.ok()) {
+    ParsedZSetsMetaValue parsed_zsets_meta_value(&meta_value);
+    version = parsed_zsets_meta_value.InitialMetaValue();
+    parsed_zsets_meta_value.set_count(member_score_map.size());
+    batch.Put(handles_[0], destination, meta_value);
+  } else {
+    char buf[4];
+    EncodeFixed32(buf, member_score_map.size());
+    ZSetsMetaValue zsets_meta_value(Slice(buf, sizeof(int32_t)));
+    version = zsets_meta_value.UpdateVersion();
+    batch.Put(handles_[0], destination, zsets_meta_value.Encode());
+  }
+
+  char score_buf[8];
+  for (const auto& sm : member_score_map) {
+    ZSetsDataKey zsets_data_key(destination, version, sm.first);
+
+    const void* ptr_score = reinterpret_cast<const void*>(&sm.second);
+    EncodeFixed64(score_buf, *reinterpret_cast<const uint64_t*>(ptr_score));
+    batch.Put(handles_[1], zsets_data_key.Encode(), Slice(score_buf, sizeof(uint64_t)));
+
+    ZSetsScoreKey zsets_score_key(destination, version, sm.second, sm.first);
+    batch.Put(handles_[2], zsets_score_key.Encode(), Slice());
+  }
+  *ret = member_score_map.size();
+  return db_->Write(default_write_options_, &batch);
+}
+
+Status RedisZSets::ZInterstore(const Slice& destination,
+                               const std::vector<std::string>& keys,
+                               const std::vector<double>& weights,
+                               const BlackWidow::AGGREGATE agg,
+                               int32_t* ret) {
+  if (keys.size() <= 0) {
+    return Status::Corruption("ZInterstore invalid parameter, no keys");
+  }
+
+  *ret = 0;
+  rocksdb::WriteBatch batch;
+  rocksdb::ReadOptions read_options;
+  const rocksdb::Snapshot* snapshot = nullptr;
+  ScopeSnapshot ss(db_, &snapshot);
+  read_options.snapshot = snapshot;
+  ScopeRecordLock l(lock_mgr_, destination);
+
+  std::string meta_value;
+  int32_t version = 0;
+  bool have_invalid_zsets = false;
+  BlackWidow::ScoreMember item;
+  std::vector<BlackWidow::KeyVersion> vaild_zsets;
+  std::vector<BlackWidow::ScoreMember> score_members;
+  std::vector<BlackWidow::ScoreMember> final_score_members;
+  Status s;
+
+  int32_t cur_index = 0;
+  int32_t stop_index = 0;
+  for (size_t idx = 0; idx < keys.size(); ++idx) {
+    s = db_->Get(read_options, handles_[0], keys[idx], &meta_value);
+    if (s.ok()) {
+      ParsedZSetsMetaValue parsed_zsets_meta_value(&meta_value);
+      if (parsed_zsets_meta_value.IsStale()
+        || parsed_zsets_meta_value.count() == 0) {
+        have_invalid_zsets = true;
+      } else {
+        vaild_zsets.push_back({keys[idx], parsed_zsets_meta_value.version()});
+        if (idx == 0) {
+          stop_index = parsed_zsets_meta_value.count() - 1;
+        }
+      }
+    } else if (s.IsNotFound()){
+      have_invalid_zsets = true;
+    } else {
+      return s;
+    }
+  }
+
+  if (!have_invalid_zsets) {
+    ZSetsScoreKey zsets_score_key(vaild_zsets[0].key, vaild_zsets[0].version, std::numeric_limits<double>::lowest(), Slice());
+    rocksdb::Iterator* iter = db_->NewIterator(read_options, handles_[2]);
+    for (iter->Seek(zsets_score_key.Encode());
+         iter->Valid() && cur_index <= stop_index;
+         iter->Next(), ++cur_index) {
+      ParsedZSetsScoreKey parsed_zsets_score_key(iter->key());
+      double score = parsed_zsets_score_key.score();
+      std::string member = parsed_zsets_score_key.member().ToString();
+      score_members.push_back({score, member});
+    }
+    delete iter;
+
+    std::string data_value;
+    for (const auto& sm : score_members) {
+      bool reliable = true;
+      item.member = sm.member;
+      item.score = sm.score * (weights.size() > 0 ? weights[0] : 1);
+      for (size_t idx = 1; idx < vaild_zsets.size(); ++idx) {
+        double weight = idx < weights.size() ? weights[idx] : 1;
+        ZSetsDataKey zsets_data_key(vaild_zsets[idx].key, vaild_zsets[idx].version, item.member);
+        s = db_->Get(read_options, handles_[1], zsets_data_key.Encode(), &data_value);
+        if (s.ok()) {
+          uint64_t tmp = DecodeFixed64(data_value.data());
+          const void* ptr_tmp = reinterpret_cast<const void*>(&tmp);
+          double score = *reinterpret_cast<const double*>(ptr_tmp);
+          switch (agg) {
+            case BlackWidow::SUM: item.score += weight * score; break;
+            case BlackWidow::MIN: item.score  = std::min(item.score, weight * score); break;
+            case BlackWidow::MAX: item.score  = std::max(item.score, weight * score); break;
+          }
+        } else if (s.IsNotFound()) {
+          reliable = false;
+          break;
+        } else {
+          return s;
+        }
+      }
+      if (reliable) {
+        final_score_members.push_back(item);
+      }
+    }
+  }
+
+  s = db_->Get(read_options, handles_[0], destination, &meta_value);
+  if (s.ok()) {
+    ParsedZSetsMetaValue parsed_zsets_meta_value(&meta_value);
+    version = parsed_zsets_meta_value.InitialMetaValue();
+    parsed_zsets_meta_value.set_count(final_score_members.size());
+    batch.Put(handles_[0], destination, meta_value);
+  } else {
+    char buf[4];
+    EncodeFixed32(buf, final_score_members.size());
+    ZSetsMetaValue zsets_meta_value(Slice(buf, sizeof(int32_t)));
+    version = zsets_meta_value.UpdateVersion();
+    batch.Put(handles_[0], destination, zsets_meta_value.Encode());
+
+  }
+  char score_buf[8];
+  for (const auto& sm : final_score_members) {
+    ZSetsDataKey zsets_data_key(destination, version, sm.member);
+
+    const void* ptr_score = reinterpret_cast<const void*>(&sm.score);
+    EncodeFixed64(score_buf, *reinterpret_cast<const uint64_t*>(ptr_score));
+    batch.Put(handles_[1], zsets_data_key.Encode(), Slice(score_buf, sizeof(uint64_t)));
+
+    ZSetsScoreKey zsets_score_key(destination, version, sm.score, sm.member);
+    batch.Put(handles_[2], zsets_score_key.Encode(), Slice());
+  }
+  *ret = final_score_members.size();
+  return db_->Write(default_write_options_, &batch);
 }
 
 Status RedisZSets::Expire(const Slice& key, int32_t ttl) {

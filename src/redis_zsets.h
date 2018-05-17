@@ -70,6 +70,16 @@ class RedisZSets : public Redis {
                   const Slice& member,
                   int32_t* rank);
   Status ZScore(const Slice& key, const Slice& member, double* score);
+  Status ZUnionstore(const Slice& destination,
+                     const std::vector<std::string>& keys,
+                     const std::vector<double>& weights,
+                     const BlackWidow::AGGREGATE agg,
+                     int32_t* ret);
+  Status ZInterstore(const Slice& destination,
+                     const std::vector<std::string>& keys,
+                     const std::vector<double>& weights,
+                     const BlackWidow::AGGREGATE agg,
+                     int32_t* ret);
 
   // Common Commands
   virtual Status Open(const rocksdb::Options& options,

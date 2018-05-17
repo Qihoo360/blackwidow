@@ -2530,6 +2530,435 @@ TEST_F(ZSetsTest, ZScoreTest) {
   ASSERT_DOUBLE_EQ(0, score);
 }
 
+// ZUNIONSTORE
+TEST_F(ZSetsTest, ZUnionstoreTest) {
+  int32_t ret;
+
+  // ***************** Group 1 Test *****************
+  // {      1, MM1} {      10, MM2} {      100, MM3}  weight 1
+  // {   1000, MM1} {   10000, MM2} {   100000, MM3}  weight 1
+  // {1000000, MM1} {10000000, MM2} {100000000, MM3}  weight 1
+  //
+  // {1001001, MM1} {10010010, MM2} {100100100, MM3}
+  //
+  std::vector<BlackWidow::ScoreMember> gp1_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp1_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp1_sm3 {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}};
+  s = db.ZAdd("GP1_ZUNIONSTORE_SM1", gp1_sm1, &ret);
+  s = db.ZAdd("GP1_ZUNIONSTORE_SM2", gp1_sm2, &ret);
+  s = db.ZAdd("GP1_ZUNIONSTORE_SM3", gp1_sm3, &ret);
+  s = db.ZUnionstore("GP1_ZUNIONSTORE_DESTINATION", {"GP1_ZUNIONSTORE_SM1", "GP1_ZUNIONSTORE_SM2", "GP1_ZUNIONSTORE_SM3"}, {1, 1, 1}, BlackWidow::SUM, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 3);
+  ASSERT_TRUE(size_match(&db, "GP1_ZUNIONSTORE_DESTINATION", 3));
+  ASSERT_TRUE(score_members_match(&db, "GP1_ZUNIONSTORE_DESTINATION", {{1001001, "MM1"}, {10010010, "MM2"}, {100100100, "MM3"}}));
+
+
+  // ***************** Group 2 Test *****************
+  // {      1, MM1} {      10, MM2} {      100, MM3}  weight 1
+  // {   1000, MM1} {   10000, MM2} {   100000, MM3}  weight 1
+  // {1000000, MM1} {10000000, MM2} {100000000, MM3}  weight 1
+  //
+  // {      1, MM1} {      10, MM2} {      100, MM3}
+  //
+  std::vector<BlackWidow::ScoreMember> gp2_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp2_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp2_sm3 {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}};
+  s = db.ZAdd("GP2_ZUNIONSTORE_SM1", gp2_sm1, &ret);
+  s = db.ZAdd("GP2_ZUNIONSTORE_SM2", gp2_sm2, &ret);
+  s = db.ZAdd("GP2_ZUNIONSTORE_SM3", gp2_sm3, &ret);
+  s = db.ZUnionstore("GP2_ZUNIONSTORE_DESTINATION", {"GP2_ZUNIONSTORE_SM1", "GP2_ZUNIONSTORE_SM2", "GP2_ZUNIONSTORE_SM3"}, {1, 1, 1}, BlackWidow::MIN, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 3);
+  ASSERT_TRUE(size_match(&db, "GP2_ZUNIONSTORE_DESTINATION", 3));
+  ASSERT_TRUE(score_members_match(&db, "GP2_ZUNIONSTORE_DESTINATION", {{1, "MM1"}, {10, "MM2"}, {100, "MM3"}}));
+
+
+  // ***************** Group 3 Test *****************
+  // {      1, MM1} {      10, MM2} {      100, MM3}  weight 1
+  // {   1000, MM1} {   10000, MM2} {   100000, MM3}  weight 1
+  // {1000000, MM1} {10000000, MM2} {100000000, MM3}  weight 1
+  //
+  // {1000000, MM1} {10000000, MM2} {100000000, MM3}
+  //
+  std::vector<BlackWidow::ScoreMember> gp3_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp3_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp3_sm3 {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}};
+  s = db.ZAdd("GP3_ZUNIONSTORE_SM1", gp3_sm1, &ret);
+  s = db.ZAdd("GP3_ZUNIONSTORE_SM2", gp3_sm2, &ret);
+  s = db.ZAdd("GP3_ZUNIONSTORE_SM3", gp3_sm3, &ret);
+  s = db.ZUnionstore("GP3_ZUNIONSTORE_DESTINATION", {"GP3_ZUNIONSTORE_SM1", "GP3_ZUNIONSTORE_SM2", "GP3_ZUNIONSTORE_SM3"}, {1, 1, 1}, BlackWidow::MAX, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 3);
+  ASSERT_TRUE(size_match(&db, "GP3_ZUNIONSTORE_DESTINATION", 3));
+  ASSERT_TRUE(score_members_match(&db, "GP3_ZUNIONSTORE_DESTINATION", {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}}));
+
+
+  // ***************** Group 4 Test *****************
+  // {      1, MM1} {      10, MM2} {      100, MM3}  weight 1
+  // {   1000, MM1} {   10000, MM2} {   100000, MM3}  weight 2
+  // {1000000, MM1} {10000000, MM2} {100000000, MM3}  weight 3
+  //
+  // {3002001, MM1} {30020010, MM2} {300200100, MM3}
+  //
+  std::vector<BlackWidow::ScoreMember> gp4_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp4_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp4_sm3 {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}};
+  s = db.ZAdd("GP4_ZUNIONSTORE_SM1", gp4_sm1, &ret);
+  s = db.ZAdd("GP4_ZUNIONSTORE_SM2", gp4_sm2, &ret);
+  s = db.ZAdd("GP4_ZUNIONSTORE_SM3", gp4_sm3, &ret);
+  s = db.ZUnionstore("GP4_ZUNIONSTORE_DESTINATION", {"GP4_ZUNIONSTORE_SM1", "GP4_ZUNIONSTORE_SM2", "GP4_ZUNIONSTORE_SM3"}, {1, 2, 3}, BlackWidow::SUM, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 3);
+  ASSERT_TRUE(size_match(&db, "GP4_ZUNIONSTORE_DESTINATION", 3));
+  ASSERT_TRUE(score_members_match(&db, "GP4_ZUNIONSTORE_DESTINATION", {{3002001, "MM1"}, {30020010, "MM2"}, {300200100, "MM3"}}));
+
+
+  // ***************** Group 5 Test *****************
+  // {      1, MM1} {      10, MM2} {      100, MM3}  weight 1
+  // {   1000, MM1} {   10000, MM2} {   100000, MM3}  weight 2
+  // {1000000, MM1}                 {100000000, MM3}  weight 3
+  //
+  // {3002001, MM1} {   20010, MM2} {300200100, MM3}
+  //
+  std::vector<BlackWidow::ScoreMember> gp5_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp5_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp5_sm3 {{1000000, "MM1"},                    {100000000, "MM3"}};
+  s = db.ZAdd("GP5_ZUNIONSTORE_SM1", gp5_sm1, &ret);
+  s = db.ZAdd("GP5_ZUNIONSTORE_SM2", gp5_sm2, &ret);
+  s = db.ZAdd("GP5_ZUNIONSTORE_SM3", gp5_sm3, &ret);
+  s = db.ZUnionstore("GP5_ZUNIONSTORE_DESTINATION", {"GP5_ZUNIONSTORE_SM1", "GP5_ZUNIONSTORE_SM2", "GP5_ZUNIONSTORE_SM3"}, {1, 2, 3}, BlackWidow::SUM, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 3);
+  ASSERT_TRUE(size_match(&db, "GP5_ZUNIONSTORE_DESTINATION", 3));
+  ASSERT_TRUE(score_members_match(&db, "GP5_ZUNIONSTORE_DESTINATION", {{20010, "MM2"}, {3002001, "MM1"}, {300200100, "MM3"}}));
+
+
+  // ***************** Group 6 Test *****************
+  // {      1, MM1} {      10, MM2} {      100, MM3}  weight 1
+  // {   1000, MM1} {   10000, MM2} {   100000, MM3}  weight 2  (expire)
+  // {1000000, MM1}                 {100000000, MM3}  weight 3
+  //
+  // {3000001, MM1} {      10, MM2} {300000100, MM3}
+  //
+  std::vector<BlackWidow::ScoreMember> gp6_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp6_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp6_sm3 {{1000000, "MM1"},                    {100000000, "MM3"}};
+  s = db.ZAdd("GP6_ZUNIONSTORE_SM1", gp6_sm1, &ret);
+  s = db.ZAdd("GP6_ZUNIONSTORE_SM2", gp6_sm2, &ret);
+  s = db.ZAdd("GP6_ZUNIONSTORE_SM3", gp6_sm3, &ret);
+  ASSERT_TRUE(make_expired(&db, "GP6_ZUNIONSTORE_SM2"));
+  s = db.ZUnionstore("GP6_ZUNIONSTORE_DESTINATION", {"GP6_ZUNIONSTORE_SM1", "GP6_ZUNIONSTORE_SM2", "GP6_ZUNIONSTORE_SM3"}, {1, 2, 3}, BlackWidow::SUM, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 3);
+  ASSERT_TRUE(size_match(&db, "GP6_ZUNIONSTORE_DESTINATION", 3));
+  ASSERT_TRUE(score_members_match(&db, "GP6_ZUNIONSTORE_DESTINATION", {{10, "MM2"}, {3000001, "MM1"}, {300000100, "MM3"}}));
+
+
+  // ***************** Group 7 Test *****************
+  // {   1, MM1} {   10, MM2} {   100, MM3}             weight 1
+  // {1000, MM1} {10000, MM2} {100000, MM3}             weight 2  (expire)
+  //                                        {1000, MM4} weight 3
+  //
+  // {   1, MM1} {   10, MM2} {   100, MM3} {3000, MM4}
+  //
+  std::vector<BlackWidow::ScoreMember> gp7_sm1 {{1,    "MM1"}, {10,    "MM2"}, {100,    "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp7_sm2 {{1000, "MM1"}, {10000, "MM2"}, {100000, "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp7_sm3 {                                              {1000, "MM4"}};
+  s = db.ZAdd("GP7_ZUNIONSTORE_SM1", gp7_sm1, &ret);
+  s = db.ZAdd("GP7_ZUNIONSTORE_SM2", gp7_sm2, &ret);
+  s = db.ZAdd("GP7_ZUNIONSTORE_SM3", gp7_sm3, &ret);
+  ASSERT_TRUE(make_expired(&db, "GP7_ZUNIONSTORE_SM2"));
+  s = db.ZUnionstore("GP7_ZUNIONSTORE_DESTINATION", {"GP7_ZUNIONSTORE_SM1", "GP7_ZUNIONSTORE_SM2", "GP7_ZUNIONSTORE_SM3"}, {1, 2, 3}, BlackWidow::SUM, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 4);
+  ASSERT_TRUE(size_match(&db, "GP7_ZUNIONSTORE_DESTINATION", 4));
+  ASSERT_TRUE(score_members_match(&db, "GP7_ZUNIONSTORE_DESTINATION", {{1, "MM1"}, {10, "MM2"}, {100, "MM3"}, {3000, "MM4"}}));
+
+
+  // ***************** Group 8 Test *****************
+  // {1, MM1}                        weight 1
+  //            {1, MM2}             weight 1
+  //                       {1, MM3}  weight 1
+  //
+  // {1, MM1}   {1, MM2}   {1, MM3}
+  //
+  std::vector<BlackWidow::ScoreMember> gp8_sm1 {{1, "MM1"}};
+  std::vector<BlackWidow::ScoreMember> gp8_sm2 {{1, "MM2"}};
+  std::vector<BlackWidow::ScoreMember> gp8_sm3 {{1, "MM3"}};
+  s = db.ZAdd("GP8_ZUNIONSTORE_SM1", gp8_sm1, &ret);
+  s = db.ZAdd("GP8_ZUNIONSTORE_SM2", gp8_sm2, &ret);
+  s = db.ZAdd("GP8_ZUNIONSTORE_SM3", gp8_sm3, &ret);
+  s = db.ZUnionstore("GP8_ZUNIONSTORE_DESTINATION", {"GP8_ZUNIONSTORE_SM1", "GP8_ZUNIONSTORE_SM2", "GP8_ZUNIONSTORE_SM3"}, {1, 1, 1}, BlackWidow::MIN, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 3);
+  ASSERT_TRUE(size_match(&db, "GP8_ZUNIONSTORE_DESTINATION", 3));
+  ASSERT_TRUE(score_members_match(&db, "GP8_ZUNIONSTORE_DESTINATION", {{1, "MM1"}, {1, "MM2"}, {1, "MM3"}}));
+
+
+  // ***************** Group 9 Test *****************
+  // {      1, MM1} {      10, MM2} {      100, MM3}  weight 1
+  // {   1000, MM1} {   10000, MM2} {   100000, MM3}  weight 1
+  // {1000000, MM1} {10000000, MM2} {100000000, MM3}  weight 1
+  //
+  // {1001001, MM1} {10010010, MM2} {100100100, MM3}
+  //
+  std::vector<BlackWidow::ScoreMember> gp9_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp9_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp9_sm3 {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp9_destination {{1, "MM1"}};
+  s = db.ZAdd("GP9_ZUNIONSTORE_SM1", gp9_sm1, &ret);
+  s = db.ZAdd("GP9_ZUNIONSTORE_SM2", gp9_sm2, &ret);
+  s = db.ZAdd("GP9_ZUNIONSTORE_SM3", gp9_sm3, &ret);
+  s = db.ZAdd("GP9_ZUNIONSTORE_DESTINATION", gp9_destination, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+  ASSERT_TRUE(size_match(&db, "GP9_ZUNIONSTORE_DESTINATION", 1));
+  ASSERT_TRUE(score_members_match(&db, "GP9_ZUNIONSTORE_DESTINATION", {{1, "MM1"}}));
+
+  s = db.ZUnionstore("GP9_ZUNIONSTORE_DESTINATION", {"GP9_ZUNIONSTORE_SM1", "GP9_ZUNIONSTORE_SM2", "GP9_ZUNIONSTORE_SM3"}, {1, 1, 1}, BlackWidow::SUM, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 3);
+  ASSERT_TRUE(size_match(&db, "GP9_ZUNIONSTORE_DESTINATION", 3));
+  ASSERT_TRUE(score_members_match(&db, "GP9_ZUNIONSTORE_DESTINATION", {{1001001, "MM1"}, {10010010, "MM2"}, {100100100, "MM3"}}));
+
+
+  // ***************** Group 10 Test *****************
+  // {      1, MM1} {      10, MM2} {      100, MM3}  weight 1
+  // {   1000, MM1} {   10000, MM2} {   100000, MM3}  weight 1
+  // {1000000, MM1} {10000000, MM2} {100000000, MM3}  weight 1
+  //
+  // {1001001, MM1} {10010010, MM2} {100100100, MM3}
+  //
+  std::vector<BlackWidow::ScoreMember> gp10_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp10_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp10_sm3 {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}};
+  s = db.ZAdd("GP10_ZUNIONSTORE_SM1", gp10_sm1, &ret);
+  s = db.ZAdd("GP10_ZUNIONSTORE_SM2", gp10_sm2, &ret);
+  s = db.ZAdd("GP10_ZUNIONSTORE_SM3", gp10_sm3, &ret);
+  s = db.ZUnionstore("GP10_ZUNIONSTORE_DESTINATION",
+      {"GP10_ZUNIONSTORE_SM1", "GP10_ZUNIONSTORE_SM2", "GP10_ZUNIONSTORE_SM3","GP10_ZUNIONSTORE_SM4"}, {1, 1, 1, 1}, BlackWidow::SUM, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 3);
+  ASSERT_TRUE(size_match(&db, "GP10_ZUNIONSTORE_DESTINATION", 3));
+  ASSERT_TRUE(score_members_match(&db, "GP10_ZUNIONSTORE_DESTINATION", {{1001001, "MM1"}, {10010010, "MM2"}, {100100100, "MM3"}}));
+}
+
+// ZINTERSTORE
+TEST_F(ZSetsTest, ZInterstoreTest) {
+  int32_t ret;
+
+  // ***************** Group 1 Test *****************
+  // {      1, MM1} {      10, MM2} {      100, MM3}  weight 1
+  // {   1000, MM1} {   10000, MM2} {   100000, MM3}  weight 1
+  // {1000000, MM1} {10000000, MM2} {100000000, MM3}  weight 1
+  //
+  // {1001001, MM1} {10010010, MM2} {100100100, MM3}
+  //
+  std::vector<BlackWidow::ScoreMember> gp1_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp1_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp1_sm3 {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}};
+  s = db.ZAdd("GP1_ZINTERSTORE_SM1", gp1_sm1, &ret);
+  s = db.ZAdd("GP1_ZINTERSTORE_SM2", gp1_sm2, &ret);
+  s = db.ZAdd("GP1_ZINTERSTORE_SM3", gp1_sm3, &ret);
+  s = db.ZInterstore("GP1_ZINTERSTORE_DESTINATION", {"GP1_ZINTERSTORE_SM1", "GP1_ZINTERSTORE_SM2", "GP1_ZINTERSTORE_SM3"}, {1, 1, 1}, BlackWidow::SUM, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 3);
+  ASSERT_TRUE(size_match(&db, "GP1_ZINTERSTORE_DESTINATION", 3));
+  ASSERT_TRUE(score_members_match(&db, "GP1_ZINTERSTORE_DESTINATION", {{1001001, "MM1"}, {10010010, "MM2"}, {100100100, "MM3"}}));
+
+
+  // ***************** Group 2 Test *****************
+  // {      1, MM1} {      10, MM2} {      100, MM3}  weight 1
+  // {   1000, MM1} {   10000, MM2} {   100000, MM3}  weight 1
+  // {1000000, MM1} {10000000, MM2} {100000000, MM3}  weight 1
+  //
+  // {      1, MM1} {      10, MM2} {      100, MM3}
+  //
+  std::vector<BlackWidow::ScoreMember> gp2_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp2_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp2_sm3 {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}};
+  s = db.ZAdd("GP2_ZINTERSTORE_SM1", gp2_sm1, &ret);
+  s = db.ZAdd("GP2_ZINTERSTORE_SM2", gp2_sm2, &ret);
+  s = db.ZAdd("GP2_ZINTERSTORE_SM3", gp2_sm3, &ret);
+  s = db.ZInterstore("GP2_ZINTERSTORE_DESTINATION", {"GP2_ZINTERSTORE_SM1", "GP2_ZINTERSTORE_SM2", "GP2_ZINTERSTORE_SM3"}, {1, 1, 1}, BlackWidow::MIN, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 3);
+  ASSERT_TRUE(size_match(&db, "GP2_ZINTERSTORE_DESTINATION", 3));
+  ASSERT_TRUE(score_members_match(&db, "GP2_ZINTERSTORE_DESTINATION", {{1, "MM1"}, {10, "MM2"}, {100, "MM3"}}));
+
+
+  // ***************** Group 3 Test *****************
+  // {      1, MM1} {      10, MM2} {      100, MM3}  weight 1
+  // {   1000, MM1} {   10000, MM2} {   100000, MM3}  weight 1
+  // {1000000, MM1} {10000000, MM2} {100000000, MM3}  weight 1
+  //
+  // {1000000, MM1} {10000000, MM2} {100000000, MM3}
+  //
+  std::vector<BlackWidow::ScoreMember> gp3_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp3_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp3_sm3 {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}};
+  s = db.ZAdd("GP3_ZINTERSTORE_SM1", gp3_sm1, &ret);
+  s = db.ZAdd("GP3_ZINTERSTORE_SM2", gp3_sm2, &ret);
+  s = db.ZAdd("GP3_ZINTERSTORE_SM3", gp3_sm3, &ret);
+  s = db.ZInterstore("GP3_ZINTERSTORE_DESTINATION", {"GP3_ZINTERSTORE_SM1", "GP3_ZINTERSTORE_SM2", "GP3_ZINTERSTORE_SM3"}, {1, 1, 1}, BlackWidow::MAX, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 3);
+  ASSERT_TRUE(size_match(&db, "GP3_ZINTERSTORE_DESTINATION", 3));
+  ASSERT_TRUE(score_members_match(&db, "GP3_ZINTERSTORE_DESTINATION", {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}}));
+
+
+  // ***************** Group 4 Test *****************
+  // {      1, MM1} {      10, MM2} {      100, MM3}  weight 1
+  // {   1000, MM1} {   10000, MM2} {   100000, MM3}  weight 2
+  // {1000000, MM1} {10000000, MM2} {100000000, MM3}  weight 3
+  //
+  // {3002001, MM1} {30020010, MM2} {300200100, MM3}
+  //
+  std::vector<BlackWidow::ScoreMember> gp4_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp4_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp4_sm3 {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}};
+  s = db.ZAdd("GP4_ZINTERSTORE_SM1", gp4_sm1, &ret);
+  s = db.ZAdd("GP4_ZINTERSTORE_SM2", gp4_sm2, &ret);
+  s = db.ZAdd("GP4_ZINTERSTORE_SM3", gp4_sm3, &ret);
+  s = db.ZInterstore("GP4_ZINTERSTORE_DESTINATION", {"GP4_ZINTERSTORE_SM1", "GP4_ZINTERSTORE_SM2", "GP4_ZINTERSTORE_SM3"}, {1, 2, 3}, BlackWidow::SUM, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 3);
+  ASSERT_TRUE(size_match(&db, "GP4_ZINTERSTORE_DESTINATION", 3));
+  ASSERT_TRUE(score_members_match(&db, "GP4_ZINTERSTORE_DESTINATION", {{3002001, "MM1"}, {30020010, "MM2"}, {300200100, "MM3"}}));
+
+
+  // ***************** Group 5 Test *****************
+  // {      1, MM1} {      10, MM2} {      100, MM3}  weight 1
+  // {   1000, MM1} {   10000, MM2} {   100000, MM3}  weight 2
+  // {1000000, MM1}                 {100000000, MM3}  weight 3
+  //
+  // {3002001, MM1}                 {300200100, MM3}
+  //
+  std::vector<BlackWidow::ScoreMember> gp5_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp5_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp5_sm3 {{1000000, "MM1"},                    {100000000, "MM3"}};
+  s = db.ZAdd("GP5_ZINTERSTORE_SM1", gp5_sm1, &ret);
+  s = db.ZAdd("GP5_ZINTERSTORE_SM2", gp5_sm2, &ret);
+  s = db.ZAdd("GP5_ZINTERSTORE_SM3", gp5_sm3, &ret);
+  s = db.ZInterstore("GP5_ZINTERSTORE_DESTINATION", {"GP5_ZINTERSTORE_SM1", "GP5_ZINTERSTORE_SM2", "GP5_ZINTERSTORE_SM3"}, {1, 2, 3}, BlackWidow::SUM, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 2);
+  ASSERT_TRUE(size_match(&db, "GP5_ZINTERSTORE_DESTINATION", 2));
+  ASSERT_TRUE(score_members_match(&db, "GP5_ZINTERSTORE_DESTINATION", {{3002001, "MM1"}, {300200100, "MM3"}}));
+
+
+  // ***************** Group 6 Test *****************
+  // {      1, MM1} {      10, MM2} {      100, MM3}  weight 1
+  // {   1000, MM1} {   10000, MM2} {   100000, MM3}  weight 2  (expire)
+  // {1000000, MM1}                 {100000000, MM3}  weight 3
+  //
+  // {3000001, MM1} {      10, MM2} {300000100, MM3}
+  //
+  std::vector<BlackWidow::ScoreMember> gp6_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp6_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp6_sm3 {{1000000, "MM1"},                    {100000000, "MM3"}};
+  s = db.ZAdd("GP6_ZINTERSTORE_SM1", gp6_sm1, &ret);
+  s = db.ZAdd("GP6_ZINTERSTORE_SM2", gp6_sm2, &ret);
+  s = db.ZAdd("GP6_ZINTERSTORE_SM3", gp6_sm3, &ret);
+  ASSERT_TRUE(make_expired(&db, "GP6_ZINTERSTORE_SM2"));
+  s = db.ZInterstore("GP6_ZINTERSTORE_DESTINATION", {"GP6_ZINTERSTORE_SM1", "GP6_ZINTERSTORE_SM2", "GP6_ZINTERSTORE_SM3"}, {1, 2, 3}, BlackWidow::SUM, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 0);
+  ASSERT_TRUE(size_match(&db, "GP6_ZINTERSTORE_DESTINATION", 0));
+  ASSERT_TRUE(score_members_match(&db, "GP6_ZINTERSTORE_DESTINATION", {}));
+
+
+  // ***************** Group 7 Test *****************
+  // {   1, MM1} {   10, MM2} {   100, MM3}             weight 1
+  // {1000, MM1} {10000, MM2} {100000, MM3}             weight 2  (expire)
+  //                                        {1000, MM4} weight 3
+  //
+  // {   1, MM1} {   10, MM2} {   100, MM3} {3000, MM4}
+  //
+  std::vector<BlackWidow::ScoreMember> gp7_sm1 {{1,    "MM1"}, {10,    "MM2"}, {100,    "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp7_sm2 {{1000, "MM1"}, {10000, "MM2"}, {100000, "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp7_sm3 {                                              {1000, "MM4"}};
+  s = db.ZAdd("GP7_ZINTERSTORE_SM1", gp7_sm1, &ret);
+  s = db.ZAdd("GP7_ZINTERSTORE_SM2", gp7_sm2, &ret);
+  s = db.ZAdd("GP7_ZINTERSTORE_SM3", gp7_sm3, &ret);
+  ASSERT_TRUE(make_expired(&db, "GP7_ZINTERSTORE_SM2"));
+  s = db.ZInterstore("GP7_ZINTERSTORE_DESTINATION", {"GP7_ZINTERSTORE_SM1", "GP7_ZINTERSTORE_SM2", "GP7_ZINTERSTORE_SM3"}, {1, 2, 3}, BlackWidow::SUM, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 0);
+  ASSERT_TRUE(size_match(&db, "GP7_ZINTERSTORE_DESTINATION", 0));
+  ASSERT_TRUE(score_members_match(&db, "GP7_ZINTERSTORE_DESTINATION", {}));
+
+
+  // ***************** Group 8 Test *****************
+  // {1, MM1}                        weight 1
+  //            {1, MM2}             weight 1
+  //                       {1, MM3}  weight 1
+  //
+  // {1, MM1}   {1, MM2}   {1, MM3}
+  //
+  std::vector<BlackWidow::ScoreMember> gp8_sm1 {{1, "MM1"}};
+  std::vector<BlackWidow::ScoreMember> gp8_sm2 {{1, "MM2"}};
+  std::vector<BlackWidow::ScoreMember> gp8_sm3 {{1, "MM3"}};
+  s = db.ZAdd("GP8_ZINTERSTORE_SM1", gp8_sm1, &ret);
+  s = db.ZAdd("GP8_ZINTERSTORE_SM2", gp8_sm2, &ret);
+  s = db.ZAdd("GP8_ZINTERSTORE_SM3", gp8_sm3, &ret);
+  s = db.ZInterstore("GP8_ZINTERSTORE_DESTINATION", {"GP8_ZINTERSTORE_SM1", "GP8_ZINTERSTORE_SM2", "GP8_ZINTERSTORE_SM3"}, {1, 1, 1}, BlackWidow::MIN, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 0);
+  ASSERT_TRUE(size_match(&db, "GP8_ZINTERSTORE_DESTINATION", 0));
+  ASSERT_TRUE(score_members_match(&db, "GP8_ZINTERSTORE_DESTINATION", {}));
+
+
+  // ***************** Group 9 Test *****************
+  // {      1, MM1} {      10, MM2} {      100, MM3}  weight 1
+  // {   1000, MM1} {   10000, MM2} {   100000, MM3}  weight 1
+  // {1000000, MM1} {10000000, MM2} {100000000, MM3}  weight 1
+  //
+  // {1001001, MM1} {10010010, MM2} {100100100, MM3}
+  //
+  std::vector<BlackWidow::ScoreMember> gp9_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp9_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp9_sm3 {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp9_destination {{1, "MM1"}};
+  s = db.ZAdd("GP9_ZINTERSTORE_SM1", gp9_sm1, &ret);
+  s = db.ZAdd("GP9_ZINTERSTORE_SM2", gp9_sm2, &ret);
+  s = db.ZAdd("GP9_ZINTERSTORE_SM3", gp9_sm3, &ret);
+  s = db.ZAdd("GP9_ZINTERSTORE_DESTINATION", gp9_destination, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+  ASSERT_TRUE(size_match(&db, "GP9_ZINTERSTORE_DESTINATION", 1));
+  ASSERT_TRUE(score_members_match(&db, "GP9_ZINTERSTORE_DESTINATION", {{1, "MM1"}}));
+
+  s = db.ZInterstore("GP9_ZINTERSTORE_DESTINATION", {"GP9_ZINTERSTORE_SM1", "GP9_ZINTERSTORE_SM2", "GP9_ZINTERSTORE_SM3"}, {1, 1, 1}, BlackWidow::SUM, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 3);
+  ASSERT_TRUE(size_match(&db, "GP9_ZINTERSTORE_DESTINATION", 3));
+  ASSERT_TRUE(score_members_match(&db, "GP9_ZINTERSTORE_DESTINATION", {{1001001, "MM1"}, {10010010, "MM2"}, {100100100, "MM3"}}));
+
+
+  // ***************** Group 10 Test *****************
+  // {      1, MM1} {      10, MM2} {      100, MM3}  weight 1
+  // {   1000, MM1} {   10000, MM2} {   100000, MM3}  weight 1
+  // {1000000, MM1} {10000000, MM2} {100000000, MM3}  weight 1
+  //
+  // {1001001, MM1} {10010010, MM2} {100100100, MM3}
+  //
+  std::vector<BlackWidow::ScoreMember> gp10_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp10_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
+  std::vector<BlackWidow::ScoreMember> gp10_sm3 {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}};
+  s = db.ZAdd("GP10_ZINTERSTORE_SM1", gp10_sm1, &ret);
+  s = db.ZAdd("GP10_ZINTERSTORE_SM2", gp10_sm2, &ret);
+  s = db.ZAdd("GP10_ZINTERSTORE_SM3", gp10_sm3, &ret);
+  s = db.ZInterstore("GP10_ZINTERSTORE_DESTINATION",
+      {"GP10_ZINTERSTORE_SM1", "GP10_ZINTERSTORE_SM2", "GP10_ZINTERSTORE_SM3", "GP10_ZINTERSTORE_SM4"}, {1, 1, 1, 1}, BlackWidow::SUM, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 0);
+  ASSERT_TRUE(size_match(&db, "GP10_ZINTERSTORE_DESTINATION", 0));
+  ASSERT_TRUE(score_members_match(&db, "GP10_ZINTERSTORE_DESTINATION", {}));
+}
+
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

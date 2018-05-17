@@ -509,6 +509,22 @@ Status BlackWidow::ZScore(const Slice& key,
   return zsets_db_->ZScore(key, member, ret);
 }
 
+Status BlackWidow::ZUnionstore(const Slice& destination,
+                               const std::vector<std::string>& keys,
+                               const std::vector<double>& weights,
+                               const BlackWidow::AGGREGATE agg,
+                               int32_t* ret) {
+  return zsets_db_->ZUnionstore(destination, keys, weights, agg, ret);
+}
+
+Status BlackWidow::ZInterstore(const Slice& destination,
+                               const std::vector<std::string>& keys,
+                               const std::vector<double>& weights,
+                               const BlackWidow::AGGREGATE agg,
+                               int32_t* ret) {
+  return zsets_db_->ZInterstore(destination, keys, weights, agg, ret);
+}
+
 
 
 // Keys Commands

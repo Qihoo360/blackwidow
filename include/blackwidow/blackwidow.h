@@ -497,6 +497,12 @@ class BlackWidow {
     std::string member;
   };
 
+  enum AGGREGATE {
+    SUM,
+    MIN,
+    MAX
+  };
+
   // Adds all the specified members with the specified scores to the sorted set
   // stored at key. It is possible to specify multiple score / member pairs. If
   // a specified member is already a member of the sorted set, the score is
@@ -698,6 +704,53 @@ class BlackWidow {
   // If member does not exist in the sorted set, or key does not exist, nil is
   // returned.
   Status ZScore(const Slice& key, const Slice& member, double* ret);
+
+  // Computes the union of numkeys sorted sets given by the specified keys, and
+  // stores the result in destination. It is mandatory to provide the number of
+  // input keys (numkeys) before passing the input keys and the other (optional)
+  // arguments.
+  //
+  // By default, the resulting score of an element is the sum of its scores in
+  // the sorted sets where it exists.
+  //
+  // Using the WEIGHTS option, it is possible to specify a multiplication factor
+  // for each input sorted set. This means that the score of every element in
+  // every input sorted set is multiplied by this factor before being passed to
+  // the aggregation function. When WEIGHTS is not given, the multiplication
+  // factors default to 1.
+  //
+  // With the AGGREGATE option, it is possible to specify how the results of the
+  // union are aggregated. This option defaults to SUM, where the score of an
+  // element is summed across the inputs where it exists. When this option is
+  // set to either MIN or MAX, the resulting set will contain the minimum or
+  // maximum score of an element across the inputs where it exists.
+  //
+  // If destination already exists, it is overwritten.
+  Status ZUnionstore(const Slice& destination,
+                     const std::vector<std::string>& keys,
+                     const std::vector<double>& weights,
+                     const BlackWidow::AGGREGATE agg,
+                     int32_t* ret);
+
+  // Computes the intersection of numkeys sorted sets given by the specified
+  // keys, and stores the result in destination. It is mandatory to provide the
+  // number of input keys (numkeys) before passing the input keys and the other
+  // (optional) arguments.
+  //
+  // By default, the resulting score of an element is the sum of its scores in
+  // the sorted sets where it exists. Because intersection requires an element
+  // to be a member of every given sorted set, this results in the score of
+  // every element in the resulting sorted set to be equal to the number of
+  // input sorted sets.
+  //
+  // For a description of the WEIGHTS and AGGREGATE options, see ZUNIONSTORE.
+  //
+  // If destination already exists, it is overwritten.
+  Status ZInterstore(const Slice& destination,
+                     const std::vector<std::string>& keys,
+                     const std::vector<double>& weights,
+                     const BlackWidow::AGGREGATE agg,
+                     int32_t* ret);
 
 
 
