@@ -35,6 +35,19 @@ class ZSetsTest : public ::testing::Test {
   blackwidow::Status s;
 };
 
+static bool members_match(const std::vector<std::string>& mm_out,
+                          const std::vector<std::string>& expect_members) {
+  if (mm_out.size() != expect_members.size()) {
+    return false;
+  }
+  for (const auto& member : expect_members) {
+    if (find(mm_out.begin(), mm_out.end(), member) == mm_out.end()) {
+      return false;
+    }
+  }
+  return true;
+}
+
 static bool score_members_match(blackwidow::BlackWidow *const db,
                                 const Slice& key,
                                 const std::vector<BlackWidow::ScoreMember>& expect_sm) {
@@ -2956,6 +2969,733 @@ TEST_F(ZSetsTest, ZInterstoreTest) {
   ASSERT_EQ(ret, 0);
   ASSERT_TRUE(size_match(&db, "GP10_ZINTERSTORE_DESTINATION", 0));
   ASSERT_TRUE(score_members_match(&db, "GP10_ZINTERSTORE_DESTINATION", {}));
+}
+
+// ZRANGEBYLEX
+TEST_F(ZSetsTest, ZRangebylexTest) {
+  int32_t ret;
+
+  std::vector<std::string> members;
+  // ***************** Group 1 Test *****************
+  // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
+  //
+  std::vector<BlackWidow::ScoreMember> gp1_sm1 {{1, "e"}, {1, "f"}, {1, "g"},
+                                                {1, "h"}, {1, "i"}, {1, "j"},
+                                                {1, "k"}, {1, "l"}, {1, "m"}};
+  s = db.ZAdd("GP1_ZRANGEBYLEX", gp1_sm1, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  s = db.ZRangebylex("GP1_ZRANGEBYLEX", "a", "n", true, true, &members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(members_match(members, {"e", "f", "g", "h", "i", "j", "k", "l", "m"}));
+
+  s = db.ZRangebylex("GP1_ZRANGEBYLEX", "e", "m", true, true, &members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(members_match(members, {"e", "f", "g", "h", "i", "j", "k", "l", "m"}));
+
+  s = db.ZRangebylex("GP1_ZRANGEBYLEX", "e", "m", true, false, &members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(members_match(members, {"e", "f", "g", "h", "i", "j", "k", "l"}));
+
+  s = db.ZRangebylex("GP1_ZRANGEBYLEX", "e", "m", false, true, &members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(members_match(members, {"f", "g", "h", "i", "j", "k", "l", "m"}));
+
+  s = db.ZRangebylex("GP1_ZRANGEBYLEX", "e", "m", false, false, &members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(members_match(members, {"f", "g", "h", "i", "j", "k", "l"}));
+
+  s = db.ZRangebylex("GP1_ZRANGEBYLEX", "h", "j", true, true, &members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(members_match(members, {"h", "i", "j"}));
+
+  s = db.ZRangebylex("GP1_ZRANGEBYLEX", "h", "j", true, false, &members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(members_match(members, {"h", "i"}));
+
+  s = db.ZRangebylex("GP1_ZRANGEBYLEX", "h", "j", false, false, &members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(members_match(members, {"i"}));
+
+  s = db.ZRangebylex("GP1_ZRANGEBYLEX", "i", "i", true, true, &members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(members_match(members, {"i"}));
+
+  s = db.ZRangebylex("GP1_ZRANGEBYLEX", "i", "i", true, false, &members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(members_match(members, {}));
+
+  s = db.ZRangebylex("GP1_ZRANGEBYLEX", "i", "i", false, true, &members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(members_match(members, {}));
+
+  s = db.ZRangebylex("GP1_ZRANGEBYLEX", "i", "i", false, false, &members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(members_match(members, {}));
+
+  s = db.ZRangebylex("GP1_ZRANGEBYLEX", "-", "+", true, true, &members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(members_match(members, {"e", "f", "g", "h", "i", "j", "k", "l", "m"}));
+
+  s = db.ZRangebylex("GP1_ZRANGEBYLEX", "-", "+", true, false, &members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(members_match(members, {"e", "f", "g", "h", "i", "j", "k", "l", "m"}));
+
+  s = db.ZRangebylex("GP1_ZRANGEBYLEX", "-", "+", false, true, &members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(members_match(members, {"e", "f", "g", "h", "i", "j", "k", "l", "m"}));
+
+  s = db.ZRangebylex("GP1_ZRANGEBYLEX", "-", "+", false, false, &members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(members_match(members, {"e", "f", "g", "h", "i", "j", "k", "l", "m"}));
+
+  s = db.ZRangebylex("GP1_ZRANGEBYLEX", "i", "+", true, true, &members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(members_match(members, {"i", "j", "k", "l", "m"}));
+
+  s = db.ZRangebylex("GP1_ZRANGEBYLEX", "i", "+", false, true, &members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(members_match(members, {"j", "k", "l", "m"}));
+
+  s = db.ZRangebylex("GP1_ZRANGEBYLEX", "-", "i", true, true, &members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(members_match(members, {"e", "f", "g", "h", "i"}));
+
+  s = db.ZRangebylex("GP1_ZRANGEBYLEX", "-", "i", true, false, &members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(members_match(members, {"e", "f", "g", "h"}));
+
+  s = db.ZRangebylex("GP1_ZRANGEBYLEX", "-", "e", true, true, &members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(members_match(members, {"e"}));
+
+  s = db.ZRangebylex("GP1_ZRANGEBYLEX", "-", "e", true, false, &members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(members_match(members, {}));
+
+  s = db.ZRangebylex("GP1_ZRANGEBYLEX", "m", "+", true, true, &members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(members_match(members, {"m"}));
+
+  s = db.ZRangebylex("GP1_ZRANGEBYLEX", "m", "+", false, true, &members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(members_match(members, {}));
+
+
+  // ***************** Group 2 Test *****************
+  // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}   (expire)
+  //
+  std::vector<BlackWidow::ScoreMember> gp2_sm1 {{1, "e"}, {1, "f"}, {1, "g"},
+                                                {1, "h"}, {1, "i"}, {1, "j"},
+                                                {1, "k"}, {1, "l"}, {1, "m"}};
+  s = db.ZAdd("GP2_ZRANGEBYLEX", gp1_sm1, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+  ASSERT_TRUE(make_expired(&db, "GP2_ZRANGEBYLEX"));
+
+  s = db.ZRangebylex("GP2_ZRANGEBYLEX", "-", "+", true, true, &members);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_TRUE(members_match(members, {}));
+
+
+  // ***************** Group 3 Test *****************
+  s = db.ZRangebylex("GP3_ZRANGEBYLEX", "-", "+", true, true, &members);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_TRUE(members_match(members, {}));
+}
+
+// ZLEXCOUNT
+TEST_F(ZSetsTest, ZLexcountTest) {
+  int32_t ret;
+
+  std::vector<std::string> members;
+  // ***************** Group 1 Test *****************
+  // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
+  //
+  std::vector<BlackWidow::ScoreMember> gp1_sm1 {{1, "e"}, {1, "f"}, {1, "g"},
+                                                {1, "h"}, {1, "i"}, {1, "j"},
+                                                {1, "k"}, {1, "l"}, {1, "m"}};
+  s = db.ZAdd("GP1_ZLEXCOUNT", gp1_sm1, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  s = db.ZLexcount("GP1_ZLEXCOUNT", "a", "n", true, true, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  s = db.ZLexcount("GP1_ZLEXCOUNT", "e", "m", true, true, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  s = db.ZLexcount("GP1_ZLEXCOUNT", "e", "m", true, false, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 8);
+
+  s = db.ZLexcount("GP1_ZLEXCOUNT", "e", "m", false, true, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 8);
+
+  s = db.ZLexcount("GP1_ZLEXCOUNT", "e", "m", false, false, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 7);
+
+  s = db.ZLexcount("GP1_ZLEXCOUNT", "h", "j", true, true, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 3);
+
+  s = db.ZLexcount("GP1_ZLEXCOUNT", "h", "j", true, false, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 2);
+
+  s = db.ZLexcount("GP1_ZLEXCOUNT", "h", "j", false, false, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+
+  s = db.ZLexcount("GP1_ZLEXCOUNT", "i", "i", true, true, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+
+  s = db.ZLexcount("GP1_ZLEXCOUNT", "i", "i", true, false, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 0);
+
+  s = db.ZLexcount("GP1_ZLEXCOUNT", "i", "i", false, true, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 0);
+
+  s = db.ZLexcount("GP1_ZLEXCOUNT", "i", "i", false, false, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 0);
+
+  s = db.ZLexcount("GP1_ZLEXCOUNT", "-", "+", true, true, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  s = db.ZLexcount("GP1_ZLEXCOUNT", "-", "+", true, false, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  s = db.ZLexcount("GP1_ZLEXCOUNT", "-", "+", false, true, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  s = db.ZLexcount("GP1_ZLEXCOUNT", "-", "+", false, false, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  s = db.ZLexcount("GP1_ZLEXCOUNT", "i", "+", true, true, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 5);
+
+  s = db.ZLexcount("GP1_ZLEXCOUNT", "i", "+", false, true, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 4);
+
+  s = db.ZLexcount("GP1_ZLEXCOUNT", "-", "i", true, true, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 5);
+
+  s = db.ZLexcount("GP1_ZLEXCOUNT", "-", "i", true, false, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 4);
+
+  s = db.ZLexcount("GP1_ZLEXCOUNT", "-", "e", true, true, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+
+  s = db.ZLexcount("GP1_ZLEXCOUNT", "-", "e", true, false, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 0);
+
+  s = db.ZLexcount("GP1_ZLEXCOUNT", "m", "+", true, true, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+
+  s = db.ZLexcount("GP1_ZLEXCOUNT", "m", "+", false, true, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 0);
+
+
+  // ***************** Group 2 Test *****************
+  // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}   (expire)
+  //
+  std::vector<BlackWidow::ScoreMember> gp2_sm1 {{1, "e"}, {1, "f"}, {1, "g"},
+                                                {1, "h"}, {1, "i"}, {1, "j"},
+                                                {1, "k"}, {1, "l"}, {1, "m"}};
+  s = db.ZAdd("GP2_ZLEXCOUNT", gp1_sm1, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+  ASSERT_TRUE(make_expired(&db, "GP2_ZLEXCOUNT"));
+
+  s = db.ZLexcount("GP2_ZLEXCOUNT", "-", "+", true, true, &ret);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(ret, 0);
+
+
+  // ***************** Group 3 Test *****************
+  s = db.ZLexcount("GP3_ZLEXCOUNT", "-", "+", true, true, &ret);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(ret, 0);
+}
+
+// ZREMRANGEBYLEX
+TEST_F(ZSetsTest, ZRemrangebylexTest) {
+  int32_t ret;
+  std::vector<std::string> members;
+
+  // ***************** Group 1 Test *****************
+  // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
+  //
+  std::vector<BlackWidow::ScoreMember> gp1_sm {{1, "e"}, {1, "f"}, {1, "g"},
+                                               {1, "h"}, {1, "i"}, {1, "j"},
+                                               {1, "k"}, {1, "l"}, {1, "m"}};
+  s = db.ZAdd("GP1_ZREMRANGEBYLEX", gp1_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  s = db.ZRemrangebylex("GP1_ZREMRANGEBYLEX", "a", "n", true, true, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+  ASSERT_TRUE(size_match(&db, "GP1_ZREMRANGEBYLEX", 0));
+  ASSERT_TRUE(score_members_match(&db, "GP1_ZREMRANGEBYLEX", {}));
+
+  // ***************** Group 2 Test *****************
+  // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
+  //
+  std::vector<BlackWidow::ScoreMember> gp2_sm {{1, "e"}, {1, "f"}, {1, "g"},
+                                               {1, "h"}, {1, "i"}, {1, "j"},
+                                               {1, "k"}, {1, "l"}, {1, "m"}};
+  s = db.ZAdd("GP2_ZREMRANGEBYLEX", gp2_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  s = db.ZRemrangebylex("GP2_ZREMRANGEBYLEX", "e", "m", true, true, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+  ASSERT_TRUE(size_match(&db, "GP2_ZREMRANGEBYLEX", 0));
+  ASSERT_TRUE(score_members_match(&db, "GP2_ZREMRANGEBYLEX", {}));
+
+
+  // ***************** Group 3 Test *****************
+  // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
+  //
+  std::vector<BlackWidow::ScoreMember> gp3_sm {{1, "e"}, {1, "f"}, {1, "g"},
+                                               {1, "h"}, {1, "i"}, {1, "j"},
+                                               {1, "k"}, {1, "l"}, {1, "m"}};
+  s = db.ZAdd("GP3_ZREMRANGEBYLEX", gp3_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  s = db.ZRemrangebylex("GP3_ZREMRANGEBYLEX", "e", "m", true, false, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 8);
+  ASSERT_TRUE(size_match(&db, "GP3_ZREMRANGEBYLEX", 1));
+  ASSERT_TRUE(score_members_match(&db, "GP3_ZREMRANGEBYLEX", {{1, "m"}}));
+
+
+  // ***************** Group 4 Test *****************
+  // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
+  //
+  std::vector<BlackWidow::ScoreMember> gp4_sm {{1, "e"}, {1, "f"}, {1, "g"},
+                                               {1, "h"}, {1, "i"}, {1, "j"},
+                                               {1, "k"}, {1, "l"}, {1, "m"}};
+  s = db.ZAdd("GP4_ZREMRANGEBYLEX", gp4_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  s = db.ZRemrangebylex("GP4_ZREMRANGEBYLEX", "e", "m", false, true, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 8);
+  ASSERT_TRUE(size_match(&db, "GP4_ZREMRANGEBYLEX", 1));
+  ASSERT_TRUE(score_members_match(&db, "GP4_ZREMRANGEBYLEX", {{1, "e"}}));
+
+
+  // ***************** Group 5 Test *****************
+  // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
+  //
+  std::vector<BlackWidow::ScoreMember> gp5_sm {{1, "e"}, {1, "f"}, {1, "g"},
+                                               {1, "h"}, {1, "i"}, {1, "j"},
+                                               {1, "k"}, {1, "l"}, {1, "m"}};
+  s = db.ZAdd("GP5_ZREMRANGEBYLEX", gp5_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  s = db.ZRemrangebylex("GP5_ZREMRANGEBYLEX", "e", "m", false, false, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 7);
+  ASSERT_TRUE(size_match(&db, "GP5_ZREMRANGEBYLEX", 2));
+  ASSERT_TRUE(score_members_match(&db, "GP5_ZREMRANGEBYLEX", {{1, "e"}, {1, "m"}}));
+
+
+  // ***************** Group 6 Test *****************
+  // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
+  //
+  std::vector<BlackWidow::ScoreMember> gp6_sm {{1, "e"}, {1, "f"}, {1, "g"},
+                                               {1, "h"}, {1, "i"}, {1, "j"},
+                                               {1, "k"}, {1, "l"}, {1, "m"}};
+  s = db.ZAdd("GP6_ZREMRANGEBYLEX", gp6_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  s = db.ZRemrangebylex("GP6_ZREMRANGEBYLEX", "h", "j", true, true, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 3);
+  ASSERT_TRUE(size_match(&db, "GP6_ZREMRANGEBYLEX", 6));
+  ASSERT_TRUE(score_members_match(&db, "GP6_ZREMRANGEBYLEX", {{1, "e"}, {1, "f"}, {1, "g"},
+                                                              {1, "k"}, {1, "l"}, {1, "m"}}));
+
+
+  // ***************** Group 7 Test *****************
+  // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
+  //
+  std::vector<BlackWidow::ScoreMember> gp7_sm {{1, "e"}, {1, "f"}, {1, "g"},
+                                               {1, "h"}, {1, "i"}, {1, "j"},
+                                               {1, "k"}, {1, "l"}, {1, "m"}};
+  s = db.ZAdd("GP7_ZREMRANGEBYLEX", gp7_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  s = db.ZRemrangebylex("GP7_ZREMRANGEBYLEX", "h", "j", true, false, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 2);
+  ASSERT_TRUE(size_match(&db, "GP7_ZREMRANGEBYLEX", 7));
+  ASSERT_TRUE(score_members_match(&db, "GP7_ZREMRANGEBYLEX", {{1, "e"}, {1, "f"}, {1, "g"},
+                                                              {1, "j"}, {1, "k"}, {1, "l"},
+                                                              {1, "m"}}));
+
+
+  // ***************** Group 8 Test *****************
+  // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
+  //
+  std::vector<BlackWidow::ScoreMember> gp8_sm {{1, "e"}, {1, "f"}, {1, "g"},
+                                               {1, "h"}, {1, "i"}, {1, "j"},
+                                               {1, "k"}, {1, "l"}, {1, "m"}};
+  s = db.ZAdd("GP8_ZREMRANGEBYLEX", gp8_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  s = db.ZRemrangebylex("GP8_ZREMRANGEBYLEX", "h", "j", false, false, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+  ASSERT_TRUE(size_match(&db, "GP8_ZREMRANGEBYLEX", 8));
+  ASSERT_TRUE(score_members_match(&db, "GP8_ZREMRANGEBYLEX", {{1, "e"}, {1, "f"}, {1, "g"},
+                                                              {1, "h"}, {1, "j"}, {1, "k"},
+                                                              {1, "l"}, {1, "m"}}));
+
+
+  // ***************** Group 9 Test *****************
+  // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
+  //
+  std::vector<BlackWidow::ScoreMember> gp9_sm {{1, "e"}, {1, "f"}, {1, "g"},
+                                               {1, "h"}, {1, "i"}, {1, "j"},
+                                               {1, "k"}, {1, "l"}, {1, "m"}};
+  s = db.ZAdd("GP9_ZREMRANGEBYLEX", gp9_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  s = db.ZRemrangebylex("GP9_ZREMRANGEBYLEX", "i", "i", true, true, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+  ASSERT_TRUE(size_match(&db, "GP9_ZREMRANGEBYLEX", 8));
+  ASSERT_TRUE(score_members_match(&db, "GP9_ZREMRANGEBYLEX", {{1, "e"}, {1, "f"}, {1, "g"},
+                                                              {1, "h"}, {1, "j"}, {1, "k"},
+                                                              {1, "l"}, {1, "m"}}));
+
+
+  // ***************** Group 10 Test *****************
+  // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
+  //
+  std::vector<BlackWidow::ScoreMember> gp10_sm {{1, "e"}, {1, "f"}, {1, "g"},
+                                                {1, "h"}, {1, "i"}, {1, "j"},
+                                                {1, "k"}, {1, "l"}, {1, "m"}};
+  s = db.ZAdd("GP10_ZREMRANGEBYLEX", gp10_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  s = db.ZRemrangebylex("GP10_ZREMRANGEBYLEX", "i", "i", true, false, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 0);
+  ASSERT_TRUE(size_match(&db, "GP10_ZREMRANGEBYLEX", 9));
+  ASSERT_TRUE(score_members_match(&db, "GP10_ZREMRANGEBYLEX", {{1, "e"}, {1, "f"}, {1, "g"},
+                                                               {1, "h"}, {1, "i"}, {1, "j"},
+                                                               {1, "k"}, {1, "l"}, {1, "m"}}));
+
+
+  // ***************** Group 11 Test *****************
+  // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
+  //
+  std::vector<BlackWidow::ScoreMember> gp11_sm {{1, "e"}, {1, "f"}, {1, "g"},
+                                                {1, "h"}, {1, "i"}, {1, "j"},
+                                                {1, "k"}, {1, "l"}, {1, "m"}};
+  s = db.ZAdd("GP11_ZREMRANGEBYLEX", gp11_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  s = db.ZRemrangebylex("GP11_ZREMRANGEBYLEX", "i", "i", false, true, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 0);
+  ASSERT_TRUE(size_match(&db, "GP11_ZREMRANGEBYLEX", 9));
+  ASSERT_TRUE(score_members_match(&db, "GP11_ZREMRANGEBYLEX", {{1, "e"}, {1, "f"}, {1, "g"},
+                                                               {1, "h"}, {1, "i"}, {1, "j"},
+                                                               {1, "k"}, {1, "l"}, {1, "m"}}));
+
+
+  // ***************** Group 12 Test *****************
+  // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
+  //
+  std::vector<BlackWidow::ScoreMember> gp12_sm {{1, "e"}, {1, "f"}, {1, "g"},
+                                                {1, "h"}, {1, "i"}, {1, "j"},
+                                                {1, "k"}, {1, "l"}, {1, "m"}};
+  s = db.ZAdd("GP12_ZREMRANGEBYLEX", gp12_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  s = db.ZRemrangebylex("GP12_ZREMRANGEBYLEX", "i", "i", false, false, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 0);
+  ASSERT_TRUE(size_match(&db, "GP12_ZREMRANGEBYLEX", 9));
+  ASSERT_TRUE(score_members_match(&db, "GP12_ZREMRANGEBYLEX", {{1, "e"}, {1, "f"}, {1, "g"},
+                                                               {1, "h"}, {1, "i"}, {1, "j"},
+                                                               {1, "k"}, {1, "l"}, {1, "m"}}));
+
+
+  // ***************** Group 13 Test *****************
+  // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
+  //
+  std::vector<BlackWidow::ScoreMember> gp13_sm {{1, "e"}, {1, "f"}, {1, "g"},
+                                                {1, "h"}, {1, "i"}, {1, "j"},
+                                                {1, "k"}, {1, "l"}, {1, "m"}};
+  s = db.ZAdd("GP13_ZREMRANGEBYLEX", gp13_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  s = db.ZRemrangebylex("GP13_ZREMRANGEBYLEX", "-", "+", true, true, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+  ASSERT_TRUE(size_match(&db, "GP13_ZREMRANGEBYLEX", 0));
+  ASSERT_TRUE(score_members_match(&db, "GP13_ZREMRANGEBYLEX", {}));
+
+
+  // ***************** Group 14 Test *****************
+  // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
+  //
+  std::vector<BlackWidow::ScoreMember> gp14_sm {{1, "e"}, {1, "f"}, {1, "g"},
+                                                {1, "h"}, {1, "i"}, {1, "j"},
+                                                {1, "k"}, {1, "l"}, {1, "m"}};
+  s = db.ZAdd("GP14_ZREMRANGEBYLEX", gp14_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  s = db.ZRemrangebylex("GP14_ZREMRANGEBYLEX", "-", "+", true, false, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+  ASSERT_TRUE(size_match(&db, "GP14_ZREMRANGEBYLEX", 0));
+  ASSERT_TRUE(score_members_match(&db, "GP14_ZREMRANGEBYLEX", {}));
+
+
+  // ***************** Group 15 Test *****************
+  // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
+  //
+  std::vector<BlackWidow::ScoreMember> gp15_sm {{1, "e"}, {1, "f"}, {1, "g"},
+                                                {1, "h"}, {1, "i"}, {1, "j"},
+                                                {1, "k"}, {1, "l"}, {1, "m"}};
+  s = db.ZAdd("GP15_ZREMRANGEBYLEX", gp15_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  s = db.ZRemrangebylex("GP15_ZREMRANGEBYLEX", "-", "+", false, true, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+  ASSERT_TRUE(size_match(&db, "GP15_ZREMRANGEBYLEX", 0));
+  ASSERT_TRUE(score_members_match(&db, "GP15_ZREMRANGEBYLEX", {}));
+
+
+  // ***************** Group 16 Test *****************
+  // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
+  //
+  std::vector<BlackWidow::ScoreMember> gp16_sm {{1, "e"}, {1, "f"}, {1, "g"},
+                                                {1, "h"}, {1, "i"}, {1, "j"},
+                                                {1, "k"}, {1, "l"}, {1, "m"}};
+  s = db.ZAdd("GP16_ZREMRANGEBYLEX", gp16_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  s = db.ZRemrangebylex("GP16_ZREMRANGEBYLEX", "-", "+", false, false, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+  ASSERT_TRUE(size_match(&db, "GP16_ZREMRANGEBYLEX", 0));
+  ASSERT_TRUE(score_members_match(&db, "GP16_ZREMRANGEBYLEX", {}));
+
+
+  // ***************** Group 17 Test *****************
+  // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
+  //
+  std::vector<BlackWidow::ScoreMember> gp17_sm {{1, "e"}, {1, "f"}, {1, "g"},
+                                                {1, "h"}, {1, "i"}, {1, "j"},
+                                                {1, "k"}, {1, "l"}, {1, "m"}};
+  s = db.ZAdd("GP17_ZREMRANGEBYLEX", gp17_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  s = db.ZRemrangebylex("GP17_ZREMRANGEBYLEX", "i", "+", true, true, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 5);
+  ASSERT_TRUE(size_match(&db, "GP17_ZREMRANGEBYLEX", 4));
+  ASSERT_TRUE(score_members_match(&db, "GP17_ZREMRANGEBYLEX", {{1, "e"}, {1, "f"}, {1, "g"},
+                                                               {1, "h"}}));
+
+
+  // ***************** Group 18 Test *****************
+  // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
+  //
+  std::vector<BlackWidow::ScoreMember> gp18_sm {{1, "e"}, {1, "f"}, {1, "g"},
+                                                {1, "h"}, {1, "i"}, {1, "j"},
+                                                {1, "k"}, {1, "l"}, {1, "m"}};
+  s = db.ZAdd("GP18_ZREMRANGEBYLEX", gp18_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  s = db.ZRemrangebylex("GP18_ZREMRANGEBYLEX", "i", "+", false, true, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 4);
+  ASSERT_TRUE(size_match(&db, "GP18_ZREMRANGEBYLEX", 5));
+  ASSERT_TRUE(score_members_match(&db, "GP18_ZREMRANGEBYLEX", {{1, "e"}, {1, "f"}, {1, "g"},
+                                                               {1, "h"}, {1, "i"}}));
+
+
+  // ***************** Group 19 Test *****************
+  // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
+  //
+  std::vector<BlackWidow::ScoreMember> gp19_sm {{1, "e"}, {1, "f"}, {1, "g"},
+                                                {1, "h"}, {1, "i"}, {1, "j"},
+                                                {1, "k"}, {1, "l"}, {1, "m"}};
+  s = db.ZAdd("GP19_ZREMRANGEBYLEX", gp19_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  s = db.ZRemrangebylex("GP19_ZREMRANGEBYLEX", "-", "i", true, true, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 5);
+  ASSERT_TRUE(size_match(&db, "GP19_ZREMRANGEBYLEX", 4));
+  ASSERT_TRUE(score_members_match(&db, "GP19_ZREMRANGEBYLEX", {{1, "j"}, {1, "k"}, {1, "l"},
+                                                               {1, "m"}}));
+
+
+  // ***************** Group 20 Test *****************
+  // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
+  //
+  std::vector<BlackWidow::ScoreMember> gp20_sm {{1, "e"}, {1, "f"}, {1, "g"},
+                                                {1, "h"}, {1, "i"}, {1, "j"},
+                                                {1, "k"}, {1, "l"}, {1, "m"}};
+  s = db.ZAdd("GP20_ZREMRANGEBYLEX", gp20_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  s = db.ZRemrangebylex("GP20_ZREMRANGEBYLEX", "-", "i", true, false, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 4);
+  ASSERT_TRUE(size_match(&db, "GP20_ZREMRANGEBYLEX", 5));
+  ASSERT_TRUE(score_members_match(&db, "GP20_ZREMRANGEBYLEX", {{1, "i"}, {1, "j"}, {1, "k"},
+                                                               {1, "l"}, {1, "m"}}));
+
+
+  // ***************** Group 21 Test *****************
+  // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
+  //
+  std::vector<BlackWidow::ScoreMember> gp21_sm {{1, "e"}, {1, "f"}, {1, "g"},
+                                                {1, "h"}, {1, "i"}, {1, "j"},
+                                                {1, "k"}, {1, "l"}, {1, "m"}};
+  s = db.ZAdd("GP21_ZREMRANGEBYLEX", gp21_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  s = db.ZRemrangebylex("GP21_ZREMRANGEBYLEX", "-", "e", true, true, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+  ASSERT_TRUE(size_match(&db, "GP21_ZREMRANGEBYLEX", 8));
+  ASSERT_TRUE(score_members_match(&db, "GP21_ZREMRANGEBYLEX", {{1, "f"}, {1, "g"}, {1, "h"},
+                                                               {1, "i"}, {1, "j"}, {1, "k"},
+                                                               {1, "l"}, {1, "m"}}));
+
+
+  // ***************** Group 22 Test *****************
+  // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
+  //
+  std::vector<BlackWidow::ScoreMember> gp22_sm {{1, "e"}, {1, "f"}, {1, "g"},
+                                                {1, "h"}, {1, "i"}, {1, "j"},
+                                                {1, "k"}, {1, "l"}, {1, "m"}};
+  s = db.ZAdd("GP22_ZREMRANGEBYLEX", gp22_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  s = db.ZRemrangebylex("GP22_ZREMRANGEBYLEX", "-", "e", true, false, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 0);
+  ASSERT_TRUE(size_match(&db, "GP22_ZREMRANGEBYLEX", 9));
+  ASSERT_TRUE(score_members_match(&db, "GP22_ZREMRANGEBYLEX", {{1, "e"}, {1, "f"}, {1, "g"},
+                                                               {1, "h"}, {1, "i"}, {1, "j"},
+                                                               {1, "k"}, {1, "l"}, {1, "m"}}));
+
+
+  // ***************** Group 23 Test *****************
+  // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
+  //
+  std::vector<BlackWidow::ScoreMember> gp23_sm {{1, "e"}, {1, "f"}, {1, "g"},
+                                                {1, "h"}, {1, "i"}, {1, "j"},
+                                                {1, "k"}, {1, "l"}, {1, "m"}};
+  s = db.ZAdd("GP23_ZREMRANGEBYLEX", gp23_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  s = db.ZRemrangebylex("GP23_ZREMRANGEBYLEX", "m", "+", true, true, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+  ASSERT_TRUE(size_match(&db, "GP23_ZREMRANGEBYLEX", 8));
+  ASSERT_TRUE(score_members_match(&db, "GP23_ZREMRANGEBYLEX", {{1, "e"}, {1, "f"}, {1, "g"},
+                                                               {1, "h"}, {1, "i"}, {1, "j"},
+                                                               {1, "k"}, {1, "l"}}));
+
+
+  // ***************** Group 24 Test *****************
+  // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
+  //
+  std::vector<BlackWidow::ScoreMember> gp24_sm {{1, "e"}, {1, "f"}, {1, "g"},
+                                                {1, "h"}, {1, "i"}, {1, "j"},
+                                                {1, "k"}, {1, "l"}, {1, "m"}};
+  s = db.ZAdd("GP24_ZREMRANGEBYLEX", gp24_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  s = db.ZRemrangebylex("GP24_ZREMRANGEBYLEX", "m", "+", false, true, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 0);
+  ASSERT_TRUE(size_match(&db, "GP24_ZREMRANGEBYLEX", 9));
+  ASSERT_TRUE(score_members_match(&db, "GP24_ZREMRANGEBYLEX", {{1, "e"}, {1, "f"}, {1, "g"},
+                                                               {1, "h"}, {1, "i"}, {1, "j"},
+                                                               {1, "k"}, {1, "l"}, {1, "m"}}));
+
+
+  // ***************** Group 25 Test *****************
+  // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}   (expire)
+  //
+  std::vector<BlackWidow::ScoreMember> gp25_sm {{1, "e"}, {1, "f"}, {1, "g"},
+                                                {1, "h"}, {1, "i"}, {1, "j"},
+                                                {1, "k"}, {1, "l"}, {1, "m"}};
+  s = db.ZAdd("GP25_ZREMRANGEBYLEX", gp25_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+  ASSERT_TRUE(make_expired(&db, "GP25_ZREMRANGEBYLEX"));
+
+  s = db.ZRemrangebylex("GP25_ZREMRANGEBYLEX", "-", "+", true, true, &ret);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(ret, 0);
+
+
+  // ***************** Group 26 Test *****************
+  s = db.ZRemrangebylex("GP26_ZREMRANGEBYLEX", "-", "+", true, true, &ret);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(ret, 0);
 }
 
 

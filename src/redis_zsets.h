@@ -80,6 +80,24 @@ class RedisZSets : public Redis {
                      const std::vector<double>& weights,
                      const BlackWidow::AGGREGATE agg,
                      int32_t* ret);
+  Status ZRangebylex(const Slice& key,
+                     const Slice& min,
+                     const Slice& max,
+                     bool left_close,
+                     bool right_close,
+                     std::vector<std::string>* members);
+  Status ZLexcount(const Slice& key,
+                   const Slice& min,
+                   const Slice& max,
+                   bool left_close,
+                   bool right_close,
+                   int32_t* ret);
+  Status ZRemrangebylex(const Slice& key,
+                        const Slice& min,
+                        const Slice& max,
+                        bool left_close,
+                        bool right_close,
+                        int32_t* ret);
 
   // Common Commands
   virtual Status Open(const rocksdb::Options& options,

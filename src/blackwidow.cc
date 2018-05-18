@@ -525,6 +525,33 @@ Status BlackWidow::ZInterstore(const Slice& destination,
   return zsets_db_->ZInterstore(destination, keys, weights, agg, ret);
 }
 
+Status BlackWidow::ZRangebylex(const Slice& key,
+                               const Slice& min,
+                               const Slice& max,
+                               bool left_close,
+                               bool right_close,
+                               std::vector<std::string>* members) {
+  return zsets_db_->ZRangebylex(key, min, max, left_close, right_close, members);
+}
+
+Status BlackWidow::ZLexcount(const Slice& key,
+                             const Slice& min,
+                             const Slice& max,
+                             bool left_close,
+                             bool right_close,
+                             int32_t* ret) {
+  return zsets_db_->ZLexcount(key, min, max, left_close, right_close, ret);
+}
+
+Status BlackWidow::ZRemrangebylex(const Slice& key,
+                                  const Slice& min,
+                                  const Slice& max,
+                                  bool left_close,
+                                  bool right_close,
+                                  int32_t* ret) {
+  return zsets_db_->ZRemrangebylex(key, min, max, left_close, right_close, ret);
+}
+
 
 
 // Keys Commands

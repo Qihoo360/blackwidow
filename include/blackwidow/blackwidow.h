@@ -752,6 +752,61 @@ class BlackWidow {
                      const BlackWidow::AGGREGATE agg,
                      int32_t* ret);
 
+  // When all the elements in a sorted set are inserted with the same score, in
+  // order to force lexicographical ordering, this command returns all the
+  // elements in the sorted set at key with a value between min and max.
+  //
+  // If the elements in the sorted set have different scores, the returned
+  // elements are unspecified.
+  //
+  // The elements are considered to be ordered from lower to higher strings as
+  // compared byte-by-byte using the memcmp() C function. Longer strings are
+  // considered greater than shorter strings if the common part is identical.
+  //
+  // The optional LIMIT argument can be used to only get a range of the matching
+  // elements (similar to SELECT LIMIT offset, count in SQL). Keep in mind that
+  // if offset is large, the sorted set needs to be traversed for offset
+  // elements before getting to the elements to return, which can add up to O(N)
+  // time complexity.
+  Status ZRangebylex(const Slice& key,
+                     const Slice& min,
+                     const Slice& max,
+                     bool left_close,
+                     bool right_close,
+                     std::vector<std::string>* members);
+
+  // When all the elements in a sorted set are inserted with the same score, in
+  // order to force lexicographical ordering, this command returns the number of
+  // elements in the sorted set at key with a value between min and max.
+  //
+  // The min and max arguments have the same meaning as described for
+  // ZRANGEBYLEX.
+  //
+  // Note: the command has a complexity of just O(log(N)) because it uses
+  // elements ranks (see ZRANK) to get an idea of the range. Because of this
+  // there is no need to do a work proportional to the size of the range.
+  Status ZLexcount(const Slice& key,
+                   const Slice& min,
+                   const Slice& max,
+                   bool left_close,
+                   bool right_close,
+                   int32_t* ret);
+
+  // When all the elements in a sorted set are inserted with the same score, in
+  // order to force lexicographical ordering, this command removes all elements
+  // in the sorted set stored at key between the lexicographical range specified
+  // by min and max.
+  //
+  // The meaning of min and max are the same of the ZRANGEBYLEX command.
+  // Similarly, this command actually returns the same elements that ZRANGEBYLEX
+  // would return if called with the same min and max arguments.
+  Status ZRemrangebylex(const Slice& key,
+                        const Slice& min,
+                        const Slice& max,
+                        bool left_close,
+                        bool right_close,
+                        int32_t* ret);
+
 
 
   // Keys Commands
