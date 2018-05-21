@@ -69,6 +69,22 @@ Status RedisZSets::Open(const rocksdb::Options& options,
   return rocksdb::DB::Open(db_ops, db_path, column_families, &handles_, &db_);
 }
 
+Status RedisZSets::CompactRange(const rocksdb::Slice* begin,
+    const rocksdb::Slice* end) {
+  Status s = db_->CompactRange(default_compact_range_options_,
+          handles_[0], begin, end);
+  if (!s.ok()) {
+    return s;
+  }
+  s = db_->CompactRange(default_compact_range_options_,
+          handles_[1], begin, end);
+  if (!s.ok()) {
+    return s;
+  }
+  return db_->CompactRange(default_compact_range_options_,
+          handles_[2], begin, end);
+}
+
 Status RedisZSets::ZAdd(const Slice& key,
                         const std::vector<BlackWidow::ScoreMember>& score_members,
                         int32_t* ret) {
@@ -1218,6 +1234,7 @@ Status RedisZSets::Expireat(const Slice& key, int32_t timestamp) {
   }
   return s;
 }
+
 Status RedisZSets::Persist(const Slice& key) {
   std::string meta_value;
   ScopeRecordLock l(lock_mgr_, key);
@@ -1261,22 +1278,6 @@ Status RedisZSets::TTL(const Slice& key, int64_t* timestamp) {
     *timestamp = -2;
   }
   return s;
-}
-
-Status RedisZSets::CompactRange(const rocksdb::Slice* begin,
-    const rocksdb::Slice* end) {
-  Status s = db_->CompactRange(default_compact_range_options_,
-          handles_[0], begin, end);
-  if (!s.ok()) {
-    return s;
-  }
-  s = db_->CompactRange(default_compact_range_options_,
-          handles_[1], begin, end);
-  if (!s.ok()) {
-    return s;
-  }
-  return db_->CompactRange(default_compact_range_options_,
-          handles_[2], begin, end);
 }
 
 } // blackwidow

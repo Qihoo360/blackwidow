@@ -64,6 +64,17 @@ Status RedisSets::Open(const rocksdb::Options& options,
   return rocksdb::DB::Open(db_ops, db_path, column_families, &handles_, &db_);
 }
 
+Status RedisSets::CompactRange(const rocksdb::Slice* begin,
+                               const rocksdb::Slice* end) {
+  Status s = db_->CompactRange(default_compact_range_options_,
+      handles_[0], begin, end);
+  if (!s.ok()) {
+    return s;
+  }
+  return db_->CompactRange(default_compact_range_options_,
+      handles_[1], begin, end);
+}
+
 Status RedisSets::SAdd(const Slice& key,
                        const std::vector<std::string>& members, int32_t* ret) {
   std::unordered_set<std::string> unique;
@@ -1071,18 +1082,6 @@ Status RedisSets::TTL(const Slice& key, int64_t* timestamp) {
     *timestamp = -2;
   }
   return s;
-}
-
-
-Status RedisSets::CompactRange(const rocksdb::Slice* begin,
-                               const rocksdb::Slice* end) {
-  Status s = db_->CompactRange(default_compact_range_options_,
-      handles_[0], begin, end);
-  if (!s.ok()) {
-    return s;
-  }
-  return db_->CompactRange(default_compact_range_options_,
-      handles_[1], begin, end);
 }
 
 }  //  namespace blackwidow

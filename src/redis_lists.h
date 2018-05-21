@@ -17,49 +17,49 @@
 namespace blackwidow {
 
 class RedisLists : public Redis {
- public:
-  RedisLists() = default;
-  ~RedisLists();
+  public:
+    RedisLists() = default;
+    ~RedisLists();
 
-  // Lists commands;
-  Status LPush(const Slice& key, const std::vector<std::string>& values,
-               uint64_t* ret);
-  Status RPush(const Slice& key, const std::vector<std::string>& values,
-               uint64_t* ret);
-  Status LRange(const Slice& key, int64_t start, int64_t stop,
-                std::vector<std::string>* ret);
-  Status LTrim(const Slice& key, int64_t start, int64_t stop);
-  Status LLen(const Slice& key, uint64_t* len);
-  Status LPop(const Slice& key, std::string* element);
-  Status RPop(const Slice& key, std::string* element);
-  Status LIndex(const Slice& key, int64_t index, std::string* element);
-  Status LInsert(const Slice& key, const BlackWidow::BeforeOrAfter& before_or_after,
-                 const std::string& pivot, const std::string& value, int64_t* ret);
-  Status LPushx(const Slice& key, const Slice& value, uint64_t* len);
-  Status RPushx(const Slice& key, const Slice& value, uint64_t* len);
-  Status LRem(const Slice& key, int64_t count, const Slice& value, uint64_t* ret);
-  Status LSet(const Slice& key, int64_t index, const Slice& value);
-  Status RPoplpush(const Slice& source, const Slice& destination, std::string* element);
-
-  // Common commands
-  virtual Status Open(const rocksdb::Options& options,
-      const std::string& db_path) override;
-  virtual Status CompactRange(const rocksdb::Slice* begin,
-      const rocksdb::Slice* end) override;
-
-  // Keys Commands
-  virtual Status Expire(const Slice& key, int32_t ttl) override;
-  virtual Status Del(const Slice& key) override;
-  virtual bool Scan(const std::string& start_key, const std::string& pattern,
-                    std::vector<std::string>* keys,
-                    int64_t* count, std::string* next_key) override;
-  virtual Status Expireat(const Slice& key, int32_t timestamp) override;
-  virtual Status Persist(const Slice& key) override;
-  virtual Status TTL(const Slice& key, int64_t* timestamp) override;
+    // Common commands
+    virtual Status Open(const rocksdb::Options& options,
+                        const std::string& db_path) override;
+    virtual Status CompactRange(const rocksdb::Slice* begin,
+                                const rocksdb::Slice* end) override;
 
 
- private:
-  std::vector<rocksdb::ColumnFamilyHandle*> handles_;
+    // Lists commands;
+    Status LIndex(const Slice& key, int64_t index, std::string* element);
+    Status LInsert(const Slice& key, const BlackWidow::BeforeOrAfter& before_or_after,
+                   const std::string& pivot, const std::string& value, int64_t* ret);
+    Status LLen(const Slice& key, uint64_t* len);
+    Status LPop(const Slice& key, std::string* element);
+    Status LPush(const Slice& key, const std::vector<std::string>& values,
+                 uint64_t* ret);
+    Status LPushx(const Slice& key, const Slice& value, uint64_t* len);
+    Status LRange(const Slice& key, int64_t start, int64_t stop,
+                  std::vector<std::string>* ret);
+    Status LRem(const Slice& key, int64_t count, const Slice& value, uint64_t* ret);
+    Status LSet(const Slice& key, int64_t index, const Slice& value);
+    Status LTrim(const Slice& key, int64_t start, int64_t stop);
+    Status RPop(const Slice& key, std::string* element);
+    Status RPoplpush(const Slice& source, const Slice& destination, std::string* element);
+    Status RPush(const Slice& key, const std::vector<std::string>& values,
+                 uint64_t* ret);
+    Status RPushx(const Slice& key, const Slice& value, uint64_t* len);
+
+    // Keys Commands
+    virtual Status Expire(const Slice& key, int32_t ttl) override;
+    virtual Status Del(const Slice& key) override;
+    virtual bool Scan(const std::string& start_key, const std::string& pattern,
+                      std::vector<std::string>* keys,
+                      int64_t* count, std::string* next_key) override;
+    virtual Status Expireat(const Slice& key, int32_t timestamp) override;
+    virtual Status Persist(const Slice& key) override;
+    virtual Status TTL(const Slice& key, int64_t* timestamp) override;
+
+  private:
+    std::vector<rocksdb::ColumnFamilyHandle*> handles_;
 };
 
 }  //  namespace blackwidow

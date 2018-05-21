@@ -31,25 +31,62 @@ class HashesTest : public ::testing::Test {
   blackwidow::Status s;
 };
 
-// HSet
-TEST_F(HashesTest, HSetTest) {
+// HDel
+TEST_F(HashesTest, HDel) {
   int32_t ret = 0;
-  std::string value;
-  // If field is a new field in the hash and value was set.
-  s = db.HSet("HSET_KEY", "HSET_TEST_FIELD", "HSET_TEST_VALUE", &ret);
+  std::vector<BlackWidow::FieldValue> fvs;
+  fvs.push_back({"TEST_FIELD1", "TEST_VALUE1"});
+  fvs.push_back({"TEST_FIELD2", "TEST_VALUE2"});
+  fvs.push_back({"TEST_FIELD3", "TEST_VALUE3"});
+  fvs.push_back({"TEST_FIELD4", "TEST_VALUE4"});
+
+  s = db.HMSet("HDEL_KEY", fvs);
+  ASSERT_TRUE(s.ok());
+
+  std::vector<std::string> fields {"TEST_FIELD1", "TEST_FIELD2",
+    "TEST_FIELD3", "TEST_FIElD2", "TEST_NOT_EXIST_FIELD"};
+  s = db.HDel("HDEL_KEY", fields, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 3);
+
+  s = db.HLen("HDEL_KEY", &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 1);
-  s = db.HGet("HSET_KEY", "HSET_TEST_FIELD", &value);
-  ASSERT_TRUE(s.ok());
-  ASSERT_EQ(value, "HSET_TEST_VALUE");
 
-  // If field already exists in the hash and the value was updated.
-  s = db.HSet("HSET_KEY", "HSET_TEST_FIELD", "HSET_TEST_NEW_VALUE", &ret);
+  // Delete not exist hash table
+  s = db.HDel("HDEL_NOT_EXIST_KEY", fields, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 0);
-  s = db.HGet("HSET_KEY", "HSET_TEST_FIELD", &value);
+
+  // Delete timeout hash table
+  s = db.HMSet("HDEL_TIMEOUT_KEY", fvs);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(value, "HSET_TEST_NEW_VALUE");
+
+  std::map<BlackWidow::DataType, rocksdb::Status> type_status;
+  db.Expire("HDEL_TIMEOUT_KEY", 1, &type_status);
+  ASSERT_TRUE(type_status[BlackWidow::DataType::kHashes].ok());
+  std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+  s = db.HDel("HDEL_TIMEOUT_KEY", fields, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 0);
+}
+
+// HExists
+TEST_F(HashesTest, HExistsTest) {
+  int32_t ret;
+  s = db.HSet("HEXIST_KEY", "HEXIST_FIELD", "HEXIST_VALUE", &ret);
+  ASSERT_TRUE(s.ok());
+
+  s = db.HExists("HEXIST_KEY", "HEXIST_FIELD");
+  ASSERT_TRUE(s.ok());
+
+  // If key does not exist.
+  s = db.HExists("HEXIST_NOT_EXIST_KEY", "HEXIST_FIELD");
+  ASSERT_TRUE(s.IsNotFound());
+
+  // If field is not present in the hash
+  s = db.HExists("HEXIST_KEY", "HEXIST_NOT_EXIST_FIELD");
+  ASSERT_TRUE(s.IsNotFound());
 }
 
 // HGet
@@ -72,174 +109,78 @@ TEST_F(HashesTest, HGetTest) {
   ASSERT_TRUE(s.IsNotFound());
 }
 
-// HMSet
-TEST_F(HashesTest, HMSetTest) {
+// HGetall
+TEST_F(HashesTest, HGetall) {
   int32_t ret = 0;
-  std::vector<BlackWidow::FieldValue> fvs1;
-  fvs1.push_back({"TEST_FIELD1", "TEST_VALUE1"});
-  fvs1.push_back({"TEST_FIELD2", "TEST_VALUE2"});
-
-  // If field already exists in the hash, it is overwritten
-  std::vector<BlackWidow::FieldValue> fvs2;
-  fvs2.push_back({"TEST_FIELD2", "TEST_VALUE2"});
-  fvs2.push_back({"TEST_FIELD3", "TEST_VALUE3"});
-  fvs2.push_back({"TEST_FIELD4", "TEST_VALUE4"});
-  fvs2.push_back({"TEST_FIELD3", "TEST_VALUE5"});
-
-  s = db.HMSet("HMSET_KEY", fvs1);
-  ASSERT_TRUE(s.ok());
-  s = db.HLen("HMSET_KEY", &ret);
-  ASSERT_TRUE(s.ok());
-  ASSERT_EQ(ret, 2);
-
-  s = db.HMSet("HMSET_KEY", fvs2);
+  std::vector<BlackWidow::FieldValue> mid_fvs_in;
+  mid_fvs_in.push_back({"MID_TEST_FIELD1", "MID_TEST_VALUE1"});
+  mid_fvs_in.push_back({"MID_TEST_FIELD2", "MID_TEST_VALUE2"});
+  mid_fvs_in.push_back({"MID_TEST_FIELD3", "MID_TEST_VALUE3"});
+  s = db.HMSet("B_HGETALL_KEY", mid_fvs_in);
   ASSERT_TRUE(s.ok());
 
-  s = db.HLen("HMSET_KEY", &ret);
+  std::vector<BlackWidow::FieldValue> fvs_out;
+  s = db.HGetall("B_HGETALL_KEY", &fvs_out);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(ret, 4);
+  ASSERT_EQ(fvs_out.size(), 3);
+  ASSERT_EQ(fvs_out[0].field, "MID_TEST_FIELD1");
+  ASSERT_EQ(fvs_out[0].value, "MID_TEST_VALUE1");
+  ASSERT_EQ(fvs_out[1].field, "MID_TEST_FIELD2");
+  ASSERT_EQ(fvs_out[1].value, "MID_TEST_VALUE2");
+  ASSERT_EQ(fvs_out[2].field, "MID_TEST_FIELD3");
+  ASSERT_EQ(fvs_out[2].value, "MID_TEST_VALUE3");
 
-  std::vector<std::string> values1;
-  std::vector<std::string> fields1 {"TEST_FIELD1",
-      "TEST_FIELD2", "TEST_FIELD3", "TEST_FIELD4"};
-  s = db.HMGet("HMSET_KEY", fields1, &values1);
+  // Insert some kv who's position above "mid kv"
+  std::vector<BlackWidow::FieldValue> pre_fvs_in;
+  pre_fvs_in.push_back({"PRE_TEST_FIELD1", "PRE_TEST_VALUE1"});
+  pre_fvs_in.push_back({"PRE_TEST_FIELD2", "PRE_TEST_VALUE2"});
+  pre_fvs_in.push_back({"PRE_TEST_FIELD3", "PRE_TEST_VALUE3"});
+  s = db.HMSet("A_HGETALL_KEY", pre_fvs_in);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(values1.size(),  4);
+  fvs_out.clear();
+  s = db.HGetall("B_HGETALL_KEY", &fvs_out);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(fvs_out.size(), 3);
+  ASSERT_EQ(fvs_out[0].field, "MID_TEST_FIELD1");
+  ASSERT_EQ(fvs_out[0].value, "MID_TEST_VALUE1");
+  ASSERT_EQ(fvs_out[1].field, "MID_TEST_FIELD2");
+  ASSERT_EQ(fvs_out[1].value, "MID_TEST_VALUE2");
+  ASSERT_EQ(fvs_out[2].field, "MID_TEST_FIELD3");
+  ASSERT_EQ(fvs_out[2].value, "MID_TEST_VALUE3");
 
-  ASSERT_EQ(values1[0], "TEST_VALUE1");
-  ASSERT_EQ(values1[1], "TEST_VALUE2");
-  ASSERT_EQ(values1[2], "TEST_VALUE5");
-  ASSERT_EQ(values1[3], "TEST_VALUE4");
+  // Insert some kv who's position below "mid kv"
+  std::vector<BlackWidow::FieldValue> suf_fvs_in;
+  suf_fvs_in.push_back({"SUF_TEST_FIELD1", "SUF_TEST_VALUE1"});
+  suf_fvs_in.push_back({"SUF_TEST_FIELD2", "SUF_TEST_VALUE2"});
+  suf_fvs_in.push_back({"SUF_TEST_FIELD3", "SUF_TEST_VALUE3"});
+  s = db.HMSet("C_HGETALL_KEY", suf_fvs_in);
+  ASSERT_TRUE(s.ok());
+  fvs_out.clear();
+  s = db.HGetall("B_HGETALL_KEY", &fvs_out);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(fvs_out.size(), 3);
+  ASSERT_EQ(fvs_out[0].field, "MID_TEST_FIELD1");
+  ASSERT_EQ(fvs_out[0].value, "MID_TEST_VALUE1");
+  ASSERT_EQ(fvs_out[1].field, "MID_TEST_FIELD2");
+  ASSERT_EQ(fvs_out[1].value, "MID_TEST_VALUE2");
+  ASSERT_EQ(fvs_out[2].field, "MID_TEST_FIELD3");
+  ASSERT_EQ(fvs_out[2].value, "MID_TEST_VALUE3");
 
+  // HGetall timeout hash table
+  fvs_out.clear();
   std::map<BlackWidow::DataType, rocksdb::Status> type_status;
-  db.Expire("HMSET_KEY", 1, &type_status);
+  db.Expire("B_HGETALL_KEY", 1, &type_status);
   ASSERT_TRUE(type_status[BlackWidow::DataType::kHashes].ok());
-
-  // The key has timeout
   std::this_thread::sleep_for(std::chrono::milliseconds(2000));
-  std::vector<BlackWidow::FieldValue> fvs3;
-  fvs3.push_back({"TEST_FIELD3", "TEST_VALUE3"});
-  fvs3.push_back({"TEST_FIELD4", "TEST_VALUE4"});
-  fvs3.push_back({"TEST_FIELD5", "TEST_VALUE5"});
-  s = db.HMSet("HMSET_KEY", fvs3);
-  ASSERT_TRUE(s.ok());
-
-  s = db.HLen("HMSET_KEY", &ret);
-  ASSERT_TRUE(s.ok());
-  ASSERT_EQ(ret, 3);
-
-  std::vector<std::string> values2;
-  std::vector<std::string> fields2 {"TEST_FIELD3",
-      "TEST_FIELD4", "TEST_FIELD5"};
-  s = db.HMGet("HMSET_KEY", fields2, &values2);
-  ASSERT_TRUE(s.ok());
-  ASSERT_EQ(values2.size(),  3);
-
-  ASSERT_EQ(values2[0], "TEST_VALUE3");
-  ASSERT_EQ(values2[1], "TEST_VALUE4");
-  ASSERT_EQ(values2[2], "TEST_VALUE5");
-}
-
-// HMGet
-TEST_F(HashesTest, HMGetTest) {
-  int32_t ret = 0;
-  std::vector<BlackWidow::FieldValue> fvs;
-  fvs.push_back({"TEST_FIELD1", "TEST_VALUE1"});
-  fvs.push_back({"TEST_FIELD2", "TEST_VALUE2"});
-  fvs.push_back({"TEST_FIELD3", "TEST_VALUE3"});
-  fvs.push_back({"TEST_FIELD2", "TEST_VALUE4"});
-  s = db.HMSet("HMGET_KEY", fvs);
-  ASSERT_TRUE(s.ok());
-
-  s = db.HLen("HMGET_KEY", &ret);
-  ASSERT_TRUE(s.ok());
-  ASSERT_EQ(ret, 3);
-
-  std::vector<std::string> values;
-  std::vector<std::string> fields {"TEST_FIELD1",
-      "TEST_FIELD2", "TEST_FIELD3", "TEST_NOT_EXIST_FIELD"};
-  s = db.HMGet("HMGET_KEY", fields, &values);
-  ASSERT_TRUE(s.ok());
-  ASSERT_EQ(values.size(), 4);
-
-  ASSERT_EQ(values[0], "TEST_VALUE1");
-  ASSERT_EQ(values[1], "TEST_VALUE4");
-  ASSERT_EQ(values[2], "TEST_VALUE3");
-  ASSERT_EQ(values[3], "");
-}
-
-// HSetnx
-TEST_F(HashesTest, HSetnxTest) {
-  int32_t ret;
-  std::string value;
-  // If field is a new field in the hash and value was set.
-  s = db.HSetnx("HSETNX_KEY", "HSETNX_TEST_FIELD", "HSETNX_TEST_VALUE", &ret);
-  ASSERT_TRUE(s.ok());
-  ASSERT_EQ(ret, 1);
-  s = db.HGet("HSETNX_KEY", "HSETNX_TEST_FIELD", &value);
-  ASSERT_TRUE(s.ok());
-  ASSERT_EQ(value, "HSETNX_TEST_VALUE");
-
-  // If field already exists, this operation has no effect.
-  s = db.HSetnx("HSETNX_KEY", "HSETNX_TEST_FIELD",
-          "HSETNX_TEST_NEW_VALUE", &ret);
-  ASSERT_TRUE(s.ok());
-  ASSERT_EQ(ret, 0);
-  s = db.HGet("HSETNX_KEY", "HSETNX_TEST_FIELD", &value);
-  ASSERT_TRUE(s.ok());
-  ASSERT_EQ(value, "HSETNX_TEST_VALUE");
-}
-
-// HLen
-TEST_F(HashesTest, HLenTest) {
-  int32_t ret = 0;
-  std::vector<BlackWidow::FieldValue> fvs;
-  fvs.push_back({"TEST_FIELD1", "TEST_VALUE1"});
-  fvs.push_back({"TEST_FIELD2", "TEST_VALUE2"});
-  fvs.push_back({"TEST_FIELD3", "TEST_VALUE3"});
-  s = db.HMSet("HLEN_KEY", fvs);
-  ASSERT_TRUE(s.ok());
-
-  s = db.HLen("HLEN_KEY", &ret);
-  ASSERT_TRUE(s.ok());
-  ASSERT_EQ(ret, 3);
-}
-
-// HStrlen
-TEST_F(HashesTest, HStrlenTest) {
-  int32_t ret = 0;
-  int32_t len = 0;
-  s = db.HSet("HSTRLEN_KEY", "HSTRLEN_TEST_FIELD", "HSTRLEN_TEST_VALUE", &ret);
-  ASSERT_TRUE(s.ok());
-  ASSERT_EQ(ret, 1);
-
-  s = db.HStrlen("HSTRLEN_KEY", "HSTRLEN_TEST_FIELD",  &len);
-  ASSERT_TRUE(s.ok());
-  ASSERT_EQ(len, 18);
-
-  // If the key or the field do not exist, 0 is returned
-  s = db.HStrlen("HSTRLEN_KEY", "HSTRLEN_NOT_EXIST_FIELD",  &len);
+  s = db.HGetall("B_HGETALL_KEY", &fvs_out);
   ASSERT_TRUE(s.IsNotFound());
-  ASSERT_EQ(len, 0);
-}
+  ASSERT_EQ(fvs_out.size(), 0);
 
-
-// HExists
-TEST_F(HashesTest, HExistsTest) {
-  int32_t ret;
-  s = db.HSet("HEXIST_KEY", "HEXIST_FIELD", "HEXIST_VALUE", &ret);
-  ASSERT_TRUE(s.ok());
-
-  s = db.HExists("HEXIST_KEY", "HEXIST_FIELD");
-  ASSERT_TRUE(s.ok());
-
-  // If key does not exist.
-  s = db.HExists("HEXIST_NOT_EXIST_KEY", "HEXIST_FIELD");
+  // HGetall not exist hash table
+  fvs_out.clear();
+  s = db.HGetall("HGETALL_NOT_EXIST_KEY", &fvs_out);
   ASSERT_TRUE(s.IsNotFound());
-
-  // If field is not present in the hash
-  s = db.HExists("HEXIST_KEY", "HEXIST_NOT_EXIST_FIELD");
-  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(fvs_out.size(), 0);
 }
 
 // HIncrby
@@ -483,120 +424,6 @@ TEST_F(HashesTest, HIncrbyfloat) {
   ASSERT_EQ(ret, 13);
 }
 
-// HDel
-TEST_F(HashesTest, HDel) {
-  int32_t ret = 0;
-  std::vector<BlackWidow::FieldValue> fvs;
-  fvs.push_back({"TEST_FIELD1", "TEST_VALUE1"});
-  fvs.push_back({"TEST_FIELD2", "TEST_VALUE2"});
-  fvs.push_back({"TEST_FIELD3", "TEST_VALUE3"});
-  fvs.push_back({"TEST_FIELD4", "TEST_VALUE4"});
-
-  s = db.HMSet("HDEL_KEY", fvs);
-  ASSERT_TRUE(s.ok());
-
-  std::vector<std::string> fields {"TEST_FIELD1", "TEST_FIELD2",
-    "TEST_FIELD3", "TEST_FIElD2", "TEST_NOT_EXIST_FIELD"};
-  s = db.HDel("HDEL_KEY", fields, &ret);
-  ASSERT_TRUE(s.ok());
-  ASSERT_EQ(ret, 3);
-
-  s = db.HLen("HDEL_KEY", &ret);
-  ASSERT_TRUE(s.ok());
-  ASSERT_EQ(ret, 1);
-
-  // Delete not exist hash table
-  s = db.HDel("HDEL_NOT_EXIST_KEY", fields, &ret);
-  ASSERT_TRUE(s.ok());
-  ASSERT_EQ(ret, 0);
-
-  // Delete timeout hash table
-  s = db.HMSet("HDEL_TIMEOUT_KEY", fvs);
-  ASSERT_TRUE(s.ok());
-
-  std::map<BlackWidow::DataType, rocksdb::Status> type_status;
-  db.Expire("HDEL_TIMEOUT_KEY", 1, &type_status);
-  ASSERT_TRUE(type_status[BlackWidow::DataType::kHashes].ok());
-  std::this_thread::sleep_for(std::chrono::milliseconds(2000));
-  s = db.HDel("HDEL_TIMEOUT_KEY", fields, &ret);
-  ASSERT_TRUE(s.ok());
-  ASSERT_EQ(ret, 0);
-}
-
-// HGetall
-TEST_F(HashesTest, HGetall) {
-  int32_t ret = 0;
-  std::vector<BlackWidow::FieldValue> mid_fvs_in;
-  mid_fvs_in.push_back({"MID_TEST_FIELD1", "MID_TEST_VALUE1"});
-  mid_fvs_in.push_back({"MID_TEST_FIELD2", "MID_TEST_VALUE2"});
-  mid_fvs_in.push_back({"MID_TEST_FIELD3", "MID_TEST_VALUE3"});
-  s = db.HMSet("B_HGETALL_KEY", mid_fvs_in);
-  ASSERT_TRUE(s.ok());
-
-  std::vector<BlackWidow::FieldValue> fvs_out;
-  s = db.HGetall("B_HGETALL_KEY", &fvs_out);
-  ASSERT_TRUE(s.ok());
-  ASSERT_EQ(fvs_out.size(), 3);
-  ASSERT_EQ(fvs_out[0].field, "MID_TEST_FIELD1");
-  ASSERT_EQ(fvs_out[0].value, "MID_TEST_VALUE1");
-  ASSERT_EQ(fvs_out[1].field, "MID_TEST_FIELD2");
-  ASSERT_EQ(fvs_out[1].value, "MID_TEST_VALUE2");
-  ASSERT_EQ(fvs_out[2].field, "MID_TEST_FIELD3");
-  ASSERT_EQ(fvs_out[2].value, "MID_TEST_VALUE3");
-
-  // Insert some kv who's position above "mid kv"
-  std::vector<BlackWidow::FieldValue> pre_fvs_in;
-  pre_fvs_in.push_back({"PRE_TEST_FIELD1", "PRE_TEST_VALUE1"});
-  pre_fvs_in.push_back({"PRE_TEST_FIELD2", "PRE_TEST_VALUE2"});
-  pre_fvs_in.push_back({"PRE_TEST_FIELD3", "PRE_TEST_VALUE3"});
-  s = db.HMSet("A_HGETALL_KEY", pre_fvs_in);
-  ASSERT_TRUE(s.ok());
-  fvs_out.clear();
-  s = db.HGetall("B_HGETALL_KEY", &fvs_out);
-  ASSERT_TRUE(s.ok());
-  ASSERT_EQ(fvs_out.size(), 3);
-  ASSERT_EQ(fvs_out[0].field, "MID_TEST_FIELD1");
-  ASSERT_EQ(fvs_out[0].value, "MID_TEST_VALUE1");
-  ASSERT_EQ(fvs_out[1].field, "MID_TEST_FIELD2");
-  ASSERT_EQ(fvs_out[1].value, "MID_TEST_VALUE2");
-  ASSERT_EQ(fvs_out[2].field, "MID_TEST_FIELD3");
-  ASSERT_EQ(fvs_out[2].value, "MID_TEST_VALUE3");
-
-  // Insert some kv who's position below "mid kv"
-  std::vector<BlackWidow::FieldValue> suf_fvs_in;
-  suf_fvs_in.push_back({"SUF_TEST_FIELD1", "SUF_TEST_VALUE1"});
-  suf_fvs_in.push_back({"SUF_TEST_FIELD2", "SUF_TEST_VALUE2"});
-  suf_fvs_in.push_back({"SUF_TEST_FIELD3", "SUF_TEST_VALUE3"});
-  s = db.HMSet("C_HGETALL_KEY", suf_fvs_in);
-  ASSERT_TRUE(s.ok());
-  fvs_out.clear();
-  s = db.HGetall("B_HGETALL_KEY", &fvs_out);
-  ASSERT_TRUE(s.ok());
-  ASSERT_EQ(fvs_out.size(), 3);
-  ASSERT_EQ(fvs_out[0].field, "MID_TEST_FIELD1");
-  ASSERT_EQ(fvs_out[0].value, "MID_TEST_VALUE1");
-  ASSERT_EQ(fvs_out[1].field, "MID_TEST_FIELD2");
-  ASSERT_EQ(fvs_out[1].value, "MID_TEST_VALUE2");
-  ASSERT_EQ(fvs_out[2].field, "MID_TEST_FIELD3");
-  ASSERT_EQ(fvs_out[2].value, "MID_TEST_VALUE3");
-
-  // HGetall timeout hash table
-  fvs_out.clear();
-  std::map<BlackWidow::DataType, rocksdb::Status> type_status;
-  db.Expire("B_HGETALL_KEY", 1, &type_status);
-  ASSERT_TRUE(type_status[BlackWidow::DataType::kHashes].ok());
-  std::this_thread::sleep_for(std::chrono::milliseconds(2000));
-  s = db.HGetall("B_HGETALL_KEY", &fvs_out);
-  ASSERT_TRUE(s.IsNotFound());
-  ASSERT_EQ(fvs_out.size(), 0);
-
-  // HGetall not exist hash table
-  fvs_out.clear();
-  s = db.HGetall("HGETALL_NOT_EXIST_KEY", &fvs_out);
-  ASSERT_TRUE(s.IsNotFound());
-  ASSERT_EQ(fvs_out.size(), 0);
-}
-
 // HKeys
 TEST_F(HashesTest, HKeys) {
   int32_t ret = 0;
@@ -662,6 +489,160 @@ TEST_F(HashesTest, HKeys) {
   ASSERT_EQ(fields.size(), 0);
 }
 
+// HLen
+TEST_F(HashesTest, HLenTest) {
+  int32_t ret = 0;
+  std::vector<BlackWidow::FieldValue> fvs;
+  fvs.push_back({"TEST_FIELD1", "TEST_VALUE1"});
+  fvs.push_back({"TEST_FIELD2", "TEST_VALUE2"});
+  fvs.push_back({"TEST_FIELD3", "TEST_VALUE3"});
+  s = db.HMSet("HLEN_KEY", fvs);
+  ASSERT_TRUE(s.ok());
+
+  s = db.HLen("HLEN_KEY", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 3);
+}
+
+// HMGet
+TEST_F(HashesTest, HMGetTest) {
+  int32_t ret = 0;
+  std::vector<BlackWidow::FieldValue> fvs;
+  fvs.push_back({"TEST_FIELD1", "TEST_VALUE1"});
+  fvs.push_back({"TEST_FIELD2", "TEST_VALUE2"});
+  fvs.push_back({"TEST_FIELD3", "TEST_VALUE3"});
+  fvs.push_back({"TEST_FIELD2", "TEST_VALUE4"});
+  s = db.HMSet("HMGET_KEY", fvs);
+  ASSERT_TRUE(s.ok());
+
+  s = db.HLen("HMGET_KEY", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 3);
+
+  std::vector<std::string> values;
+  std::vector<std::string> fields {"TEST_FIELD1",
+      "TEST_FIELD2", "TEST_FIELD3", "TEST_NOT_EXIST_FIELD"};
+  s = db.HMGet("HMGET_KEY", fields, &values);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(values.size(), 4);
+
+  ASSERT_EQ(values[0], "TEST_VALUE1");
+  ASSERT_EQ(values[1], "TEST_VALUE4");
+  ASSERT_EQ(values[2], "TEST_VALUE3");
+  ASSERT_EQ(values[3], "");
+}
+
+// HMSet
+TEST_F(HashesTest, HMSetTest) {
+  int32_t ret = 0;
+  std::vector<BlackWidow::FieldValue> fvs1;
+  fvs1.push_back({"TEST_FIELD1", "TEST_VALUE1"});
+  fvs1.push_back({"TEST_FIELD2", "TEST_VALUE2"});
+
+  // If field already exists in the hash, it is overwritten
+  std::vector<BlackWidow::FieldValue> fvs2;
+  fvs2.push_back({"TEST_FIELD2", "TEST_VALUE2"});
+  fvs2.push_back({"TEST_FIELD3", "TEST_VALUE3"});
+  fvs2.push_back({"TEST_FIELD4", "TEST_VALUE4"});
+  fvs2.push_back({"TEST_FIELD3", "TEST_VALUE5"});
+
+  s = db.HMSet("HMSET_KEY", fvs1);
+  ASSERT_TRUE(s.ok());
+  s = db.HLen("HMSET_KEY", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 2);
+
+  s = db.HMSet("HMSET_KEY", fvs2);
+  ASSERT_TRUE(s.ok());
+
+  s = db.HLen("HMSET_KEY", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 4);
+
+  std::vector<std::string> values1;
+  std::vector<std::string> fields1 {"TEST_FIELD1",
+      "TEST_FIELD2", "TEST_FIELD3", "TEST_FIELD4"};
+  s = db.HMGet("HMSET_KEY", fields1, &values1);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(values1.size(),  4);
+
+  ASSERT_EQ(values1[0], "TEST_VALUE1");
+  ASSERT_EQ(values1[1], "TEST_VALUE2");
+  ASSERT_EQ(values1[2], "TEST_VALUE5");
+  ASSERT_EQ(values1[3], "TEST_VALUE4");
+
+  std::map<BlackWidow::DataType, rocksdb::Status> type_status;
+  db.Expire("HMSET_KEY", 1, &type_status);
+  ASSERT_TRUE(type_status[BlackWidow::DataType::kHashes].ok());
+
+  // The key has timeout
+  std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+  std::vector<BlackWidow::FieldValue> fvs3;
+  fvs3.push_back({"TEST_FIELD3", "TEST_VALUE3"});
+  fvs3.push_back({"TEST_FIELD4", "TEST_VALUE4"});
+  fvs3.push_back({"TEST_FIELD5", "TEST_VALUE5"});
+  s = db.HMSet("HMSET_KEY", fvs3);
+  ASSERT_TRUE(s.ok());
+
+  s = db.HLen("HMSET_KEY", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 3);
+
+  std::vector<std::string> values2;
+  std::vector<std::string> fields2 {"TEST_FIELD3",
+      "TEST_FIELD4", "TEST_FIELD5"};
+  s = db.HMGet("HMSET_KEY", fields2, &values2);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(values2.size(),  3);
+
+  ASSERT_EQ(values2[0], "TEST_VALUE3");
+  ASSERT_EQ(values2[1], "TEST_VALUE4");
+  ASSERT_EQ(values2[2], "TEST_VALUE5");
+}
+
+// HSet
+TEST_F(HashesTest, HSetTest) {
+  int32_t ret = 0;
+  std::string value;
+  // If field is a new field in the hash and value was set.
+  s = db.HSet("HSET_KEY", "HSET_TEST_FIELD", "HSET_TEST_VALUE", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+  s = db.HGet("HSET_KEY", "HSET_TEST_FIELD", &value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(value, "HSET_TEST_VALUE");
+
+  // If field already exists in the hash and the value was updated.
+  s = db.HSet("HSET_KEY", "HSET_TEST_FIELD", "HSET_TEST_NEW_VALUE", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 0);
+  s = db.HGet("HSET_KEY", "HSET_TEST_FIELD", &value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(value, "HSET_TEST_NEW_VALUE");
+}
+
+// HSetnx
+TEST_F(HashesTest, HSetnxTest) {
+  int32_t ret;
+  std::string value;
+  // If field is a new field in the hash and value was set.
+  s = db.HSetnx("HSETNX_KEY", "HSETNX_TEST_FIELD", "HSETNX_TEST_VALUE", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+  s = db.HGet("HSETNX_KEY", "HSETNX_TEST_FIELD", &value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(value, "HSETNX_TEST_VALUE");
+
+  // If field already exists, this operation has no effect.
+  s = db.HSetnx("HSETNX_KEY", "HSETNX_TEST_FIELD",
+          "HSETNX_TEST_NEW_VALUE", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 0);
+  s = db.HGet("HSETNX_KEY", "HSETNX_TEST_FIELD", &value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(value, "HSETNX_TEST_VALUE");
+}
+
 // HVals
 TEST_F(HashesTest, HVals) {
   int32_t ret = 0;
@@ -725,6 +706,24 @@ TEST_F(HashesTest, HVals) {
   s = db.HVals("HVALS_NOT_EXIST_KEY", &values);
   ASSERT_TRUE(s.IsNotFound());
   ASSERT_EQ(values.size(), 0);
+}
+
+// HStrlen
+TEST_F(HashesTest, HStrlenTest) {
+  int32_t ret = 0;
+  int32_t len = 0;
+  s = db.HSet("HSTRLEN_KEY", "HSTRLEN_TEST_FIELD", "HSTRLEN_TEST_VALUE", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+
+  s = db.HStrlen("HSTRLEN_KEY", "HSTRLEN_TEST_FIELD",  &len);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(len, 18);
+
+  // If the key or the field do not exist, 0 is returned
+  s = db.HStrlen("HSTRLEN_KEY", "HSTRLEN_NOT_EXIST_FIELD",  &len);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(len, 0);
 }
 
 int main(int argc, char** argv) {
