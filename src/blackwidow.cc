@@ -33,12 +33,30 @@ BlackWidow::~BlackWidow() {
 }
 
 Status BlackWidow::Compact() {
-  Status s = strings_db_->CompactRange(NULL, NULL);
+  Status s;
+  s = strings_db_->CompactRange(NULL, NULL);
   if (!s.ok()) {
     return s;
   }
-  return hashes_db_->CompactRange(NULL, NULL);
+  s = hashes_db_->CompactRange(NULL, NULL);
+  if (!s.ok()) {
+    return s;
+  }
+  s = sets_db_->CompactRange(NULL, NULL);
+  if (!s.ok()) {
+    return s;
+  }
+  s = lists_db_->CompactRange(NULL, NULL);
+  if (!s.ok()) {
+    return s;
+  }
+  s = zsets_db_->CompactRange(NULL, NULL);
+  if (!s.ok()) {
+    return s;
+  }
+  return Status::OK();
 }
+
 
 static std::string AppendSubDirectory(const std::string& db_path,
     const std::string& sub_db) {
@@ -90,7 +108,7 @@ int64_t BlackWidow::StoreAndGetCursor(int64_t cursor,
     cursors_store_.map_.erase(tail);
   }
 
-  cursors_store_.list_.push_back(cursor);
+  cursors_store_.list_.push_front(cursor);
   cursors_store_.map_[cursor] = next_key;
   cursors_mutex_->UnLock();
   return cursor;
@@ -714,7 +732,13 @@ int64_t BlackWidow::Exists(const std::vector<std::string>& keys,
       (*type_status)[DataType::kLists] = s;
     }
 
-    // TODO(wxj) other types
+    s = zsets_db_->ZCard(key, &ret);
+    if (s.ok()) {
+      count++;
+    } else if (!s.IsNotFound()) {
+      is_corruption = true;
+      (*type_status)[DataType::kZSets] = s;
+    }
   }
 
   if (is_corruption) {
@@ -792,7 +816,16 @@ int64_t BlackWidow::Scan(int64_t cursor, const std::string& pattern,
         break;
       }
       start_key = "";
-    // TODO(wxj) other data types
+    case 'z':
+      is_finish = zsets_db_->Scan(start_key, pattern, keys,
+                                  &count, &next_key);
+      if (count == 0 && is_finish) {
+        break;
+      } else if (count == 0 && !is_finish) {
+        cursor_ret = StoreAndGetCursor(cursor + count_origin,
+                                       std::string("l") + next_key);
+        break;
+      }
   }
 
   return cursor_ret;
@@ -828,7 +861,22 @@ int32_t BlackWidow::Expireat(const Slice& key, int32_t timestamp,
     (*type_status)[DataType::kSets] = s;
   }
 
-  // TODO(shq) other types
+  s = lists_db_->Expireat(key, timestamp);
+  if (s.ok()) {
+    count++;
+  } else if (!s.IsNotFound()) {
+    is_corruption = true;
+    (*type_status)[DataType::kLists] = s;
+  }
+
+  s = zsets_db_->Expireat(key, timestamp);
+  if (s.ok()) {
+    count++;
+  } else if (!s.IsNotFound()) {
+    is_corruption = true;
+    (*type_status)[DataType::kLists] = s;
+  }
+
   if (is_corruption) {
     return -1;
   } else {
@@ -874,8 +922,14 @@ int32_t BlackWidow::Persist(const Slice& key,
     (*type_status)[DataType::kLists] = s;
   }
 
+  s = zsets_db_->Persist(key);
+  if (s.ok()) {
+    count++;
+  } else if (!s.IsNotFound()) {
+    is_corruption = true;
+    (*type_status)[DataType::kLists] = s;
+  }
 
-  // TODO(wxj) other types
   if (is_corruption) {
     return -1;
   } else {
@@ -921,7 +975,13 @@ std::map<BlackWidow::DataType, int64_t> BlackWidow::TTL(const Slice& key,
     (*type_status)[DataType::kLists] = s;
   }
 
-  // TODO(wxj) other types
+  s = zsets_db_->TTL(key, &timestamp);
+  if (s.ok() || s.IsNotFound()) {
+    ret[DataType::kZSets] = timestamp;
+  } else if (!s.IsNotFound()) {
+    ret[DataType::kZSets] = -3;
+    (*type_status)[DataType::kZSets] = s;
+  }
   return ret;
 }
 

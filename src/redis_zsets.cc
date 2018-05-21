@@ -69,12 +69,6 @@ Status RedisZSets::Open(const rocksdb::Options& options,
   return rocksdb::DB::Open(db_ops, db_path, column_families, &handles_, &db_);
 }
 
-Status RedisZSets::CompactRange(const rocksdb::Slice* begin,
-    const rocksdb::Slice* end) {
-  //TODO: to be implemented
-  return Status();
-}
-
 Status RedisZSets::ZAdd(const Slice& key,
                         const std::vector<BlackWidow::ScoreMember>& score_members,
                         int32_t* ret) {
@@ -1167,25 +1161,122 @@ Status RedisZSets::Del(const Slice& key) {
 }
 
 bool RedisZSets::Scan(const std::string& start_key,
-                        const std::string& pattern,
-                        std::vector<std::string>* keys,
-                        int64_t* count,
-                        std::string* next_key) {
-  //TODO: to be implemented
-  return true;
+                      const std::string& pattern,
+                      std::vector<std::string>* keys,
+                      int64_t* count,
+                      std::string* next_key) {
+  std::string meta_key, meta_value;
+  bool is_finish = true;
+  rocksdb::ReadOptions iterator_options;
+  const rocksdb::Snapshot* snapshot;
+  ScopeSnapshot ss(db_, &snapshot);
+  iterator_options.snapshot = snapshot;
+  iterator_options.fill_cache = false;
+
+  rocksdb::Iterator* it = db_->NewIterator(iterator_options, handles_[0]);
+
+  it->Seek(start_key);
+  while (it->Valid() && (*count) > 0) {
+    ParsedZSetsMetaValue parsed_zsets_meta_value(it->value());
+    if (parsed_zsets_meta_value.IsStale()) {
+      it->Next();
+      continue;
+    } else {
+      meta_key = it->key().ToString();
+      meta_value = it->value().ToString();
+      if (StringMatch(pattern.data(), pattern.size(),
+                         meta_key.data(), meta_key.size(), 0)) {
+        keys->push_back(meta_key);
+      }
+      (*count)--;
+      it->Next();
+    }
+  }
+
+  if (it->Valid()) {
+    *next_key = it->key().ToString();
+    is_finish = false;
+  } else {
+    *next_key = "";
+  }
+  delete it;
+  return is_finish;
 }
 
 Status RedisZSets::Expireat(const Slice& key, int32_t timestamp) {
-  //TODO: to be implemented
-  return Status();
+  std::string meta_value;
+  ScopeRecordLock l(lock_mgr_, key);
+  Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
+  if (s.ok()) {
+    ParsedZSetsMetaValue parsed_zsets_meta_value(&meta_value);
+    if (parsed_zsets_meta_value.IsStale()) {
+      return Status::NotFound("Stale");
+    } else {
+      parsed_zsets_meta_value.set_timestamp(timestamp);
+      return db_->Put(default_write_options_, handles_[0], key, meta_value);
+    }
+  }
+  return s;
 }
 Status RedisZSets::Persist(const Slice& key) {
-  //TODO: to be implemented
-  return Status();
+  std::string meta_value;
+  ScopeRecordLock l(lock_mgr_, key);
+  Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
+  if (s.ok()) {
+    ParsedZSetsMetaValue parsed_zsets_meta_value(&meta_value);
+    if (parsed_zsets_meta_value.IsStale()) {
+      return Status::NotFound("Stale");
+    } else {
+      int32_t timestamp = parsed_zsets_meta_value.timestamp();
+      if (timestamp == 0) {
+        return Status::NotFound("Not have an associated timeout");
+      } else {
+        parsed_zsets_meta_value.set_timestamp(0);
+        return db_->Put(default_write_options_, handles_[0], key, meta_value);
+      }
+    }
+  }
+  return s;
 }
+
 Status RedisZSets::TTL(const Slice& key, int64_t* timestamp) {
-  //TODO: to be implemented
-  return Status();
+  std::string meta_value;
+  Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
+  if (s.ok()) {
+    ParsedZSetsMetaValue parsed_zsets_meta_value(&meta_value);
+    if (parsed_zsets_meta_value.IsStale()) {
+      *timestamp = -2;
+      return Status::NotFound("Stale");
+    } else {
+      *timestamp = parsed_zsets_meta_value.timestamp();
+      if (*timestamp == 0) {
+        *timestamp = -1;
+      } else {
+        int64_t curtime;
+        rocksdb::Env::Default()->GetCurrentTime(&curtime);
+        *timestamp = *timestamp - curtime > 0 ? *timestamp - curtime : -1;
+      }
+    }
+  } else if (s.IsNotFound()) {
+    *timestamp = -2;
+  }
+  return s;
+}
+
+Status RedisZSets::CompactRange(const rocksdb::Slice* begin,
+    const rocksdb::Slice* end) {
+  Status s = db_->CompactRange(default_compact_range_options_,
+          handles_[0], begin, end);
+  if (!s.ok()) {
+    return s;
+  }
+  s = db_->CompactRange(default_compact_range_options_,
+          handles_[1], begin, end);
+  if (!s.ok()) {
+    return s;
+  }
+  return db_->CompactRange(default_compact_range_options_,
+          handles_[2], begin, end);
 }
 
 } // blackwidow
