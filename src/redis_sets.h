@@ -49,8 +49,8 @@ class RedisSets : public Redis {
                  const Slice& member, int32_t* ret);
     Status SPop(const Slice& key, int32_t count,
                 std::vector<std::string>* members);
-    Status SRandmembers(const Slice& key, int32_t count,
-                        std::vector<std::string>* members);
+    Status SRandmember(const Slice& key, int32_t count,
+                       std::vector<std::string>* members);
     Status SRem(const Slice& key, const std::vector<std::string>& members,
                 int32_t* ret);
     Status SUnion(const std::vector<std::string>& keys,

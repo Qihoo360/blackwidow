@@ -66,6 +66,28 @@ static bool members_match(const std::vector<std::string>& mm_out,
   return true;
 }
 
+static bool members_contains(const std::vector<std::string>& mm_out,
+                             const std::vector<std::string>& total_members) {
+  for (const auto& member : mm_out) {
+    if (find(total_members.begin(), total_members.end(), member)
+      == total_members.end()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+static bool members_uniquen(const std::vector<std::string>& members) {
+  for (int32_t idx = 0; idx < members.size(); ++idx) {
+    for (int32_t sidx = idx + 1; sidx < members.size(); ++sidx) {
+      if (members[idx] == members[sidx]) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 static bool size_match(blackwidow::BlackWidow *const db,
                        const Slice& key,
                        int32_t expect_size) {
@@ -1314,7 +1336,8 @@ TEST_F(SetsTest, SPopTest) {
   int32_t ret = 0;
   // ***************** Group 1 Test *****************
   std::vector<std::string> gp1_members {"gp1_aa", "gp1_bb", "gp1_cc",
-      "gp1_dd", "gp1_ee", "gp1_ff", "gp1_gg", "gp1_hh"};
+                                        "gp1_dd", "gp1_ee", "gp1_ff",
+                                        "gp1_gg", "gp1_hh"};
   s = db.SAdd("GP1_SPOP_KEY", gp1_members, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 8);
@@ -1342,12 +1365,15 @@ TEST_F(SetsTest, SPopTest) {
   ASSERT_TRUE(size_match(&db, "GP1_SPOP_KEY", 0));
   gp1_out_all.insert(gp1_out_all.begin(), gp1_out3.begin(), gp1_out3.end());
 
+  ASSERT_TRUE(size_match(&db, "GP1_SPOP_KEY", 0));
+  ASSERT_TRUE(members_match(&db, "GP1_SPOP_KEY", {}));
   ASSERT_TRUE(members_match(gp1_out_all, gp1_members));
 
 
   // ***************** Group 2 Test *****************
   std::vector<std::string> gp2_members {"gp2_aa", "gp2_bb", "gp2_cc",
-      "gp2_dd", "gp2_ee", "gp2_ff", "gp2_gg", "gp2_hh"};
+                                        "gp2_dd", "gp2_ee", "gp2_ff",
+                                        "gp2_gg", "gp2_hh"};
   s = db.SAdd("GP2_SPOP_KEY", gp2_members, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 8);
@@ -1357,12 +1383,14 @@ TEST_F(SetsTest, SPopTest) {
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(gp2_out.size(), 8);
   ASSERT_TRUE(size_match(&db, "GP2_SPOP_KEY", 0));
+  ASSERT_TRUE(members_match(&db, "GP2_SPOP_KEY", {}));
   ASSERT_TRUE(members_match(gp2_out, gp2_members));
 
 
   // ***************** Group 3 Test *****************
   std::vector<std::string> gp3_members {"gp3_aa", "gp3_bb", "gp3_cc",
-      "gp3_dd", "gp3_ee", "gp3_ff", "gp3_gg", "gp3_hh"};
+                                        "gp3_dd", "gp3_ee", "gp3_ff",
+                                        "gp3_gg", "gp3_hh"};
   s = db.SAdd("GP3_SPOP_KEY", gp3_members, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 8);
@@ -1372,12 +1400,14 @@ TEST_F(SetsTest, SPopTest) {
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(gp3_out.size(), 8);
   ASSERT_TRUE(size_match(&db, "GP3_SPOP_KEY", 0));
+  ASSERT_TRUE(members_match(&db, "GP3_SPOP_KEY", {}));
   ASSERT_TRUE(members_match(gp3_out, gp3_members));
 
 
   // ***************** Group 4 Test *****************
   std::vector<std::string> gp4_members {"gp4_aa", "gp4_bb", "gp4_cc",
-      "gp4_dd", "gp4_ee", "gp4_ff", "gp4_gg", "gp4_hh"};
+                                        "gp4_dd", "gp4_ee", "gp4_ff",
+                                        "gp4_gg", "gp4_hh"};
   s = db.SAdd("GP4_SPOP_KEY", gp4_members, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 8);
@@ -1387,12 +1417,16 @@ TEST_F(SetsTest, SPopTest) {
   ASSERT_TRUE(s.IsInvalidArgument());
   ASSERT_EQ(gp4_out.size(), 0);
   ASSERT_TRUE(size_match(&db, "GP4_SPOP_KEY", 8));
+  ASSERT_TRUE(members_match(&db, "GP4_SPOP_KEY",{"gp4_aa", "gp4_bb", "gp4_cc",
+                                                 "gp4_dd", "gp4_ee", "gp4_ff",
+                                                 "gp4_gg", "gp4_hh"}));
   ASSERT_TRUE(members_match(gp4_out, {}));
 
 
   // ***************** Group 5 Test *****************
   std::vector<std::string> gp5_members {"gp5_aa", "gp5_bb", "gp5_cc",
-      "gp5_dd", "gp5_ee", "gp5_ff", "gp5_gg", "gp5_hh"};
+                                        "gp5_dd", "gp5_ee", "gp5_ff",
+                                        "gp5_gg", "gp5_hh"};
   s = db.SAdd("GP5_SPOP_KEY", gp5_members, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 8);
@@ -1404,7 +1438,201 @@ TEST_F(SetsTest, SPopTest) {
   ASSERT_TRUE(s.IsNotFound());
   ASSERT_EQ(gp5_out.size(), 0);
   ASSERT_TRUE(size_match(&db, "GP5_SPOP_KEY", 0));
+  ASSERT_TRUE(members_match(&db, "GP5_SPOP_KEY",{}));
   ASSERT_TRUE(members_match(gp5_out, {}));
+
+
+  // ***************** Group 6 Test *****************
+  std::vector<std::string> gp6_members {"gp6_aa", "gp6_bb", "gp6_cc",
+                                        "gp6_dd", "gp6_ee", "gp6_ff",
+                                        "gp6_gg", "gp6_hh"};
+  s = db.SAdd("GP6_SPOP_KEY", gp6_members, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 8);
+
+  std::vector<std::string> gp6_out;
+  std::vector<std::string> gp6_left_members;
+  s = db.SPop("GP6_SPOP_KEY", 3, &gp6_out);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp6_out.size(), 3);
+  for (const auto& member : gp6_members) {
+    bool find = false;
+    for (const auto& goal : gp6_out) {
+      if (member == goal) {
+        find = true;
+        break;
+      }
+    }
+    if (!find) {
+      gp6_left_members.push_back(member);
+    }
+  }
+  ASSERT_TRUE(size_match(&db, "GP6_SPOP_KEY", 5));
+  ASSERT_TRUE(members_match(&db, "GP6_SPOP_KEY", gp6_left_members));
+
+
+  // ***************** Group 7 Test *****************
+  std::vector<std::string> gp7_members {"gp7_aa", "gp7_bb", "gp7_cc",
+                                        "gp7_dd", "gp7_ee", "gp7_ff",
+                                        "gp7_gg", "gp7_hh"};
+  s = db.SAdd("GP7_SPOP_KEY", gp7_members, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 8);
+
+  std::vector<std::string> gp7_out;
+  std::vector<std::string> gp7_pop_members;
+  std::vector<std::string> gp7_left_members;
+  for (int32_t idx = 0; idx < gp7_members.size(); ++idx) {
+    s = db.SPop("GP7_SPOP_KEY", 1, &gp7_out);
+    ASSERT_TRUE(s.ok());
+    ASSERT_EQ(gp7_out.size(), 1);
+
+    gp7_left_members.clear();
+    gp7_pop_members.insert(gp7_pop_members.begin(), gp7_out.begin(), gp7_out.end());
+    for (const auto& member : gp7_members) {
+      bool find = false;
+      for (const auto& goal : gp7_pop_members) {
+        if (member == goal) {
+          find = true;
+          break;
+        }
+      }
+      if (!find) {
+        gp7_left_members.push_back(member);
+      }
+    }
+    ASSERT_TRUE(size_match(&db, "GP7_SPOP_KEY", gp7_members.size() - idx - 1));
+    ASSERT_TRUE(members_match(&db, "GP7_SPOP_KEY", gp7_left_members));
+  }
+  ASSERT_TRUE(size_match(&db, "GP7_SPOP_KEY", 0));
+  ASSERT_TRUE(members_match(&db,"GP7_SPOP_KEY", {}));
+
+
+  // ***************** Group 8 Test *****************
+  s = db.SAdd("GP8_SPOP_KEY", {"MM"}, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+
+  std::vector<std::string> gp8_out;
+  s = db.SPop("GP8_SPOP_KEY", 1, &gp8_out);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp8_out.size(), 1);
+  ASSERT_TRUE(members_match(gp8_out, {"MM"}));
+  ASSERT_TRUE(size_match(&db, "GP8_SPOP_KEY", 0));
+  ASSERT_TRUE(members_match(&db, "GP8_SPOP_KEY", {}));
+}
+
+// SRandmember
+TEST_F(SetsTest, SRanmemberTest) {
+  int32_t ret = 0;
+
+  // ***************** Group 1 Test *****************
+  std::vector<std::string> gp1_members {"gp1_aa", "gp1_bb", "gp1_cc",
+                                        "gp1_dd", "gp1_ee", "gp1_ff",
+                                        "gp1_gg", "gp1_hh"};
+  s = db.SAdd("GP1_SRANDMEMBER_KEY", gp1_members, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 8);
+
+  std::vector<std::string> gp1_out;
+
+  s = db.SRandmember("GP1_SRANDMEMBER_KEY", 1, &gp1_out);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp1_out.size(), 1);
+  ASSERT_TRUE(members_uniquen(gp1_out));
+  ASSERT_TRUE(members_contains(gp1_out, gp1_members));
+
+  s = db.SRandmember("GP1_SRANDMEMBER_KEY", 3, &gp1_out);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp1_out.size(), 3);
+  ASSERT_TRUE(members_uniquen(gp1_out));
+  ASSERT_TRUE(members_contains(gp1_out, gp1_members));
+
+  s = db.SRandmember("GP1_SRANDMEMBER_KEY", 4, &gp1_out);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp1_out.size(), 4);
+  ASSERT_TRUE(members_uniquen(gp1_out));
+  ASSERT_TRUE(members_contains(gp1_out, gp1_members));
+
+  s = db.SRandmember("GP1_SRANDMEMBER_KEY", 8, &gp1_out);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp1_out.size(), 8);
+  ASSERT_TRUE(members_uniquen(gp1_out));
+  ASSERT_TRUE(members_contains(gp1_out, gp1_members));
+
+  s = db.SRandmember("GP1_SRANDMEMBER_KEY", 10, &gp1_out);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp1_out.size(), 8);
+  ASSERT_TRUE(members_uniquen(gp1_out));
+  ASSERT_TRUE(members_contains(gp1_out, gp1_members));
+
+  s = db.SRandmember("GP1_SRANDMEMBER_KEY", -1, &gp1_out);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp1_out.size(), 1);
+  ASSERT_TRUE(members_contains(gp1_out, gp1_members));
+
+  s = db.SRandmember("GP1_SRANDMEMBER_KEY", -3, &gp1_out);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp1_out.size(), 3);
+  ASSERT_TRUE(members_contains(gp1_out, gp1_members));
+
+  s = db.SRandmember("GP1_SRANDMEMBER_KEY", -4, &gp1_out);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp1_out.size(), 4);
+  ASSERT_TRUE(members_contains(gp1_out, gp1_members));
+
+  s = db.SRandmember("GP1_SRANDMEMBER_KEY", -8, &gp1_out);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp1_out.size(), 8);
+  ASSERT_TRUE(members_contains(gp1_out, gp1_members));
+
+  s = db.SRandmember("GP1_SRANDMEMBER_KEY", -10, &gp1_out);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp1_out.size(), 10);
+  ASSERT_TRUE(members_contains(gp1_out, gp1_members));
+
+
+  // ***************** Group 2 Test *****************
+  s = db.SAdd("GP2_SRANDMEMBER_KEY", {"MM"}, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+
+  std::vector<std::string> gp2_out;
+  s = db.SRandmember("GP2_SRANDMEMBER_KEY", 1, &gp2_out);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp2_out.size(), 1);
+  ASSERT_TRUE(members_match(gp2_out, {"MM"}));
+
+  s = db.SRandmember("GP2_SRANDMEMBER_KEY", 3, &gp2_out);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp2_out.size(), 1);
+  ASSERT_TRUE(members_match(gp2_out, {"MM"}));
+
+  s = db.SRandmember("GP2_SRANDMEMBER_KEY", -1, &gp2_out);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp2_out.size(), 1);
+  ASSERT_TRUE(members_match(gp2_out, {"MM"}));
+
+  s = db.SRandmember("GP2_SRANDMEMBER_KEY", -3, &gp2_out);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp2_out.size(), 3);
+  ASSERT_TRUE(members_match(gp2_out, {"MM", "MM", "MM"}));
+
+
+  // ***************** Group 3 Test *****************
+  std::vector<std::string> gp3_members {"gp1_aa", "gp1_bb", "gp1_cc",
+                                        "gp1_dd", "gp1_ee", "gp1_ff",
+                                        "gp1_gg", "gp1_hh"};
+  s = db.SAdd("GP3_SRANDMEMBER_KEY", gp3_members, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 8);
+  ASSERT_TRUE(make_expired(&db, "GP3_SRANDMEMBER_KEY"));
+
+  std::vector<std::string> gp3_out;
+  s = db.SRandmember("GP3_SRANDMEMBER_KEY", 1, &gp3_out);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(gp3_out.size(), 0);
+  ASSERT_TRUE(members_match(gp3_out, {}));
 }
 
 

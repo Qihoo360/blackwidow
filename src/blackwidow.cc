@@ -365,9 +365,9 @@ Status BlackWidow::SPop(const Slice& key, int32_t count,
   return sets_db_->SPop(key, count, members);
 }
 
-Status BlackWidow::SRandmembers(const Slice& key, int32_t count,
-                                std::vector<std::string>* members) {
-  return sets_db_->SRandmembers(key, count, members);
+Status BlackWidow::SRandmember(const Slice& key, int32_t count,
+                               std::vector<std::string>* members) {
+  return sets_db_->SRandmember(key, count, members);
 }
 
 Status BlackWidow::SRem(const Slice& key,

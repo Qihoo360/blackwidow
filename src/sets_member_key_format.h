@@ -13,8 +13,7 @@ namespace blackwidow {
 class SetsMemberKey {
   public:
     SetsMemberKey(const Slice& key, int32_t version, const Slice& member) :
-      start_(nullptr), key_(key), version_(version),
-      serial_num_(static_cast<uint32_t>(hash_func(member.ToString()))), member_(member) {
+      start_(nullptr), key_(key), version_(version), member_(member) {
     }
 
     ~SetsMemberKey() {
@@ -25,7 +24,7 @@ class SetsMemberKey {
 
     const Slice Encode() {
       size_t usize = key_.size() + member_.size();
-      size_t needed = usize + sizeof(int32_t) * 3;
+      size_t needed = usize + sizeof(int32_t) * 2;
       char* dst;
       if (needed < sizeof(space_)) {
         dst = space_;
@@ -39,71 +38,8 @@ class SetsMemberKey {
       dst += key_.size();
       EncodeFixed32(dst, version_);
       dst += sizeof(int32_t);
-      EncodeFixed32(dst, serial_num_);
-      dst += sizeof(int32_t);
       memcpy(dst, member_.data(), member_.size());
       return Slice(start_, needed);
-    }
-
-    static void EncodePrefix(const Slice& key, int32_t version, std::string* prefix) {
-      char* dst;
-      char* start;
-      size_t needed = key.size() + sizeof(int32_t) * 2;
-
-      dst = new char[needed];
-      start = dst;
-      EncodeFixed32(dst, key.size());
-      dst += sizeof(int32_t);
-      memcpy(dst, key.data(), key.size());
-      dst += key.size();
-      EncodeFixed32(dst, version);
-      dst += sizeof(int32_t);
-      prefix->assign(start, needed);
-      delete start;
-    }
-
-    static void EncodePrefixWithSerial(const Slice& key, int32_t version, uint32_t serial_num, std::string* prefix) {
-      char* dst;
-      char* start;
-      size_t needed = key.size() + sizeof(int32_t) * 3;
-
-      dst = new char[needed];
-      start = dst;
-      EncodeFixed32(dst, key.size());
-      dst += sizeof(int32_t);
-      memcpy(dst, key.data(), key.size());
-      dst += key.size();
-      EncodeFixed32(dst, version);
-      dst += sizeof(int32_t);
-      EncodeFixed32(dst, serial_num);
-      dst += sizeof(int32_t);
-      prefix->assign(start, needed);
-      delete start;
-    }
-
-    static void EncodeSlightlyLargerPrefix(const Slice& key, int32_t version, std::string* prefix) {
-      char* dst;
-      char* start;
-      size_t needed = key.size() + sizeof(int32_t) * 2;
-
-      dst = new char[needed];
-      start = dst;
-      EncodeFixed32(dst, key.size());
-      dst += sizeof(int32_t);
-      memcpy(dst, key.data(), key.size());
-      dst += key.size();
-      EncodeFixed32(dst, version);
-      dst += sizeof(int32_t);
-      prefix->assign(start, needed);
-
-      uint8_t tail_value = (uint8_t)(*prefix)[needed -1];
-      if (tail_value == 0xff) {
-        prefix->append(4, (char)0xff);
-      } else {
-        tail_value += 1;
-        prefix->replace(needed - 1, 1, 1, (char)tail_value);
-      }
-      delete start;
     }
 
   private:
@@ -111,7 +47,6 @@ class SetsMemberKey {
     char* start_;
     Slice key_;
     int32_t version_;
-    uint32_t serial_num_;
     Slice member_;
 };
 
@@ -125,9 +60,7 @@ class ParsedSetsMemberKey {
       ptr += key_len;
       version_ = DecodeFixed32(ptr);
       ptr += sizeof(int32_t);
-      serial_num_ = DecodeFixed32(ptr);
-      ptr += sizeof(int32_t);
-      member_ = Slice(ptr, rdb_key->size() - key_len - sizeof(int32_t) * 3);
+      member_ = Slice(ptr, rdb_key->size() - key_len - sizeof(int32_t) * 2);
     }
 
     explicit ParsedSetsMemberKey(const Slice& rdb_key) {
@@ -138,9 +71,7 @@ class ParsedSetsMemberKey {
       ptr += key_len;
       version_ = DecodeFixed32(ptr);
       ptr += sizeof(int32_t);
-      serial_num_ = DecodeFixed32(ptr);
-      ptr += sizeof(int32_t);
-      member_ = Slice(ptr, rdb_key.size() - key_len - sizeof(int32_t) * 3);
+      member_ = Slice(ptr, rdb_key.size() - key_len - sizeof(int32_t) * 2);
     }
 
     virtual ~ParsedSetsMemberKey() = default;
@@ -153,10 +84,6 @@ class ParsedSetsMemberKey {
       return version_;
     }
 
-    uint32_t serial_num() {
-      return serial_num_;
-    }
-
     Slice member() {
       return member_;
     }
@@ -164,7 +91,6 @@ class ParsedSetsMemberKey {
   private:
     Slice key_;
     int32_t version_;
-    uint32_t serial_num_;
     Slice member_;
 };
 

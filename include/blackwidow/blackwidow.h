@@ -349,8 +349,8 @@ class BlackWidow {
   // behavior changes and the command is allowed to return the same element
   // multiple times. In this case the number of returned elements is the
   // absolute value of the specified count
-  Status SRandmembers(const Slice& key, int32_t count,
-                      std::vector<std::string>* members);
+  Status SRandmember(const Slice& key, int32_t count,
+                     std::vector<std::string>* members);
 
   // Move member from the set at source to the set at destination. This
   // operation is atomic. In every given moment the element will appear to be a

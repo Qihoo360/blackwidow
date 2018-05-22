@@ -7,6 +7,7 @@
 
 #include <map>
 #include <memory>
+#include <random>
 #include <algorithm>
 
 #include "src/util.h"
@@ -15,11 +16,6 @@
 #include "src/scope_snapshot.h"
 
 namespace blackwidow {
-
-const rocksdb::Comparator* SetsMemberKeyComparator() {
-  static SetsMemberKeyComparatorImpl smkc;
-  return &smkc;
-}
 
 RedisSets::~RedisSets() {
   for (auto handle : handles_) {
@@ -35,7 +31,6 @@ Status RedisSets::Open(const rocksdb::Options& options,
     // create column family
     rocksdb::ColumnFamilyHandle* cf;
     rocksdb::ColumnFamilyOptions cfo;
-    cfo.comparator = SetsMemberKeyComparator();
     s = db_->CreateColumnFamily(cfo, "member_cf", &cf);
     if (!s.ok()) {
       return s;
@@ -53,7 +48,6 @@ Status RedisSets::Open(const rocksdb::Options& options,
       std::make_shared<SetsMetaFilterFactory>();
   member_cf_ops.compaction_filter_factory =
       std::make_shared<SetsMemberFilterFactory>(&db_, &handles_);
-  member_cf_ops.comparator = SetsMemberKeyComparator();
   std::vector<rocksdb::ColumnFamilyDescriptor> column_families;
   // Meta CF
   column_families.push_back(rocksdb::ColumnFamilyDescriptor(
@@ -99,9 +93,8 @@ Status RedisSets::SAdd(const Slice& key,
   if (s.ok()) {
     ParsedSetsMetaValue parsed_sets_meta_value(&meta_value);
     if (parsed_sets_meta_value.IsStale()) {
-      version = parsed_sets_meta_value.UpdateVersion();
+      version = parsed_sets_meta_value.InitialMetaValue();
       parsed_sets_meta_value.set_count(filtered_members.size());
-      parsed_sets_meta_value.set_timestamp(0);
       batch.Put(handles_[0], key, meta_value);
       for (const auto& member : filtered_members) {
         SetsMemberKey sets_member_key(key, version, member);
@@ -196,10 +189,11 @@ Status RedisSets::SDiff(const std::vector<std::string>& keys,
     ParsedSetsMetaValue parsed_sets_meta_value(&meta_value);
     if (!parsed_sets_meta_value.IsStale()) {
       bool found;
-      std::string prefix;
+      Slice prefix;
       std::string member_value;
       version = parsed_sets_meta_value.version();
-      SetsMemberKey::EncodePrefix(keys[0], version, &prefix);
+      SetsMemberKey sets_member_key(keys[0], version, Slice());
+      prefix = sets_member_key.Encode();
       auto iter = db_->NewIterator(read_options, handles_[1]);
       for (iter->Seek(prefix);
            iter->Valid() && iter->key().starts_with(prefix);
@@ -270,10 +264,10 @@ Status RedisSets::SDiffstore(const Slice& destination,
     ParsedSetsMetaValue parsed_sets_meta_value(&meta_value);
     if (!parsed_sets_meta_value.IsStale()) {
       bool found;
-      std::string prefix;
       std::string member_value;
       version = parsed_sets_meta_value.version();
-      SetsMemberKey::EncodePrefix(keys[0], version, &prefix);
+      SetsMemberKey sets_member_key(keys[0], version, Slice());
+      Slice prefix = sets_member_key.Encode();
       auto iter = db_->NewIterator(read_options, handles_[1]);
       for (iter->Seek(prefix);
            iter->Valid() && iter->key().starts_with(prefix);
@@ -308,9 +302,8 @@ Status RedisSets::SDiffstore(const Slice& destination,
   s = db_->Get(read_options, handles_[0], destination, &meta_value);
   if (s.ok()) {
     ParsedSetsMetaValue parsed_sets_meta_value(&meta_value);
-    version = parsed_sets_meta_value.UpdateVersion();
+    version = parsed_sets_meta_value.InitialMetaValue();
     parsed_sets_meta_value.set_count(members.size());
-    parsed_sets_meta_value.set_timestamp(0);
     batch.Put(handles_[0], destination, meta_value);
   } else if (s.IsNotFound()) {
     char str[4];
@@ -370,10 +363,10 @@ Status RedisSets::SInter(const std::vector<std::string>& keys,
       return Status::OK();
     } else {
       bool reliable;
-      std::string prefix;
       std::string member_value;
       version = parsed_sets_meta_value.version();
-      SetsMemberKey::EncodePrefix(keys[0], version, &prefix);
+      SetsMemberKey sets_member_key(keys[0], version, Slice());
+      Slice prefix = sets_member_key.Encode();
       auto iter = db_->NewIterator(read_options, handles_[1]);
       for (iter->Seek(prefix);
            iter->Valid() && iter->key().starts_with(prefix);
@@ -460,10 +453,10 @@ Status RedisSets::SInterstore(const Slice& destination,
         have_invalid_sets = true;
       } else {
         bool reliable;
-        std::string prefix;
         std::string member_value;
         version = parsed_sets_meta_value.version();
-        SetsMemberKey::EncodePrefix(keys[0], version, &prefix);
+        SetsMemberKey sets_member_key(keys[0], version, Slice());
+        Slice prefix = sets_member_key.Encode();
         auto iter = db_->NewIterator(read_options, handles_[1]);
         for (iter->Seek(prefix);
              iter->Valid() && iter->key().starts_with(prefix);
@@ -502,9 +495,8 @@ Status RedisSets::SInterstore(const Slice& destination,
   s = db_->Get(read_options, handles_[0], destination, &meta_value);
   if (s.ok()) {
     ParsedSetsMetaValue parsed_sets_meta_value(&meta_value);
-    version = parsed_sets_meta_value.UpdateVersion();
+    version = parsed_sets_meta_value.InitialMetaValue();
     parsed_sets_meta_value.set_count(members.size());
-    parsed_sets_meta_value.set_timestamp(0);
     batch.Put(handles_[0], destination, meta_value);
   } else if (s.IsNotFound()) {
     char str[4];
@@ -567,9 +559,9 @@ Status RedisSets::SMembers(const Slice& key,
     if (parsed_sets_meta_value.IsStale()) {
       return Status::NotFound("Stale");
     } else {
-      std::string prefix;
       version = parsed_sets_meta_value.version();
-      SetsMemberKey::EncodePrefix(key, version, &prefix);
+      SetsMemberKey sets_member_key(key, version, Slice());
+      Slice prefix = sets_member_key.Encode();
       auto iter = db_->NewIterator(read_options, handles_[1]);
       for (iter->Seek(prefix);
            iter->Valid() && iter->key().starts_with(prefix);
@@ -636,9 +628,8 @@ Status RedisSets::SMove(const Slice& source, const Slice& destination,
   if (s.ok()) {
     ParsedSetsMetaValue parsed_sets_meta_value(&meta_value);
     if (parsed_sets_meta_value.IsStale()) {
-      version = parsed_sets_meta_value.UpdateVersion();
+      version = parsed_sets_meta_value.InitialMetaValue();
       parsed_sets_meta_value.set_count(1);
-      parsed_sets_meta_value.set_timestamp(0);
       batch.Put(handles_[0], destination, meta_value);
       SetsMemberKey sets_member_key(destination, version, member);
       batch.Put(handles_[1], sets_member_key.Encode(), Slice());
@@ -673,101 +664,137 @@ Status RedisSets::SMove(const Slice& source, const Slice& destination,
 Status RedisSets::SPop(const Slice& key, int32_t count,
                        std::vector<std::string>* members) {
   if (count <= 0) {
-    return Status::InvalidArgument("index out of range");
+    return Status::InvalidArgument("invalid count");
   }
 
-  rocksdb::WriteBatch batch;
-  rocksdb::ReadOptions read_options;
-  const rocksdb::Snapshot* snapshot;
+  members->clear();
+  int32_t last_seed = time(NULL);
+  std::default_random_engine engine;
 
   std::string meta_value;
-  int32_t version = 0;
+  rocksdb::WriteBatch batch;
   ScopeRecordLock l(lock_mgr_, key);
-  ScopeSnapshot ss(db_, &snapshot);
-  read_options.snapshot = snapshot;
-  Status s = db_->Get(read_options, handles_[0], key, &meta_value);
+  std::vector<int32_t> targets;
+  std::unordered_set<int32_t> unique;
+
+  Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
     ParsedSetsMetaValue parsed_sets_meta_value(&meta_value);
     if (parsed_sets_meta_value.IsStale()) {
-      return Status::NotFound("stale");
+      return Status::NotFound("Stale");
     } else if (parsed_sets_meta_value.count() == 0) {
       return Status::NotFound();
     } else {
-      std::string normal_prefix;
-      version = parsed_sets_meta_value.version();
-      SetsMemberKey::EncodePrefix(key, version, &normal_prefix);
-      if (parsed_sets_meta_value.count() < count) {
-        version = parsed_sets_meta_value.version();
-        auto iter = db_->NewIterator(read_options, handles_[1]);
-        for (iter->Seek(normal_prefix);
-             iter->Valid() && iter->key().starts_with(normal_prefix);
-             iter->Next()) {
+      int32_t size = parsed_sets_meta_value.count();
+      int32_t version = parsed_sets_meta_value.version();
+      count = count <= size ? count : size;
+      while (targets.size() < static_cast<size_t>(count)) {
+        engine.seed(last_seed);
+        last_seed = engine();
+        int32_t pos = last_seed % size;
+        if (unique.find(pos) == unique.end()) {
+          unique.insert(pos);
+          targets.push_back(pos);
+        }
+      }
+      std::sort(targets.begin(), targets.end());
+
+      int32_t del_cnt = 0;
+      int32_t cur_index = 0, idx = 0;
+      SetsMemberKey sets_member_key(key, version, Slice());
+      auto iter = db_->NewIterator(default_read_options_, handles_[1]);
+      for (iter->Seek(sets_member_key.Encode());
+           iter->Valid() && cur_index < size;
+           iter->Next(), cur_index++) {
+        if (static_cast<size_t>(idx) >= targets.size()) {
+          break;
+        }
+        if (cur_index == targets[idx]) {
+          idx++, del_cnt++;
+          batch.Delete(handles_[1], iter->key());
           ParsedSetsMemberKey parsed_sets_member_key(iter->key());
           members->push_back(parsed_sets_member_key.member().ToString());
-          batch.Delete(handles_[1], iter->key());
         }
-        delete iter;
-        parsed_sets_meta_value.set_count(0);
-        parsed_sets_meta_value.UpdateVersion();
-        parsed_sets_meta_value.set_timestamp(0);
-        batch.Put(handles_[0], key, meta_value);
-      } else {
-        int32_t rest = count;
-        std::string slight_larger_prefix;
-        SetsMemberKey::EncodeSlightlyLargerPrefix(key,
-            version, &slight_larger_prefix);
-        auto iter = db_->NewIterator(read_options, handles_[1]);
-        iter->SeekForPrev(slight_larger_prefix);
-        if (iter->Valid() && iter->key().starts_with(normal_prefix)) {
-          ParsedSetsMemberKey parsed_sets_tail_member_key(iter->key());
-          srand (time(NULL));
-          uint32_t rand_serial_num = parsed_sets_tail_member_key.serial_num()
-            * (rand() / double(RAND_MAX));
-          std::string with_serial_prefix;
-          SetsMemberKey::EncodePrefixWithSerial(key, version,
-              rand_serial_num, &with_serial_prefix);
-          for (iter->Seek(with_serial_prefix);
-               iter->Valid() && iter->key().starts_with(normal_prefix);
-               iter->Next()) {
-            ParsedSetsMemberKey parsed_sets_member_key(iter->key());
-            members->push_back(parsed_sets_member_key.member().ToString());
-            batch.Delete(handles_[1], iter->key());
-            if (--rest <= 0) {
-              break;
-            }
-          }
-          if (rest) {
-            for (iter->Seek(normal_prefix);
-                 iter->Valid() && iter->key().starts_with(normal_prefix);
-                 iter->Next()) {
-              ParsedSetsMemberKey parsed_sets_member_key(iter->key());
-              members->push_back(parsed_sets_member_key.member().ToString());
-              batch.Delete(handles_[1], iter->key());
-              if (--rest <= 0) {
-                break;
-              }
-            }
-          }
-          parsed_sets_meta_value.ModifyCount(-count);
-          batch.Put(handles_[0], key, meta_value);
-        } else {
-          delete iter;
-          return Status::NotFound();
-        }
-        delete iter;
       }
+      random_shuffle(members->begin(), members->end());
+      delete iter;
+      parsed_sets_meta_value.ModifyCount(-del_cnt);
+      batch.Put(handles_[0], key, meta_value);
     }
-  } else if (s.IsNotFound()) {
-    return Status::NotFound();
   } else {
     return s;
   }
   return db_->Write(default_write_options_, &batch);
 }
 
-Status RedisSets::SRandmembers(const Slice& key, int32_t count,
-                               std::vector<std::string>* members) {
-  return Status::OK();
+Status RedisSets::SRandmember(const Slice& key, int32_t count,
+                              std::vector<std::string>* members) {
+  if (count == 0) {
+    return Status::InvalidArgument("invalid count");
+  }
+
+  members->clear();
+  int32_t last_seed = time(NULL);
+  std::default_random_engine engine;
+
+  std::string meta_value;
+  rocksdb::WriteBatch batch;
+  ScopeRecordLock l(lock_mgr_, key);
+  std::vector<int32_t> targets;
+  std::unordered_set<int32_t> unique;
+
+  Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
+  if (s.ok()) {
+    ParsedSetsMetaValue parsed_sets_meta_value(&meta_value);
+    if (parsed_sets_meta_value.IsStale()) {
+      return Status::NotFound("Stale");
+    } else if (parsed_sets_meta_value.count() == 0) {
+      return Status::NotFound();
+    } else {
+      int32_t size = parsed_sets_meta_value.count();
+      int32_t version = parsed_sets_meta_value.version();
+      if (count > 0) {
+        count = count <= size ? count : size;
+        while (targets.size() < static_cast<size_t>(count)) {
+          engine.seed(last_seed);
+          last_seed = engine();
+          uint32_t pos = last_seed % size;
+          if (unique.find(pos) == unique.end()) {
+            unique.insert(pos);
+            targets.push_back(pos);
+          }
+        }
+      } else {
+        count = -count;
+        while (targets.size() < static_cast<size_t>(count)) {
+          engine.seed(last_seed);
+          last_seed = engine();
+          targets.push_back(last_seed % size);
+        }
+      }
+      std::sort(targets.begin(), targets.end());
+
+      int32_t cur_index = 0, idx = 0;
+      SetsMemberKey sets_member_key(key, version, Slice());
+      auto iter = db_->NewIterator(default_read_options_, handles_[1]);
+      for (iter->Seek(sets_member_key.Encode());
+           iter->Valid() && cur_index < size;
+           iter->Next(), cur_index++) {
+        if (static_cast<size_t>(idx) >= targets.size()) {
+          break;
+        }
+        ParsedSetsMemberKey parsed_sets_member_key(iter->key());
+        while (static_cast<size_t>(idx) < targets.size()
+          && cur_index == targets[idx]) {
+          idx++;
+          members->push_back(parsed_sets_member_key.member().ToString());
+        }
+      }
+      random_shuffle(members->begin(), members->end());
+      delete iter;
+    }
+  }
+  return s;
 }
 
 Status RedisSets::SRem(const Slice& key,
@@ -845,10 +872,11 @@ Status RedisSets::SUnion(const std::vector<std::string>& keys,
     }
   }
 
-  std::string prefix;
+  Slice prefix;
   std::map<std::string, bool> result_flag;
   for (const auto& key_version : vaild_sets) {
-    SetsMemberKey::EncodePrefix(key_version.key, key_version.version, &prefix);
+    SetsMemberKey sets_member_key(key_version.key, key_version.version, Slice());
+    prefix = sets_member_key.Encode();
     auto iter = db_->NewIterator(read_options, handles_[1]);
     for (iter->Seek(prefix);
          iter->Valid() && iter->key().starts_with(prefix);
@@ -897,11 +925,12 @@ Status RedisSets::SUnionstore(const Slice& destination,
     }
   }
 
-  std::string prefix;
+  Slice prefix;
   std::vector<std::string> members;
   std::map<std::string, bool> result_flag;
   for (const auto& key_version : vaild_sets) {
-    SetsMemberKey::EncodePrefix(key_version.key, key_version.version, &prefix);
+    SetsMemberKey sets_member_key(key_version.key, key_version.version, Slice());
+    prefix = sets_member_key.Encode();
     auto iter = db_->NewIterator(read_options, handles_[1]);
     for (iter->Seek(prefix);
          iter->Valid() && iter->key().starts_with(prefix);
@@ -919,9 +948,8 @@ Status RedisSets::SUnionstore(const Slice& destination,
   s = db_->Get(read_options, handles_[0], destination, &meta_value);
   if (s.ok()) {
     ParsedSetsMetaValue parsed_sets_meta_value(&meta_value);
-    version = parsed_sets_meta_value.UpdateVersion();
+    version = parsed_sets_meta_value.InitialMetaValue();
     parsed_sets_meta_value.set_count(members.size());
-    parsed_sets_meta_value.set_timestamp(0);
     batch.Put(handles_[0], destination, meta_value);
   } else if (s.IsNotFound()) {
     char str[4];
