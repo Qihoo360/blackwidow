@@ -17,7 +17,7 @@ class ListsDataKey {
 
   ~ListsDataKey() {
     if (start_ != space_) {
-      delete start_;
+      delete[] start_;
     }
   }
 
@@ -88,7 +88,6 @@ class ParsedListsDataKey {
   }
 
  private:
-  std::string* raw_key_;
   Slice key_;
   int32_t version_;
   uint64_t index_;

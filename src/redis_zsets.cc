@@ -120,9 +120,9 @@ Status RedisZSets::ZAdd(const Slice& key,
     std::string data_value;
     for (const auto& sm : filtered_score_members) {
       bool not_found = true;
-      ZSetsDataKey zsets_data_key(key, version, sm.member);
+      ZSetsMemberKey zsets_member_key(key, version, sm.member);
       if (!is_stale) {
-        s = db_->Get(default_read_options_, handles_[1], zsets_data_key.Encode(), &data_value);
+        s = db_->Get(default_read_options_, handles_[1], zsets_member_key.Encode(), &data_value);
         if (s.ok()) {
           not_found = false;
           uint64_t tmp = DecodeFixed64(data_value.data());
@@ -141,7 +141,7 @@ Status RedisZSets::ZAdd(const Slice& key,
 
       const void* ptr_score = reinterpret_cast<const void*>(&sm.score);
       EncodeFixed64(score_buf, *reinterpret_cast<const uint64_t*>(ptr_score));
-      batch.Put(handles_[1], zsets_data_key.Encode(), Slice(score_buf, sizeof(uint64_t)));
+      batch.Put(handles_[1], zsets_member_key.Encode(), Slice(score_buf, sizeof(uint64_t)));
 
       ZSetsScoreKey zsets_score_key(key, version, sm.score, sm.member);
       batch.Put(handles_[2], zsets_score_key.Encode(), Slice());
@@ -159,10 +159,10 @@ Status RedisZSets::ZAdd(const Slice& key,
     version = zsets_meta_value.UpdateVersion();
     batch.Put(handles_[0], key, zsets_meta_value.Encode());
     for (const auto& sm : filtered_score_members) {
-      ZSetsDataKey zsets_data_key(key, version, sm.member);
+      ZSetsMemberKey zsets_member_key(key, version, sm.member);
       const void* ptr_score = reinterpret_cast<const void*>(&sm.score);
       EncodeFixed64(score_buf, *reinterpret_cast<const uint64_t*>(ptr_score));
-      batch.Put(handles_[1], zsets_data_key.Encode(), Slice(score_buf, sizeof(uint64_t)));
+      batch.Put(handles_[1], zsets_member_key.Encode(), Slice(score_buf, sizeof(uint64_t)));
 
       ZSetsScoreKey zsets_score_key(key, version, sm.score, sm.member);
       batch.Put(handles_[2], zsets_score_key.Encode(), Slice());
@@ -260,8 +260,8 @@ Status RedisZSets::ZIncrby(const Slice& key,
       version = parsed_zsets_meta_value.version();
     }
     std::string data_value;
-    ZSetsDataKey zsets_data_key(key, version, member);
-    s = db_->Get(default_read_options_, handles_[1], zsets_data_key.Encode(), &data_value);
+    ZSetsMemberKey zsets_member_key(key, version, member);
+    s = db_->Get(default_read_options_, handles_[1], zsets_member_key.Encode(), &data_value);
     if (s.ok()) {
       uint64_t tmp = DecodeFixed64(data_value.data());
       const void* ptr_tmp = reinterpret_cast<const void*>(&tmp);
@@ -286,10 +286,10 @@ Status RedisZSets::ZIncrby(const Slice& key,
   } else {
     return s;
   }
-  ZSetsDataKey zsets_data_key(key, version, member);
+  ZSetsMemberKey zsets_member_key(key, version, member);
   const void* ptr_score = reinterpret_cast<const void*>(&score);
   EncodeFixed64(score_buf, *reinterpret_cast<const uint64_t*>(ptr_score));
-  batch.Put(handles_[1], zsets_data_key.Encode(), Slice(score_buf, sizeof(uint64_t)));
+  batch.Put(handles_[1], zsets_member_key.Encode(), Slice(score_buf, sizeof(uint64_t)));
 
   ZSetsScoreKey zsets_score_key(key, version, score, member);
   batch.Put(handles_[2], zsets_score_key.Encode(), Slice());
@@ -478,14 +478,14 @@ Status RedisZSets::ZRem(const Slice& key,
       std::string data_value;
       int32_t version = parsed_zsets_meta_value.version();
       for (const auto& member : filtered_members) {
-        ZSetsDataKey zsets_data_key(key, version, member);
-        s = db_->Get(default_read_options_, handles_[1], zsets_data_key.Encode(), &data_value);
+        ZSetsMemberKey zsets_member_key(key, version, member);
+        s = db_->Get(default_read_options_, handles_[1], zsets_member_key.Encode(), &data_value);
         if (s.ok()) {
           del_cnt++;
           uint64_t tmp = DecodeFixed64(data_value.data());
           const void* ptr_tmp = reinterpret_cast<const void*>(&tmp);
           double score = *reinterpret_cast<const double*>(ptr_tmp);
-          batch.Delete(handles_[1], zsets_data_key.Encode());
+          batch.Delete(handles_[1], zsets_member_key.Encode());
 
           ZSetsScoreKey zsets_score_key(key, version, score, member);
           batch.Delete(handles_[2], zsets_score_key.Encode());
@@ -535,8 +535,8 @@ Status RedisZSets::ZRemrangebyrank(const Slice& key,
            iter->Next(), ++cur_index) {
         if (cur_index >= start_index) {
           ParsedZSetsScoreKey parsed_zsets_score_key(iter->key());
-          ZSetsDataKey zsets_data_key(key, version, parsed_zsets_score_key.member());
-          batch.Delete(handles_[1], zsets_data_key.Encode());
+          ZSetsMemberKey zsets_member_key(key, version, parsed_zsets_score_key.member());
+          batch.Delete(handles_[1], zsets_member_key.Encode());
           batch.Delete(handles_[2], iter->key());
           del_cnt++;
         }
@@ -580,8 +580,8 @@ Status RedisZSets::ZRemrangebyscore(const Slice& key,
         ParsedZSetsScoreKey parsed_zsets_score_key(iter->key());
         if (min <= parsed_zsets_score_key.score()
           && parsed_zsets_score_key.score() <= max) {
-          ZSetsDataKey zsets_data_key(key, version, parsed_zsets_score_key.member());
-          batch.Delete(handles_[1], zsets_data_key.Encode());
+          ZSetsMemberKey zsets_member_key(key, version, parsed_zsets_score_key.member());
+          batch.Delete(handles_[1], zsets_member_key.Encode());
           batch.Delete(handles_[2], iter->key());
           del_cnt++;
         } else if (parsed_zsets_score_key.score() > max) {
@@ -771,8 +771,8 @@ Status RedisZSets::ZScore(const Slice& key, const Slice& member, double* score) 
       return Status::NotFound();
     } else {
       std::string data_value;
-      ZSetsDataKey zsets_data_key(key, version, member);
-      s = db_->Get(read_options, handles_[1], zsets_data_key.Encode(), &data_value);
+      ZSetsMemberKey zsets_member_key(key, version, member);
+      s = db_->Get(read_options, handles_[1], zsets_member_key.Encode(), &data_value);
       if (s.ok()) {
         uint64_t tmp = DecodeFixed64(data_value.data());
         const void* ptr_tmp = reinterpret_cast<const void*>(&tmp);
@@ -859,11 +859,11 @@ Status RedisZSets::ZUnionstore(const Slice& destination,
 
   char score_buf[8];
   for (const auto& sm : member_score_map) {
-    ZSetsDataKey zsets_data_key(destination, version, sm.first);
+    ZSetsMemberKey zsets_member_key(destination, version, sm.first);
 
     const void* ptr_score = reinterpret_cast<const void*>(&sm.second);
     EncodeFixed64(score_buf, *reinterpret_cast<const uint64_t*>(ptr_score));
-    batch.Put(handles_[1], zsets_data_key.Encode(), Slice(score_buf, sizeof(uint64_t)));
+    batch.Put(handles_[1], zsets_member_key.Encode(), Slice(score_buf, sizeof(uint64_t)));
 
     ZSetsScoreKey zsets_score_key(destination, version, sm.second, sm.first);
     batch.Put(handles_[2], zsets_score_key.Encode(), Slice());
@@ -940,8 +940,8 @@ Status RedisZSets::ZInterstore(const Slice& destination,
       item.score = sm.score * (weights.size() > 0 ? weights[0] : 1);
       for (size_t idx = 1; idx < vaild_zsets.size(); ++idx) {
         double weight = idx < weights.size() ? weights[idx] : 1;
-        ZSetsDataKey zsets_data_key(vaild_zsets[idx].key, vaild_zsets[idx].version, item.member);
-        s = db_->Get(read_options, handles_[1], zsets_data_key.Encode(), &data_value);
+        ZSetsMemberKey zsets_member_key(vaild_zsets[idx].key, vaild_zsets[idx].version, item.member);
+        s = db_->Get(read_options, handles_[1], zsets_member_key.Encode(), &data_value);
         if (s.ok()) {
           uint64_t tmp = DecodeFixed64(data_value.data());
           const void* ptr_tmp = reinterpret_cast<const void*>(&tmp);
@@ -980,11 +980,11 @@ Status RedisZSets::ZInterstore(const Slice& destination,
   }
   char score_buf[8];
   for (const auto& sm : final_score_members) {
-    ZSetsDataKey zsets_data_key(destination, version, sm.member);
+    ZSetsMemberKey zsets_member_key(destination, version, sm.member);
 
     const void* ptr_score = reinterpret_cast<const void*>(&sm.score);
     EncodeFixed64(score_buf, *reinterpret_cast<const uint64_t*>(ptr_score));
-    batch.Put(handles_[1], zsets_data_key.Encode(), Slice(score_buf, sizeof(uint64_t)));
+    batch.Put(handles_[1], zsets_member_key.Encode(), Slice(score_buf, sizeof(uint64_t)));
 
     ZSetsScoreKey zsets_score_key(destination, version, sm.score, sm.member);
     batch.Put(handles_[2], zsets_score_key.Encode(), Slice());
@@ -1021,15 +1021,15 @@ Status RedisZSets::ZRangebylex(const Slice& key,
       int32_t version = parsed_zsets_meta_value.version();
       int32_t cur_index = 0;
       int32_t stop_index = parsed_zsets_meta_value.count() - 1;
-      ZSetsDataKey zsets_data_key(key, version, Slice());
+      ZSetsMemberKey zsets_member_key(key, version, Slice());
       rocksdb::Iterator* iter = db_->NewIterator(read_options, handles_[1]);
-      for (iter->Seek(zsets_data_key.Encode());
+      for (iter->Seek(zsets_member_key.Encode());
            iter->Valid() && cur_index <= stop_index;
            iter->Next(), ++cur_index) {
         bool left_pass = false;
         bool right_pass = false;
-        ParsedZSetsDataKey parsed_zsets_data_key(iter->key());
-        Slice member = parsed_zsets_data_key.field();
+        ParsedZSetsMemberKey parsed_zsets_member_key(iter->key());
+        Slice member = parsed_zsets_member_key.member();
         if (left_no_limit
           || (left_close && min.compare(member) <= 0)
           || (!left_close && min.compare(member) < 0)) {
@@ -1095,15 +1095,15 @@ Status RedisZSets::ZRemrangebylex(const Slice& key,
       int32_t version = parsed_zsets_meta_value.version();
       int32_t cur_index = 0;
       int32_t stop_index = parsed_zsets_meta_value.count() - 1;
-      ZSetsDataKey zsets_data_key(key, version, Slice());
+      ZSetsMemberKey zsets_member_key(key, version, Slice());
       rocksdb::Iterator* iter = db_->NewIterator(read_options, handles_[1]);
-      for (iter->Seek(zsets_data_key.Encode());
+      for (iter->Seek(zsets_member_key.Encode());
            iter->Valid() && cur_index <= stop_index;
            iter->Next(), ++cur_index) {
         bool left_pass = false;
         bool right_pass = false;
-        ParsedZSetsDataKey parsed_zsets_data_key(iter->key());
-        Slice member = parsed_zsets_data_key.field();
+        ParsedZSetsMemberKey parsed_zsets_member_key(iter->key());
+        Slice member = parsed_zsets_member_key.member();
         if (left_no_limit
           || (left_close && min.compare(member) <= 0)
           || (!left_close && min.compare(member) < 0)) {

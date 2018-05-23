@@ -8,7 +8,6 @@
 
 namespace blackwidow {
 
-typedef HashesDataKey ZSetsDataKey;
 /*
  * |  <Key Size>  |      <Key>      | <Version> |  <Score>  |      <Member>      |
  *      4 Bytes      key size Bytes    4 Bytes     8 Bytes    member size Bytes
@@ -56,7 +55,6 @@ class ZSetsScoreKey {
   Slice member_;
 };
 
-typedef ParsedHashesDataKey ParsedZSetsDataKey;
 
 class ParsedZSetsScoreKey {
  public:

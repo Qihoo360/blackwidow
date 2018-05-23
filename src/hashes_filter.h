@@ -11,7 +11,7 @@
 #include <vector>
 
 #include "src/base_meta_value_format.h"
-#include "src/hashes_data_key_format.h"
+#include "src/base_data_key_format.h"
 #include "src/debug.h"
 #include "rocksdb/compaction_filter.h"
 
