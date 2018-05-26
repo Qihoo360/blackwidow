@@ -81,15 +81,10 @@ Status RedisSets::SAdd(const Slice& key,
   }
 
   rocksdb::WriteBatch batch;
-  rocksdb::ReadOptions read_options;
-  const rocksdb::Snapshot* snapshot;
-
-  std::string meta_value;
-  int32_t version = 0;
   ScopeRecordLock l(lock_mgr_, key);
-  ScopeSnapshot ss(db_, &snapshot);
-  read_options.snapshot = snapshot;
-  Status s = db_->Get(read_options, handles_[0], key, &meta_value);
+  int32_t version = 0;
+  std::string meta_value;
+  Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
     ParsedSetsMetaValue parsed_sets_meta_value(&meta_value);
     if (parsed_sets_meta_value.IsStale()) {
@@ -107,7 +102,7 @@ Status RedisSets::SAdd(const Slice& key,
       version = parsed_sets_meta_value.version();
       for (const auto& member : filtered_members) {
         SetsMemberKey sets_member_key(key, version, member);
-        s = db_->Get(read_options, handles_[1],
+        s = db_->Get(default_read_options_, handles_[1],
                      sets_member_key.Encode(), &member_value);
         if (s.ok()) {
         } else if (s.IsNotFound()) {
@@ -577,23 +572,21 @@ Status RedisSets::SMembers(const Slice& key,
 
 Status RedisSets::SMove(const Slice& source, const Slice& destination,
                         const Slice& member, int32_t* ret) {
+
   rocksdb::WriteBatch batch;
   rocksdb::ReadOptions read_options;
-  const rocksdb::Snapshot* snapshot;
 
-  std::vector<std::string> keys {source.ToString(), destination.ToString()};
-  std::string meta_value;
   int32_t version = 0;
+  std::string meta_value;
+  std::vector<std::string> keys {source.ToString(), destination.ToString()};
   MultiScopeRecordLock ml(lock_mgr_, keys);
-  ScopeSnapshot ss(db_, &snapshot);
-  read_options.snapshot = snapshot;
 
   if (source == destination) {
     *ret = 1;
     return Status::OK();
   }
 
-  Status s = db_->Get(read_options, handles_[0], source, &meta_value);
+  Status s = db_->Get(default_read_options_, handles_[0], source, &meta_value);
   if (s.ok()) {
     ParsedSetsMetaValue parsed_sets_meta_value(&meta_value);
     if (parsed_sets_meta_value.IsStale()) {
@@ -603,7 +596,7 @@ Status RedisSets::SMove(const Slice& source, const Slice& destination,
       std::string member_value;
       version = parsed_sets_meta_value.version();
       SetsMemberKey sets_member_key(source, version, member);
-      s = db_->Get(read_options, handles_[1],
+      s = db_->Get(default_read_options_, handles_[1],
               sets_member_key.Encode(), &member_value);
       if (s.ok()) {
         *ret = 1;
@@ -624,7 +617,7 @@ Status RedisSets::SMove(const Slice& source, const Slice& destination,
     return s;
   }
 
-  s = db_->Get(read_options, handles_[0], destination, &meta_value);
+  s = db_->Get(default_read_options_, handles_[0], destination, &meta_value);
   if (s.ok()) {
     ParsedSetsMetaValue parsed_sets_meta_value(&meta_value);
     if (parsed_sets_meta_value.IsStale()) {
@@ -637,7 +630,7 @@ Status RedisSets::SMove(const Slice& source, const Slice& destination,
       std::string member_value;
       version = parsed_sets_meta_value.version();
       SetsMemberKey sets_member_key(destination, version, member);
-      s = db_->Get(read_options, handles_[1],
+      s = db_->Get(default_read_options_, handles_[1],
               sets_member_key.Encode(), &member_value);
       if (s.IsNotFound()) {
         parsed_sets_meta_value.ModifyCount(1);
@@ -801,15 +794,11 @@ Status RedisSets::SRem(const Slice& key,
                        const std::vector<std::string>& members,
                        int32_t* ret) {
   rocksdb::WriteBatch batch;
-  rocksdb::ReadOptions read_options;
-  const rocksdb::Snapshot* snapshot;
-
-  std::string meta_value;
-  int32_t version = 0;
   ScopeRecordLock l(lock_mgr_, key);
-  ScopeSnapshot ss(db_, &snapshot);
-  read_options.snapshot = snapshot;
-  Status s = db_->Get(read_options, handles_[0], key, &meta_value);
+
+  int32_t version = 0;
+  std::string meta_value;
+  Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
     ParsedSetsMetaValue parsed_sets_meta_value(&meta_value);
     if (parsed_sets_meta_value.IsStale()) {
@@ -821,7 +810,7 @@ Status RedisSets::SRem(const Slice& key,
       version = parsed_sets_meta_value.version();
       for (const auto& member : members) {
         SetsMemberKey sets_member_key(key, version, member);
-        s = db_->Get(read_options, handles_[1],
+        s = db_->Get(default_read_options_, handles_[1],
                 sets_member_key.Encode(), &member_value);
         if (s.ok()) {
           cnt++;

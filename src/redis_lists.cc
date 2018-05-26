@@ -258,12 +258,13 @@ Status RedisLists::LPop(const Slice& key, std::string* element) {
 Status RedisLists::LPush(const Slice& key,
                          const std::vector<std::string>& values,
                          uint64_t* ret) {
-  rocksdb::WriteBatch batch;
-  int32_t version = 0;
-  uint64_t index = 0;
   *ret = 0;
-  std::string meta_value;
+  rocksdb::WriteBatch batch;
   ScopeRecordLock l(lock_mgr_, key);
+
+  uint64_t index = 0;
+  int32_t version = 0;
+  std::string meta_value;
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
     ParsedListsMetaValue parsed_lists_meta_value(&meta_value);
@@ -303,6 +304,7 @@ Status RedisLists::LPush(const Slice& key,
 Status RedisLists::LPushx(const Slice& key, const Slice& value, uint64_t* len) {
   rocksdb::WriteBatch batch;
   ScopeRecordLock l(lock_mgr_, key);
+
   std::string meta_value;
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
@@ -328,10 +330,14 @@ Status RedisLists::LPushx(const Slice& key, const Slice& value, uint64_t* len) {
 
 Status RedisLists::LRange(const Slice& key, int64_t start, int64_t stop,
                           std::vector<std::string>* ret) {
-  ScopeRecordLock l(lock_mgr_, key);
-  std::string meta_value;
+  rocksdb::ReadOptions read_options;
+  const rocksdb::Snapshot* snapshot;
 
-  Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
+  ScopeSnapshot ss(db_, &snapshot);
+  read_options.snapshot = snapshot;
+
+  std::string meta_value;
+  Status s = db_->Get(read_options, handles_[0], key, &meta_value);
   if (s.ok()) {
     ParsedListsMetaValue parsed_lists_meta_value(&meta_value);
     if (parsed_lists_meta_value.IsStale()) {
@@ -355,7 +361,7 @@ Status RedisLists::LRange(const Slice& key, int64_t start, int64_t stop,
       if (stop_index >= parsed_lists_meta_value.right_index()) {
         stop_index = parsed_lists_meta_value.right_index() - 1;
       }
-      rocksdb::Iterator* iter = db_->NewIterator(default_read_options_,
+      rocksdb::Iterator* iter = db_->NewIterator(read_options,
               handles_[1]);
       ListsDataKey start_data_key(key, version, start_index);
       for (iter->Seek(start_data_key.Encode());
@@ -516,8 +522,9 @@ Status RedisLists::LSet(const Slice& key, int64_t index, const Slice& value) {
 Status RedisLists::LTrim(const Slice& key, int64_t start, int64_t stop) {
 
   rocksdb::WriteBatch batch;
-  std::string meta_value;
   ScopeRecordLock l(lock_mgr_, key);
+
+  std::string meta_value;
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
     ParsedListsMetaValue parsed_lists_meta_value(&meta_value);
@@ -579,6 +586,7 @@ Status RedisLists::LTrim(const Slice& key, int64_t start, int64_t stop) {
 Status RedisLists::RPop(const Slice& key, std::string* element) {
   rocksdb::WriteBatch batch;
   ScopeRecordLock l(lock_mgr_, key);
+
   std::string meta_value;
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
@@ -718,12 +726,12 @@ Status RedisLists::RPoplpush(const Slice& source,
 Status RedisLists::RPush(const Slice& key,
                          const std::vector<std::string>& values,
                          uint64_t* ret) {
-  rocksdb::WriteBatch batch;
-  int32_t version = 0;
-  uint64_t index = 0;
   *ret = 0;
+  rocksdb::WriteBatch batch;
+
+  uint64_t index = 0;
+  int32_t version = 0;
   std::string meta_value;
-  ScopeRecordLock l(lock_mgr_, key);
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
     ParsedListsMetaValue parsed_lists_meta_value(&meta_value);

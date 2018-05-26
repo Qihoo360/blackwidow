@@ -188,18 +188,13 @@ Status RedisHashes::HGetall(const Slice& key,
 Status RedisHashes::HIncrby(const Slice& key, const Slice& field, int64_t value,
                             int64_t* ret) {
   rocksdb::WriteBatch batch;
-  rocksdb::ReadOptions read_options;
-  const rocksdb::Snapshot* snapshot;
+  ScopeRecordLock l(lock_mgr_, key);
 
   int32_t version = 0;
   std::string old_value;
   std::string meta_value;
 
-  ScopeRecordLock l(lock_mgr_, key);
-  ScopeSnapshot ss(db_, &snapshot);
-  read_options.snapshot = snapshot;
-  Status s = db_->Get(read_options, handles_[0], key, &meta_value);
-
+  Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
     ParsedHashesMetaValue parsed_hashes_meta_value(&meta_value);
     if (parsed_hashes_meta_value.IsStale()) {
@@ -215,7 +210,7 @@ Status RedisHashes::HIncrby(const Slice& key, const Slice& field, int64_t value,
     } else {
       version = parsed_hashes_meta_value.version();
       HashesDataKey hashes_data_key(key, version, field);
-      s = db_->Get(read_options, handles_[1],
+      s = db_->Get(default_read_options_, handles_[1],
               hashes_data_key.Encode(), &old_value);
       if (s.ok()) {
         char* end = nullptr;
@@ -263,8 +258,7 @@ Status RedisHashes::HIncrby(const Slice& key, const Slice& field, int64_t value,
 Status RedisHashes::HIncrbyfloat(const Slice& key, const Slice& field,
                                  const Slice& by, std::string* new_value) {
   rocksdb::WriteBatch batch;
-  rocksdb::ReadOptions read_options;
-  const rocksdb::Snapshot* snapshot;
+  ScopeRecordLock l(lock_mgr_, key);
 
   int32_t version = 0;
   std::string meta_value;
@@ -275,10 +269,7 @@ Status RedisHashes::HIncrbyfloat(const Slice& key, const Slice& field,
     return Status::InvalidArgument("Value is not a vaild float");
   }
 
-  ScopeRecordLock l(lock_mgr_, key);
-  ScopeSnapshot ss(db_, &snapshot);
-  read_options.snapshot = snapshot;
-  Status s = db_->Get(read_options, handles_[0], key, &meta_value);
+  Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
     ParsedHashesMetaValue parsed_hashes_meta_value(&meta_value);
     if (parsed_hashes_meta_value.IsStale()) {
@@ -293,7 +284,7 @@ Status RedisHashes::HIncrbyfloat(const Slice& key, const Slice& field,
     } else {
       version = parsed_hashes_meta_value.version();
       HashesDataKey hashes_data_key(key, version, field);
-      s = db_->Get(read_options, handles_[1],
+      s = db_->Get(default_read_options_, handles_[1],
               hashes_data_key.Encode(), &old_value_str);
       if (s.ok()) {
         long double total;
@@ -428,15 +419,12 @@ Status RedisHashes::HMSet(const Slice& key,
     }
   }
 
+  rocksdb::WriteBatch batch;
+  ScopeRecordLock l(lock_mgr_, key);
+
   int32_t version = 0;
   std::string meta_value;
-  rocksdb::WriteBatch batch;
-  rocksdb::ReadOptions read_options;
-  const rocksdb::Snapshot* snapshot;
-  ScopeRecordLock l(lock_mgr_, key);
-  ScopeSnapshot ss(db_, &snapshot);
-  read_options.snapshot = snapshot;
-  Status s = db_->Get(read_options, handles_[0], key, &meta_value);
+  Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
     ParsedHashesMetaValue parsed_hashes_meta_value(&meta_value);
     if (parsed_hashes_meta_value.IsStale()) {
@@ -454,7 +442,7 @@ Status RedisHashes::HMSet(const Slice& key,
       version = parsed_hashes_meta_value.version();
       for (const auto& fv : filtered_fvs) {
         HashesDataKey hashes_data_key(key, version, fv.field);
-        s = db_->Get(read_options, handles_[1],
+        s = db_->Get(default_read_options_, handles_[1],
                 hashes_data_key.Encode(), &data_value);
         if (s.ok()) {
           batch.Put(handles_[1], hashes_data_key.Encode(), fv.value);
@@ -485,15 +473,11 @@ Status RedisHashes::HMSet(const Slice& key,
 Status RedisHashes::HSet(const Slice& key, const Slice& field,
                          const Slice& value, int32_t* res) {
   rocksdb::WriteBatch batch;
-  rocksdb::ReadOptions read_options;
-  const rocksdb::Snapshot* snapshot;
-
-  std::string meta_value;
-  int32_t version = 0;
   ScopeRecordLock l(lock_mgr_, key);
-  ScopeSnapshot ss(db_, &snapshot);
-  read_options.snapshot = snapshot;
-  Status s = db_->Get(read_options, handles_[0], key, &meta_value);
+
+  int32_t version = 0;
+  std::string meta_value;
+  Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
     ParsedHashesMetaValue parsed(&meta_value);
     if (parsed.IsStale()) {
@@ -508,7 +492,7 @@ Status RedisHashes::HSet(const Slice& key, const Slice& field,
       version = parsed.version();
       HashesDataKey data_key(key, version, field);
       std::string data_value;
-      s = db_->Get(read_options, handles_[1], data_key.Encode(), &data_value);
+      s = db_->Get(default_read_options_, handles_[1], data_key.Encode(), &data_value);
       if (s.ok()) {
         batch.Put(handles_[1], data_key.Encode(), value);
         *res = 0;
@@ -540,15 +524,11 @@ Status RedisHashes::HSet(const Slice& key, const Slice& field,
 Status RedisHashes::HSetnx(const Slice& key, const Slice& field,
                            const Slice& value, int32_t* ret) {
   rocksdb::WriteBatch batch;
-  rocksdb::ReadOptions read_options;
-  const rocksdb::Snapshot* snapshot;
-
-  std::string meta_value;
-  int32_t version = 0;
   ScopeRecordLock l(lock_mgr_, key);
-  ScopeSnapshot ss(db_, &snapshot);
-  read_options.snapshot = snapshot;
-  Status s = db_->Get(read_options, handles_[0], key, &meta_value);
+
+  int32_t version = 0;
+  std::string meta_value;
+  Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
     ParsedHashesMetaValue parsed_hashes_meta_value(&meta_value);
     if (parsed_hashes_meta_value.IsStale()) {
@@ -563,7 +543,7 @@ Status RedisHashes::HSetnx(const Slice& key, const Slice& field,
       version = parsed_hashes_meta_value.version();
       HashesDataKey hashes_data_key(key, version, field);
       std::string data_value;
-      s = db_->Get(read_options, handles_[1],
+      s = db_->Get(default_read_options_, handles_[1],
               hashes_data_key.Encode(), &data_value);
       if (s.ok()) {
         *ret = 0;
