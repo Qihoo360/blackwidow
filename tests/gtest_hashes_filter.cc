@@ -7,9 +7,9 @@
 #include <thread>
 #include <iostream>
 
-#include "blackwidow/blackwidow.h"
 #include "src/redis.h"
-#include "src/hashes_filter.h"
+#include "src/base_filter.h"
+#include "blackwidow/blackwidow.h"
 
 using namespace blackwidow;
 

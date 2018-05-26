@@ -11,7 +11,7 @@
 #include <algorithm>
 
 #include "src/util.h"
-#include "src/sets_filter.h"
+#include "src/base_filter.h"
 #include "src/scope_record_lock.h"
 #include "src/scope_snapshot.h"
 
@@ -999,9 +999,7 @@ Status RedisSets::Del(const Slice& key) {
     if (parsed_sets_meta_value.IsStale()) {
       return Status::NotFound("Stale");
     } else {
-      parsed_sets_meta_value.set_count(0);
-      parsed_sets_meta_value.UpdateVersion();
-      parsed_sets_meta_value.set_timestamp(0);
+      parsed_sets_meta_value.InitialMetaValue();
       s = db_->Put(default_write_options_, handles_[0], key, meta_value);
     }
   }
@@ -1110,6 +1108,42 @@ Status RedisSets::TTL(const Slice& key, int64_t* timestamp) {
     *timestamp = -2;
   }
   return s;
+}
+
+void RedisSets::ScanDatabase() {
+
+  rocksdb::ReadOptions iterator_options;
+  const rocksdb::Snapshot* snapshot;
+  ScopeSnapshot ss(db_, &snapshot);
+  iterator_options.snapshot = snapshot;
+  iterator_options.fill_cache = false;
+
+  printf("\n***************Sets Meta Data***************\n");
+  auto meta_iter = db_->NewIterator(iterator_options, handles_[0]);
+  for (meta_iter->SeekToFirst();
+       meta_iter->Valid();
+       meta_iter->Next()) {
+    ParsedSetsMetaValue parsed_sets_meta_value(meta_iter->value());
+    printf("[key : %-30s] [count : %-10d] [timestamp : %-10d] [version : %d]\n",
+           meta_iter->key().ToString().c_str(),
+           parsed_sets_meta_value.count(),
+           parsed_sets_meta_value.timestamp(),
+           parsed_sets_meta_value.version());
+  }
+  delete meta_iter;
+
+  printf("\n***************Sets Member Data***************\n");
+  auto member_iter = db_->NewIterator(iterator_options, handles_[1]);
+  for (member_iter->SeekToFirst();
+       member_iter->Valid();
+       member_iter->Next()) {
+    ParsedSetsMemberKey parsed_sets_member_key(member_iter->key());
+    printf("[key : %-30s] [member : %-20s] [version : %d]\n",
+           parsed_sets_member_key.key().ToString().c_str(),
+           parsed_sets_member_key.member().ToString().c_str(),
+           parsed_sets_member_key.version());
+  }
+  delete member_iter;
 }
 
 }  //  namespace blackwidow

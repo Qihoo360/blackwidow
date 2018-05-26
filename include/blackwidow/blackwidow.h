@@ -807,8 +807,6 @@ class BlackWidow {
                         bool right_close,
                         int32_t* ret);
 
-
-
   // Keys Commands
   enum DataType {
     kStrings,
@@ -872,6 +870,9 @@ class BlackWidow {
   // return > 0 TTL in seconds
   std::map<DataType, int64_t> TTL(const Slice& key,
                                   std::map<DataType, Status>* type_status);
+
+  // Iterate through all the data in the database.
+  void ScanDatabase(const DataType& type);
 
   // HyperLogLog
   enum {

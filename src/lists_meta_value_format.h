@@ -96,7 +96,7 @@ class ParsedListsMetaValue : public ParsedInternalValue {
  public:
   // Use this constructor after rocksdb::DB::Get();
   explicit ParsedListsMetaValue(std::string* internal_value_str) :
-    ParsedInternalValue(internal_value_str) {
+    ParsedInternalValue(internal_value_str), count_(0), left_index_(0), right_index_(0) {
     assert(internal_value_str->size() >= kListsMetaValueSuffixLength);
     if (internal_value_str->size() >= kListsMetaValueSuffixLength) {
       user_value_ = Slice(internal_value_str->data(),
@@ -117,7 +117,7 @@ class ParsedListsMetaValue : public ParsedInternalValue {
 
   // Use this constructor in rocksdb::CompactionFilter::Filter();
   explicit ParsedListsMetaValue(const Slice& internal_value_slice) :
-    ParsedInternalValue(internal_value_slice) {
+    ParsedInternalValue(internal_value_slice), count_(0), left_index_(0), right_index_(0) {
     assert(internal_value_slice.size() >= kListsMetaValueSuffixLength);
     if (internal_value_slice.size() >= kListsMetaValueSuffixLength) {
       user_value_ = Slice(internal_value_slice.data(),

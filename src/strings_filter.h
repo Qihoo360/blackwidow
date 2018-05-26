@@ -16,28 +16,46 @@
 namespace blackwidow {
 
 class StringsFilter : public rocksdb::CompactionFilter {
- public:
-  StringsFilter() = default;
-  virtual bool Filter(int level, const rocksdb::Slice& key,
-                      const rocksdb::Slice& value,
-                      std::string* new_value, bool* value_changed) const
-      override {
-    ParsedStringsValue parsed_strings_value(value);
-    return parsed_strings_value.IsStale();
-  }
+  public:
+    StringsFilter() = default;
+    virtual bool Filter(int level, const rocksdb::Slice& key,
+                        const rocksdb::Slice& value,
+                        std::string* new_value, bool* value_changed) const override {
+      int64_t unix_time;
+      rocksdb::Env::Default()->GetCurrentTime(&unix_time);
+      int32_t cur_time = static_cast<int32_t>(unix_time);
+      ParsedStringsValue parsed_strings_value(value);
+      Trace("==========================START==========================");
+      Trace("[StringsFilter], key: %s, value = %s, timestamp: %d, cur_time: %d",
+            key.ToString().c_str(),
+            parsed_strings_value.value().ToString().c_str(),
+            parsed_strings_value.timestamp(),
+            cur_time);
 
-  virtual const char* Name() const override { return "StringsFilter"; }
+      if (parsed_strings_value.timestamp() != 0
+        && parsed_strings_value.timestamp() < cur_time) {
+        Trace("Drop[Stale]");
+        return true;
+      } else {
+        Trace("Reserve");
+        return false;
+      }
+    }
+
+    virtual const char* Name() const override { return "StringsFilter"; }
 };
 
 class StringsFilterFactory : public rocksdb::CompactionFilterFactory {
- public:
-  StringsFilterFactory() = default;
-  virtual std::unique_ptr<rocksdb::CompactionFilter> CreateCompactionFilter(
+  public:
+    StringsFilterFactory() = default;
+    virtual std::unique_ptr<rocksdb::CompactionFilter> CreateCompactionFilter(
       const rocksdb::CompactionFilter::Context& context) override {
-    return std::unique_ptr<rocksdb::CompactionFilter>(
+      return std::unique_ptr<rocksdb::CompactionFilter>(
         new StringsFilter());
-  }
-  virtual const char* Name() const override { return "StringsFilterFactory"; }
+    }
+    virtual const char* Name() const override {
+      return "StringsFilterFactory";
+    }
 };
 
 }  //  namespace blackwidow

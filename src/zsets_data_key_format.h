@@ -93,21 +93,21 @@ class ParsedZSetsScoreKey {
   Slice key() {
     return key_;
   }
-  Slice member() {
-    return member_;
-  }
   int32_t version() const {
     return version_;
   }
   double score() const {
     return score_;
   }
+  Slice member() {
+    return member_;
+  }
 
  private:
   Slice key_;
-  Slice member_;
   int32_t version_;
   double score_;
+  Slice member_;
 };
 
 } // blackwidow

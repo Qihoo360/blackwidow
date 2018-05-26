@@ -68,6 +68,9 @@ class RedisStrings : public Redis {
     virtual Status Expireat(const Slice& key, int32_t timestamp) override;
     virtual Status Persist(const Slice& key) override;
     virtual Status TTL(const Slice& key, int64_t* timestamp) override;
+
+    // Iterate all data
+    void ScanDatabase();
 };
 
 }  //  namespace blackwidow

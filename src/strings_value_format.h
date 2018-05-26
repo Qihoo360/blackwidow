@@ -57,6 +57,7 @@ class ParsedStringsValue : public ParsedInternalValue {
           kStringsValueSuffixLength);
     }
   }
+
   // Strings type do not have version field;
   virtual void SetVersionToValue() override {
   }
@@ -68,6 +69,11 @@ class ParsedStringsValue : public ParsedInternalValue {
       EncodeFixed32(dst, timestamp_);
     }
   }
+
+  Slice value() {
+    return user_value_;
+  }
+
   static const size_t kStringsValueSuffixLength = sizeof(int32_t);
 };
 

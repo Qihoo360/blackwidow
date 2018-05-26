@@ -1280,5 +1280,62 @@ Status RedisZSets::TTL(const Slice& key, int64_t* timestamp) {
   return s;
 }
 
+void RedisZSets::ScanDatabase() {
+
+  rocksdb::ReadOptions iterator_options;
+  const rocksdb::Snapshot* snapshot;
+  ScopeSnapshot ss(db_, &snapshot);
+  iterator_options.snapshot = snapshot;
+  iterator_options.fill_cache = false;
+
+  printf("\n***************ZSets Meta Data***************\n");
+  auto meta_iter = db_->NewIterator(iterator_options, handles_[0]);
+  for (meta_iter->SeekToFirst();
+       meta_iter->Valid();
+       meta_iter->Next()) {
+    ParsedZSetsMetaValue parsed_zsets_meta_value(meta_iter->value());
+    printf("[key : %-30s] [count : %-10d] [timestamp : %-10d] [version : %d]\n",
+           meta_iter->key().ToString().c_str(),
+           parsed_zsets_meta_value.count(),
+           parsed_zsets_meta_value.timestamp(),
+           parsed_zsets_meta_value.version());
+  }
+  delete meta_iter;
+
+  printf("\n***************ZSets Member To Score Data***************\n");
+  auto member_iter = db_->NewIterator(iterator_options, handles_[1]);
+  for (member_iter->SeekToFirst();
+       member_iter->Valid();
+       member_iter->Next()) {
+    ParsedZSetsMemberKey parsed_zsets_member_key(member_iter->key());
+
+    uint64_t tmp = DecodeFixed64(member_iter->value().data());
+    const void* ptr_tmp = reinterpret_cast<const void*>(&tmp);
+    double score = *reinterpret_cast<const double*>(ptr_tmp);
+
+    printf("[key : %-30s] [member : %-20s] [score : %-20lf] [version : %d]\n",
+           parsed_zsets_member_key.key().ToString().c_str(),
+           parsed_zsets_member_key.member().ToString().c_str(),
+           score,
+           parsed_zsets_member_key.version());
+  }
+  delete member_iter;
+
+  printf("\n***************ZSets Score To Member Data***************\n");
+  auto score_iter = db_->NewIterator(iterator_options, handles_[2]);
+  for (score_iter->SeekToFirst();
+       score_iter->Valid();
+       score_iter->Next()) {
+    ParsedZSetsScoreKey parsed_zsets_score_key(score_iter->key());
+    printf("[key : %-30s] [score : %-20lf] [member : %-20s] [version : %d]\n",
+           parsed_zsets_score_key.key().ToString().c_str(),
+           parsed_zsets_score_key.score(),
+           parsed_zsets_score_key.member().ToString().c_str(),
+           parsed_zsets_score_key.version());
+
+  }
+  delete score_iter;
+}
+
 } // blackwidow
 

@@ -8,7 +8,7 @@
 #include <memory>
 
 #include "src/util.h"
-#include "src/hashes_filter.h"
+#include "src/base_filter.h"
 #include "src/scope_record_lock.h"
 #include "src/scope_snapshot.h"
 
@@ -775,6 +775,43 @@ Status RedisHashes::TTL(const Slice& key, int64_t* timestamp) {
     *timestamp = -2;
   }
   return s;
+}
+
+void RedisHashes::ScanDatabase() {
+
+  rocksdb::ReadOptions iterator_options;
+  const rocksdb::Snapshot* snapshot;
+  ScopeSnapshot ss(db_, &snapshot);
+  iterator_options.snapshot = snapshot;
+  iterator_options.fill_cache = false;
+
+  printf("\n***************Hashes Meta Data***************\n");
+  auto meta_iter = db_->NewIterator(iterator_options, handles_[0]);
+  for (meta_iter->SeekToFirst();
+       meta_iter->Valid();
+       meta_iter->Next()) {
+    ParsedHashesMetaValue parsed_hashes_meta_value(meta_iter->value());
+    printf("[key : %-30s] [count : %-10d] [timestamp : %-10d] [version : %d]\n",
+           meta_iter->key().ToString().c_str(),
+           parsed_hashes_meta_value.count(),
+           parsed_hashes_meta_value.timestamp(),
+           parsed_hashes_meta_value.version());
+  }
+  delete meta_iter;
+
+  printf("\n***************Hashes Field Data***************\n");
+  auto field_iter = db_->NewIterator(iterator_options, handles_[1]);
+  for (field_iter->SeekToFirst();
+       field_iter->Valid();
+       field_iter->Next()) {
+    ParsedHashesDataKey parsed_hashes_data_key(field_iter->key());
+    printf("[key : %-30s] [field : %-20s] [value : %-20s] [version : %d]\n",
+           parsed_hashes_data_key.key().ToString().c_str(),
+           parsed_hashes_data_key.field().ToString().c_str(),
+           field_iter->value().ToString().c_str(),
+           parsed_hashes_data_key.version());
+  }
+  delete field_iter;
 }
 
 }  //  namespace blackwidow

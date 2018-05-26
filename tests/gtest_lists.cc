@@ -1404,33 +1404,530 @@ TEST_F(ListsTest, LSetTest) {
 
 // LTrim
 TEST_F(ListsTest, LTrimTest) {
+
   uint64_t num;
-  std::vector<std::string> values;
-  for (int32_t i = 0; i < 100; i++) {
-    values.push_back("LTRIM_VALUE"+ std::to_string(i));
-  }
-  s = db.RPush("LTRIM_KEY", values, &num);
-  ASSERT_EQ(num, values.size());
+  // ***************** Group 1 Test *****************
+  //  "a" -> "b" -> "c" -> "d" -> "e"
+  //   0      1      2      3      4
+  //  -5     -4     -3     -2     -1
+  std::vector<std::string> gp1_nodes {"a", "b", "c", "d", "e"};
+  s = db.RPush("GP1_LTRIM_KEY", gp1_nodes, &num);
   ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp1_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP1_LTRIM_KEY", gp1_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP1_LTRIM_KEY", {"a", "b", "c", "d", "e"}));
 
-  std::vector<std::string> result;
-  s = db.LRange("LTRIM_KEY", 0, 100, &result);
+  s = db.LTrim("GP1_LTRIM_KEY", 0, 4);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(result.size(), 100);
-  for (int32_t i = 0; i < 100; i++) {
-    ASSERT_STREQ(result[i].c_str(), values[i].c_str());
-  }
-  result.clear();
+  ASSERT_TRUE(len_match(&db, "GP1_LTRIM_KEY", gp1_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP1_LTRIM_KEY", {"a", "b", "c", "d", "e"}));
 
-  s = db.LTrim("LTRIM_KEY", 0, 50);
+  s = db.LTrim("GP1_LTRIM_KEY", 0, -1);
   ASSERT_TRUE(s.ok());
-  s = db.LRange("LTRIM_KEY", 0, 50, &result);
+  ASSERT_TRUE(len_match(&db, "GP1_LTRIM_KEY", gp1_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP1_LTRIM_KEY", {"a", "b", "c", "d", "e"}));
+
+  s = db.LTrim("GP1_LTRIM_KEY", -5, 4);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(result.size(), 51);
-  for (int32_t i = 0; i < 51; i++) {
-    ASSERT_STREQ(result[i].c_str(), values[i].c_str());
-  }
-  result.clear();
+  ASSERT_TRUE(len_match(&db, "GP1_LTRIM_KEY", gp1_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP1_LTRIM_KEY", {"a", "b", "c", "d", "e"}));
+
+  s = db.LTrim("GP1_LTRIM_KEY", -5, -1);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(len_match(&db, "GP1_LTRIM_KEY", gp1_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP1_LTRIM_KEY", {"a", "b", "c", "d", "e"}));
+
+
+  // ***************** Group 2 Test *****************
+  //  "a" -> "b" -> "c" -> "d" -> "e"
+  //   0      1      2      3      4
+  //  -5     -4     -3     -2     -1
+  std::vector<std::string> gp2_nodes {"a", "b", "c", "d", "e"};
+  s = db.RPush("GP2_LTRIM_KEY", gp2_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp2_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP2_LTRIM_KEY", gp2_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP2_LTRIM_KEY", {"a", "b", "c", "d", "e"}));
+
+  s = db.LTrim("GP2_LTRIM_KEY", 0, 2);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(len_match(&db, "GP2_LTRIM_KEY", 3));
+  ASSERT_TRUE(elements_match(&db, "GP2_LTRIM_KEY", {"a", "b", "c"}));
+
+
+  // ***************** Group 3 Test *****************
+  //  "a" -> "b" -> "c" -> "d" -> "e"
+  //   0      1      2      3      4
+  //  -5     -4     -3     -2     -1
+  std::vector<std::string> gp3_nodes {"a", "b", "c", "d", "e"};
+  s = db.RPush("GP3_LTRIM_KEY", gp3_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp3_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP3_LTRIM_KEY", gp3_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP3_LTRIM_KEY", {"a", "b", "c", "d", "e"}));
+
+  s = db.LTrim("GP3_LTRIM_KEY", 0, -3);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(len_match(&db, "GP3_LTRIM_KEY", 3));
+  ASSERT_TRUE(elements_match(&db, "GP3_LTRIM_KEY", {"a", "b", "c"}));
+
+
+  // ***************** Group 4 Test *****************
+  //  "a" -> "b" -> "c" -> "d" -> "e"
+  //   0      1      2      3      4
+  //  -5     -4     -3     -2     -1
+  std::vector<std::string> gp4_nodes {"a", "b", "c", "d", "e"};
+  s = db.RPush("GP4_LTRIM_KEY", gp4_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp4_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP4_LTRIM_KEY", gp4_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP4_LTRIM_KEY", {"a", "b", "c", "d", "e"}));
+
+  s = db.LTrim("GP4_LTRIM_KEY", -5, 2);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(len_match(&db, "GP4_LTRIM_KEY", 3));
+  ASSERT_TRUE(elements_match(&db, "GP4_LTRIM_KEY", {"a", "b", "c"}));
+
+
+  // ***************** Group 5 Test *****************
+  //  "a" -> "b" -> "c" -> "d" -> "e"
+  //   0      1      2      3      4
+  //  -5     -4     -3     -2     -1
+  std::vector<std::string> gp5_nodes {"a", "b", "c", "d", "e"};
+  s = db.RPush("GP5_LTRIM_KEY", gp5_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp5_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP5_LTRIM_KEY", gp5_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP5_LTRIM_KEY", {"a", "b", "c", "d", "e"}));
+
+  s = db.LTrim("GP5_LTRIM_KEY", -5, -3);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(len_match(&db, "GP5_LTRIM_KEY", 3));
+  ASSERT_TRUE(elements_match(&db, "GP5_LTRIM_KEY", {"a", "b", "c"}));
+
+
+  // ***************** Group 6 Test *****************
+  //  "a" -> "b" -> "c" -> "d" -> "e"
+  //   0      1      2      3      4
+  //  -5     -4     -3     -2     -1
+  std::vector<std::string> gp6_nodes {"a", "b", "c", "d", "e"};
+  s = db.RPush("GP6_LTRIM_KEY", gp6_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp6_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP6_LTRIM_KEY", gp6_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP6_LTRIM_KEY", {"a", "b", "c", "d", "e"}));
+
+  s = db.LTrim("GP6_LTRIM_KEY", -100, 2);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(len_match(&db, "GP6_LTRIM_KEY", 3));
+  ASSERT_TRUE(elements_match(&db, "GP6_LTRIM_KEY", {"a", "b", "c"}));
+
+
+  // ***************** Group 7 Test *****************
+  //  "a" -> "b" -> "c" -> "d" -> "e"
+  //   0      1      2      3      4
+  //  -5     -4     -3     -2     -1
+  std::vector<std::string> gp7_nodes {"a", "b", "c", "d", "e"};
+  s = db.RPush("GP7_LTRIM_KEY", gp7_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp7_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP7_LTRIM_KEY", gp7_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP7_LTRIM_KEY", {"a", "b", "c", "d", "e"}));
+
+  s = db.LTrim("GP7_LTRIM_KEY", -100, -3);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(len_match(&db, "GP7_LTRIM_KEY", 3));
+  ASSERT_TRUE(elements_match(&db, "GP7_LTRIM_KEY", {"a", "b", "c"}));
+
+
+  // ***************** Group 8 Test *****************
+  //  "a" -> "b" -> "c" -> "d" -> "e"
+  //   0      1      2      3      4
+  //  -5     -4     -3     -2     -1
+  std::vector<std::string> gp8_nodes {"a", "b", "c", "d", "e"};
+  s = db.RPush("GP8_LTRIM_KEY", gp8_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp8_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP8_LTRIM_KEY", gp8_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP8_LTRIM_KEY", {"a", "b", "c", "d", "e"}));
+
+  s = db.LTrim("GP8_LTRIM_KEY", 1, 3);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(len_match(&db, "GP8_LTRIM_KEY", 3));
+  ASSERT_TRUE(elements_match(&db, "GP8_LTRIM_KEY", {"b", "c", "d"}));
+
+
+  // ***************** Group 9 Test *****************
+  //  "a" -> "b" -> "c" -> "d" -> "e"
+  //   0      1      2      3      4
+  //  -5     -4     -3     -2     -1
+  std::vector<std::string> gp9_nodes {"a", "b", "c", "d", "e"};
+  s = db.RPush("GP9_LTRIM_KEY", gp9_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp9_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP9_LTRIM_KEY", gp9_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP9_LTRIM_KEY", {"a", "b", "c", "d", "e"}));
+
+  s = db.LTrim("GP9_LTRIM_KEY", 1, -2);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(len_match(&db, "GP9_LTRIM_KEY", 3));
+  ASSERT_TRUE(elements_match(&db, "GP9_LTRIM_KEY", {"b", "c", "d"}));
+
+
+  // ***************** Group 10 Test *****************
+  //  "a" -> "b" -> "c" -> "d" -> "e"
+  //   0      1      2      3      4
+  //  -5     -4     -3     -2     -1
+  std::vector<std::string> gp10_nodes {"a", "b", "c", "d", "e"};
+  s = db.RPush("GP10_LTRIM_KEY", gp10_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp10_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP10_LTRIM_KEY", gp10_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP10_LTRIM_KEY", {"a", "b", "c", "d", "e"}));
+
+  s = db.LTrim("GP10_LTRIM_KEY", -4, 3);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(len_match(&db, "GP10_LTRIM_KEY", 3));
+  ASSERT_TRUE(elements_match(&db, "GP10_LTRIM_KEY", {"b", "c", "d"}));
+
+
+  // ***************** Group 11 Test *****************
+  //  "a" -> "b" -> "c" -> "d" -> "e"
+  //   0      1      2      3      4
+  //  -5     -4     -3     -2     -1
+  std::vector<std::string> gp11_nodes {"a", "b", "c", "d", "e"};
+  s = db.RPush("GP11_LTRIM_KEY", gp11_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp11_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP11_LTRIM_KEY", gp11_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP11_LTRIM_KEY", {"a", "b", "c", "d", "e"}));
+
+  s = db.LTrim("GP11_LTRIM_KEY", -4, -2);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(len_match(&db, "GP11_LTRIM_KEY", 3));
+  ASSERT_TRUE(elements_match(&db, "GP11_LTRIM_KEY", {"b", "c", "d"}));
+
+
+  // ***************** Group 12 Test *****************
+  //  "a" -> "b" -> "c" -> "d" -> "e"
+  //   0      1      2      3      4
+  //  -5     -4     -3     -2     -1
+  std::vector<std::string> gp12_nodes {"a", "b", "c", "d", "e"};
+  s = db.RPush("GP12_LTRIM_KEY", gp12_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp12_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP12_LTRIM_KEY", gp12_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP12_LTRIM_KEY", {"a", "b", "c", "d", "e"}));
+
+  s = db.LTrim("GP12_LTRIM_KEY", 2, 2);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(len_match(&db, "GP12_LTRIM_KEY", 1));
+  ASSERT_TRUE(elements_match(&db, "GP12_LTRIM_KEY", {"c"}));
+
+
+  // ***************** Group 13 Test *****************
+  //  "a" -> "b" -> "c" -> "d" -> "e"
+  //   0      1      2      3      4
+  //  -5     -4     -3     -2     -1
+  std::vector<std::string> gp13_nodes {"a", "b", "c", "d", "e"};
+  s = db.RPush("GP13_LTRIM_KEY", gp13_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp13_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP13_LTRIM_KEY", gp13_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP13_LTRIM_KEY", {"a", "b", "c", "d", "e"}));
+
+  s = db.LTrim("GP13_LTRIM_KEY", 2, -3);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(len_match(&db, "GP13_LTRIM_KEY", 1));
+  ASSERT_TRUE(elements_match(&db, "GP13_LTRIM_KEY", {"c"}));
+
+
+  // ***************** Group 14 Test *****************
+  //  "a" -> "b" -> "c" -> "d" -> "e"
+  //   0      1      2      3      4
+  //  -5     -4     -3     -2     -1
+  std::vector<std::string> gp14_nodes {"a", "b", "c", "d", "e"};
+  s = db.RPush("GP14_LTRIM_KEY", gp14_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp14_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP14_LTRIM_KEY", gp14_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP14_LTRIM_KEY", {"a", "b", "c", "d", "e"}));
+
+  s = db.LTrim("GP14_LTRIM_KEY", -3, -3);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(len_match(&db, "GP14_LTRIM_KEY", 1));
+  ASSERT_TRUE(elements_match(&db, "GP14_LTRIM_KEY", {"c"}));
+
+
+  // ***************** Group 15 Test *****************
+  //  "a" -> "b" -> "c" -> "d" -> "e"
+  //   0      1      2      3      4
+  //  -5     -4     -3     -2     -1
+  std::vector<std::string> gp15_nodes {"a", "b", "c", "d", "e"};
+  s = db.RPush("GP15_LTRIM_KEY", gp15_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp15_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP15_LTRIM_KEY", gp15_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP15_LTRIM_KEY", {"a", "b", "c", "d", "e"}));
+
+  s = db.LTrim("GP15_LTRIM_KEY", 2, 4);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(len_match(&db, "GP15_LTRIM_KEY", 3));
+  ASSERT_TRUE(elements_match(&db, "GP15_LTRIM_KEY", {"c", "d", "e"}));
+
+
+  // ***************** Group 16 Test *****************
+  //  "a" -> "b" -> "c" -> "d" -> "e"
+  //   0      1      2      3      4
+  //  -5     -4     -3     -2     -1
+  std::vector<std::string> gp16_nodes {"a", "b", "c", "d", "e"};
+  s = db.RPush("GP16_LTRIM_KEY", gp16_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp16_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP16_LTRIM_KEY", gp16_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP16_LTRIM_KEY", {"a", "b", "c", "d", "e"}));
+
+  s = db.LTrim("GP16_LTRIM_KEY", 2, -1);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(len_match(&db, "GP16_LTRIM_KEY", 3));
+  ASSERT_TRUE(elements_match(&db, "GP16_LTRIM_KEY", {"c", "d", "e"}));
+
+
+  // ***************** Group 17 Test *****************
+  //  "a" -> "b" -> "c" -> "d" -> "e"
+  //   0      1      2      3      4
+  //  -5     -4     -3     -2     -1
+  std::vector<std::string> gp17_nodes {"a", "b", "c", "d", "e"};
+  s = db.RPush("GP17_LTRIM_KEY", gp17_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp17_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP17_LTRIM_KEY", gp17_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP17_LTRIM_KEY", {"a", "b", "c", "d", "e"}));
+
+  s = db.LTrim("GP17_LTRIM_KEY", -3, 4);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(len_match(&db, "GP17_LTRIM_KEY", 3));
+  ASSERT_TRUE(elements_match(&db, "GP17_LTRIM_KEY", {"c", "d", "e"}));
+
+
+  // ***************** Group 18 Test *****************
+  //  "a" -> "b" -> "c" -> "d" -> "e"
+  //   0      1      2      3      4
+  //  -5     -4     -3     -2     -1
+  std::vector<std::string> gp18_nodes {"a", "b", "c", "d", "e"};
+  s = db.RPush("GP18_LTRIM_KEY", gp18_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp18_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP18_LTRIM_KEY", gp18_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP18_LTRIM_KEY", {"a", "b", "c", "d", "e"}));
+
+  s = db.LTrim("GP18_LTRIM_KEY", -3, -1);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(len_match(&db, "GP18_LTRIM_KEY", 3));
+  ASSERT_TRUE(elements_match(&db, "GP18_LTRIM_KEY", {"c", "d", "e"}));
+
+
+  // ***************** Group 19 Test *****************
+  //  "a" -> "b" -> "c" -> "d" -> "e"
+  //   0      1      2      3      4
+  //  -5     -4     -3     -2     -1
+  std::vector<std::string> gp19_nodes {"a", "b", "c", "d", "e"};
+  s = db.RPush("GP19_LTRIM_KEY", gp19_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp19_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP19_LTRIM_KEY", gp19_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP19_LTRIM_KEY", {"a", "b", "c", "d", "e"}));
+
+  s = db.LTrim("GP19_LTRIM_KEY", -100, 100);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(len_match(&db, "GP19_LTRIM_KEY", 5));
+  ASSERT_TRUE(elements_match(&db, "GP19_LTRIM_KEY", {"a", "b", "c", "d", "e"}));
+
+
+  // ***************** Group 20 Test *****************
+  //  "a" -> "b" -> "c" -> "d" -> "e"
+  //   0      1      2      3      4
+  //  -5     -4     -3     -2     -1
+  std::vector<std::string> gp20_nodes {"a", "b", "c", "d", "e"};
+  s = db.RPush("GP20_LTRIM_KEY", gp20_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp20_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP20_LTRIM_KEY", gp20_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP20_LTRIM_KEY", {"a", "b", "c", "d", "e"}));
+
+  s = db.LTrim("GP20_LTRIM_KEY", 0, 0);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(len_match(&db, "GP20_LTRIM_KEY", 1));
+  ASSERT_TRUE(elements_match(&db, "GP20_LTRIM_KEY", {"a"}));
+
+
+  // ***************** Group 21 Test *****************
+  //  "a" -> "b" -> "c" -> "d" -> "e"
+  //   0      1      2      3      4
+  //  -5     -4     -3     -2     -1
+  std::vector<std::string> gp21_nodes {"a", "b", "c", "d", "e"};
+  s = db.RPush("GP21_LTRIM_KEY", gp21_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp21_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP21_LTRIM_KEY", gp21_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP21_LTRIM_KEY", {"a", "b", "c", "d", "e"}));
+
+  s = db.LTrim("GP21_LTRIM_KEY", -5, -5);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(len_match(&db, "GP21_LTRIM_KEY", 1));
+  ASSERT_TRUE(elements_match(&db, "GP21_LTRIM_KEY", {"a"}));
+
+
+  // ***************** Group 22 Test *****************
+  //  "a" -> "b" -> "c" -> "d" -> "e"
+  //   0      1      2      3      4
+  //  -5     -4     -3     -2     -1
+  std::vector<std::string> gp22_nodes {"a", "b", "c", "d", "e"};
+  s = db.RPush("GP22_LTRIM_KEY", gp22_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp22_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP22_LTRIM_KEY", gp22_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP22_LTRIM_KEY", {"a", "b", "c", "d", "e"}));
+
+  s = db.LTrim("GP22_LTRIM_KEY", -100, 0);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(len_match(&db, "GP22_LTRIM_KEY", 1));
+  ASSERT_TRUE(elements_match(&db, "GP22_LTRIM_KEY", {"a"}));
+
+
+  // ***************** Group 23 Test *****************
+  //  "a" -> "b" -> "c" -> "d" -> "e"
+  //   0      1      2      3      4
+  //  -5     -4     -3     -2     -1
+  std::vector<std::string> gp23_nodes {"a", "b", "c", "d", "e"};
+  s = db.RPush("GP23_LTRIM_KEY", gp23_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp23_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP23_LTRIM_KEY", gp23_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP23_LTRIM_KEY", {"a", "b", "c", "d", "e"}));
+
+  s = db.LTrim("GP23_LTRIM_KEY", -100, -5);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(len_match(&db, "GP23_LTRIM_KEY", 1));
+  ASSERT_TRUE(elements_match(&db, "GP23_LTRIM_KEY", {"a"}));
+
+
+  // ***************** Group 24 Test *****************
+  //  "a" -> "b" -> "c" -> "d" -> "e"
+  //   0      1      2      3      4
+  //  -5     -4     -3     -2     -1
+  std::vector<std::string> gp24_nodes {"a", "b", "c", "d", "e"};
+  s = db.RPush("GP24_LTRIM_KEY", gp24_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp24_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP24_LTRIM_KEY", gp24_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP24_LTRIM_KEY", {"a", "b", "c", "d", "e"}));
+
+  s = db.LTrim("GP24_LTRIM_KEY", 3, 1);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(len_match(&db, "GP24_LTRIM_KEY", 0));
+  ASSERT_TRUE(elements_match(&db, "GP24_LTRIM_KEY", {}));
+
+
+  // ***************** Group 25 Test *****************
+  //  "a" -> "b" -> "c" -> "d" -> "e"
+  //   0      1      2      3      4
+  //  -5     -4     -3     -2     -1
+  std::vector<std::string> gp25_nodes {"a", "b", "c", "d", "e"};
+  s = db.RPush("GP25_LTRIM_KEY", gp25_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp25_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP25_LTRIM_KEY", gp25_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP25_LTRIM_KEY", {"a", "b", "c", "d", "e"}));
+
+  s = db.LTrim("GP25_LTRIM_KEY", -100, -110);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(len_match(&db, "GP25_LTRIM_KEY", 0));
+  ASSERT_TRUE(elements_match(&db, "GP25_LTRIM_KEY", {}));
+
+
+  // ***************** Group 26 Test *****************
+  //  "a" -> "b" -> "c" -> "d" -> "e"
+  //   0      1      2      3      4
+  //  -5     -4     -3     -2     -1
+  std::vector<std::string> gp26_nodes {"a", "b", "c", "d", "e"};
+  s = db.RPush("GP26_LTRIM_KEY", gp26_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp26_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP26_LTRIM_KEY", gp26_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP26_LTRIM_KEY", {"a", "b", "c", "d", "e"}));
+
+  s = db.LTrim("GP26_LTRIM_KEY", 110, 100);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(len_match(&db, "GP26_LTRIM_KEY", 0));
+  ASSERT_TRUE(elements_match(&db, "GP26_LTRIM_KEY", {}));
+
+
+  // ***************** Group 27 Test *****************
+  //  "a" -> "b"
+  //   0      1
+  //  -2     -1
+  std::vector<std::string> gp27_nodes {"a", "b"};
+  s = db.RPush("GP27_LTRIM_KEY", gp27_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp27_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP27_LTRIM_KEY", gp27_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP27_LTRIM_KEY", {"a", "b"}));
+
+  s = db.LTrim("GP27_LTRIM_KEY", 0, 0);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(len_match(&db, "GP27_LTRIM_KEY", 1));
+  ASSERT_TRUE(elements_match(&db, "GP27_LTRIM_KEY", {"a"}));
+
+
+  // ***************** Group 28 Test *****************
+  //  "a" -> "b"
+  //   0      1
+  //  -2     -1
+  std::vector<std::string> gp28_nodes {"a", "b"};
+  s = db.RPush("GP28_LTRIM_KEY", gp28_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp28_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP28_LTRIM_KEY", gp28_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP28_LTRIM_KEY", {"a", "b"}));
+
+  s = db.LTrim("GP28_LTRIM_KEY", 1, 1);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(len_match(&db, "GP28_LTRIM_KEY", 1));
+  ASSERT_TRUE(elements_match(&db, "GP28_LTRIM_KEY", {"b"}));
+
+
+  // ***************** Group 29 Test *****************
+  //  "a" -> "b"
+  //   0      1
+  //  -2     -1
+  std::vector<std::string> gp29_nodes {"a", "b"};
+  s = db.RPush("GP29_LTRIM_KEY", gp29_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp29_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP29_LTRIM_KEY", gp29_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP29_LTRIM_KEY", {"a", "b"}));
+
+  s = db.LTrim("GP29_LTRIM_KEY", -100, 100);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(len_match(&db, "GP29_LTRIM_KEY", 2));
+  ASSERT_TRUE(elements_match(&db, "GP29_LTRIM_KEY", {"a", "b"}));
+
+
+  // ***************** Group 30 Test *****************
+  //  "a" -> "b"
+  //   0      1
+  //  -2     -1
+  std::vector<std::string> gp30_nodes {"a", "b"};
+  s = db.RPush("GP30_LTRIM_KEY", gp30_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp30_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP30_LTRIM_KEY", gp30_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP30_LTRIM_KEY", {"a", "b"}));
+  ASSERT_TRUE(make_expired(&db, "GP30_LTRIM_KEY"));
+
+  s = db.LTrim("GP30_LTRIM_KEY", -100, 100);
+  ASSERT_TRUE(s.IsNotFound());
 }
 
 // RPop

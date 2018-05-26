@@ -1009,6 +1009,27 @@ std::map<BlackWidow::DataType, int64_t> BlackWidow::TTL(const Slice& key,
   return ret;
 }
 
+void BlackWidow::ScanDatabase(const DataType& type) {
+
+  switch (type) {
+    case kStrings:
+        strings_db_->ScanDatabase();
+        break;
+    case kHashes:
+        hashes_db_->ScanDatabase();
+        break;
+    case kSets:
+        sets_db_->ScanDatabase();
+        break;
+    case kLists:
+        lists_db_->ScanDatabase();
+        break;
+    case kZSets:
+        zsets_db_->ScanDatabase();
+        break;
+  }
+}
+
 // HyperLogLog
 Status BlackWidow::PfAdd(const Slice& key,
                          const std::vector<std::string>& values, bool* update) {

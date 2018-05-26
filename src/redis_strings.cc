@@ -971,4 +971,27 @@ Status RedisStrings::TTL(const Slice& key, int64_t* timestamp) {
   return s;
 }
 
+void RedisStrings::ScanDatabase() {
+
+  rocksdb::ReadOptions iterator_options;
+  const rocksdb::Snapshot* snapshot;
+  ScopeSnapshot ss(db_, &snapshot);
+  iterator_options.snapshot = snapshot;
+  iterator_options.fill_cache = false;
+
+  printf("\n***************String Data***************\n");
+  auto iter = db_->NewIterator(iterator_options);
+  for (iter->SeekToFirst();
+       iter->Valid();
+       iter->Next()) {
+    ParsedStringsValue parsed_strings_value(iter->value());
+    printf("[key : %-30s] [value : %-30s] [timestamp : %-10d] [version : %d]\n",
+           iter->key().ToString().c_str(),
+           parsed_strings_value.value().ToString().c_str(),
+           parsed_strings_value.timestamp(),
+           parsed_strings_value.version());
+  }
+  delete iter;
+}
+
 }  //  namespace blackwidow
