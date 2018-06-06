@@ -16,6 +16,10 @@
 #include "rocksdb/slice.h"
 
 namespace blackwidow {
+
+const int64_t ZSET_SCORE_MAX = std::numeric_limits<double>::max();
+const int64_t ZSET_SCORE_MIN = std::numeric_limits<double>::lowest();
+
 using Options = rocksdb::Options;
 using Status = rocksdb::Status;
 using Slice = rocksdb::Slice;
@@ -70,6 +74,9 @@ class BlackWidow {
   // Set key to hold the string value. if key
   // already holds a value, it is overwritten
   Status Set(const Slice& key, const Slice& value);
+
+  // Set key to hold the string value. if key exist
+  Status Setxx(const Slice& key, const Slice& value, int32_t* ret);
 
   // Get the value of key. If the key does not exist
   // the special value nil is returned
@@ -536,6 +543,8 @@ class BlackWidow {
   Status ZCount(const Slice& key,
                 double min,
                 double max,
+                bool left_close,
+                bool right_close,
                 int32_t* ret);
 
   // Increments the score of member in the sorted set stored at key by
@@ -662,6 +671,8 @@ class BlackWidow {
   Status ZRemrangebyscore(const Slice& key,
                           double min,
                           double max,
+                          bool left_close,
+                          bool right_close,
                           int32_t* ret);
 
   // Returns the specified range of elements in the sorted set stored at key.

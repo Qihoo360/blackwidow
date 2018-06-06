@@ -232,7 +232,7 @@ Status RedisStrings::Decrby(const Slice& key, int64_t value, int64_t* ret) {
       char* end = nullptr;
       int64_t ival = strtoll(old_value.c_str(), &end, 10);
       if (*end != 0) {
-        return Status::InvalidArgument("Value is not a integer");
+        return Status::Corruption("Value is not a integer");
       }
       if ((value >= 0 && LLONG_MIN + value > ival) ||
           (value < 0 && LLONG_MAX + value < ival)) {
@@ -365,7 +365,7 @@ Status RedisStrings::Incrby(const Slice& key, int64_t value, int64_t* ret) {
       char* end = nullptr;
       int64_t ival = strtoll(old_value.c_str(), &end, 10);
       if (*end != 0) {
-        return Status::InvalidArgument("Value is not a integer");
+        return Status::Corruption("Value is not a integer");
       }
       if ((value >= 0 && LLONG_MAX - value < ival) ||
           (value < 0 && LLONG_MIN - value > ival)) {
@@ -393,7 +393,7 @@ Status RedisStrings::Incrbyfloat(const Slice& key, const Slice& value,
   std::string old_value, new_value;
   long double long_double_by;
   if (StrToLongDouble(value.data(), value.size(), &long_double_by) == -1) {
-    return Status::InvalidArgument("Value is not a vaild float");
+    return Status::Corruption("Value is not a vaild float");
   }
   ScopeRecordLock l(lock_mgr_, key);
   Status s = db_->Get(default_read_options_, key, &old_value);
@@ -409,7 +409,7 @@ Status RedisStrings::Incrbyfloat(const Slice& key, const Slice& value,
       long double total, old_number;
       if (StrToLongDouble(old_value.data(),
                           old_value.size(), &old_number) == -1) {
-        return Status::InvalidArgument("Value is not a vaild float");
+        return Status::Corruption("Value is not a vaild float");
       }
       total = old_number + long_double_by;
       if (LongDoubleToStr(total, &new_value) == -1) {
@@ -483,6 +483,9 @@ Status RedisStrings::MSetnx(const std::vector<BlackWidow::KeyValue>& kvs,
         exists = true;
         break;
       }
+    } else if (s.IsNotFound()) {
+      exists = true;
+      break;
     }
   }
   if (!exists) {
@@ -498,6 +501,30 @@ Status RedisStrings::Set(const Slice& key, const Slice& value) {
   StringsValue strings_value(value);
   ScopeRecordLock l(lock_mgr_, key);
   return db_->Put(default_write_options_, key, strings_value.Encode());
+}
+
+Status RedisStrings::Setxx(const Slice& key, const Slice& value, int32_t* ret) {
+  bool not_found = true;
+  std::string old_value;
+  StringsValue strings_value(value);
+  ScopeRecordLock l(lock_mgr_, key);
+  Status s = db_->Get(default_read_options_, key, &old_value);
+  if (s.ok()) {
+    ParsedStringsValue parsed_strings_value(old_value);
+    if (!parsed_strings_value.IsStale()) {
+      not_found = false;
+    }
+  } else if (!s.IsNotFound()) {
+    return s;
+  }
+
+  if (not_found) {
+    *ret = 0;
+    return s;
+  } else {
+    *ret = 1;
+    return db_->Put(default_write_options_, key, strings_value.Encode());
+  }
 }
 
 Status RedisStrings::SetBit(const Slice& key, int64_t offset,

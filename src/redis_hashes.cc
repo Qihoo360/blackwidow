@@ -216,7 +216,7 @@ Status RedisHashes::HIncrby(const Slice& key, const Slice& field, int64_t value,
         char* end = nullptr;
         int64_t ival = strtoll(old_value.c_str(), &end, 10);
         if (*end != 0) {
-          return Status::InvalidArgument("hash value is not an integer");
+          return Status::Corruption("hash value is not an integer");
         }
         if ((value >= 0 && LLONG_MAX - value < ival) ||
           (value < 0 && LLONG_MIN - value > ival)) {
@@ -266,7 +266,7 @@ Status RedisHashes::HIncrbyfloat(const Slice& key, const Slice& field,
   long double long_double_by;
 
   if (StrToLongDouble(by.data(), by.size(), &long_double_by) == -1) {
-    return Status::InvalidArgument("Value is not a vaild float");
+    return Status::Corruption("value is not a vaild float");
   }
 
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
@@ -291,7 +291,7 @@ Status RedisHashes::HIncrbyfloat(const Slice& key, const Slice& field,
         long double old_value;
         if (StrToLongDouble(old_value_str.data(),
                     old_value_str.size(), &old_value) == -1) {
-          return Status::InvalidArgument("Hash value is not a vaild float");
+          return Status::Corruption("value is not a vaild float");
         }
 
         total = old_value + long_double_by;
@@ -402,6 +402,9 @@ Status RedisHashes::HMGet(const Slice& key,
       }
     }
   } else if (s.IsNotFound()) {
+    for (size_t idx = 0; idx < fields.size(); ++idx) {
+      values->push_back("");
+    }
     return Status::NotFound();
   }
   return Status::OK();

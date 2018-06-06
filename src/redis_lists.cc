@@ -108,6 +108,7 @@ Status RedisLists::LInsert(const Slice& key,
                            const std::string& pivot,
                            const std::string& value,
                            int64_t* ret) {
+  *ret = 0;
   rocksdb::WriteBatch batch;
   ScopeRecordLock l(lock_mgr_, key);
   std::string meta_value;
@@ -207,6 +208,7 @@ Status RedisLists::LInsert(const Slice& key,
 }
 
 Status RedisLists::LLen(const Slice& key, uint64_t* len) {
+  *len = 0;
   std::string meta_value;
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
@@ -302,6 +304,7 @@ Status RedisLists::LPush(const Slice& key,
 }
 
 Status RedisLists::LPushx(const Slice& key, const Slice& value, uint64_t* len) {
+  *len = 0;
   rocksdb::WriteBatch batch;
   ScopeRecordLock l(lock_mgr_, key);
 
@@ -379,6 +382,7 @@ Status RedisLists::LRange(const Slice& key, int64_t start, int64_t stop,
 
 Status RedisLists::LRem(const Slice& key, int64_t count,
                         const Slice& value, uint64_t* ret) {
+  *ret = 0;
   rocksdb::WriteBatch batch;
   ScopeRecordLock l(lock_mgr_, key);
   std::string meta_value;
@@ -509,7 +513,7 @@ Status RedisLists::LSet(const Slice& key, int64_t index, const Slice& value) {
         : parsed_lists_meta_value.right_index() + index;
       if (target_index <= parsed_lists_meta_value.left_index()
         || target_index >= parsed_lists_meta_value.right_index()) {
-        return Status::NotFound();
+        return Status::Corruption("index out of range");
       }
       ListsDataKey lists_data_key(key, version, target_index);
       return db_->Put(default_write_options_, handles_[1],
@@ -769,7 +773,9 @@ Status RedisLists::RPush(const Slice& key,
 }
 
 Status RedisLists::RPushx(const Slice& key, const Slice& value, uint64_t* len) {
+  *len = 0;
   rocksdb::WriteBatch batch;
+
   ScopeRecordLock l(lock_mgr_, key);
   std::string meta_value;
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);

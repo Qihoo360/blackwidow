@@ -143,6 +143,10 @@ Status BlackWidow::Set(const Slice& key, const Slice& value) {
   return strings_db_->Set(key, value);
 }
 
+Status BlackWidow::Setxx(const Slice& key, const Slice& value, int32_t* ret) {
+  return strings_db_->Setxx(key, value, ret);
+}
+
 Status BlackWidow::Get(const Slice& key, std::string* value) {
   return strings_db_->Get(key, value);
 }
@@ -470,8 +474,10 @@ Status BlackWidow::ZCard(const Slice& key,
 Status BlackWidow::ZCount(const Slice& key,
                           double min,
                           double max,
+                          bool left_close,
+                          bool right_close,
                           int32_t* ret) {
-  return zsets_db_->ZCount(key, min, max, ret);
+  return zsets_db_->ZCount(key, min, max, left_close, right_close, ret);
 }
 
 Status BlackWidow::ZIncrby(const Slice& key,
@@ -519,8 +525,10 @@ Status BlackWidow::ZRemrangebyrank(const Slice& key,
 Status BlackWidow::ZRemrangebyscore(const Slice& key,
                                     double min,
                                     double max,
+                                    bool left_close,
+                                    bool right_close,
                                     int32_t* ret) {
-  return zsets_db_->ZRemrangebyscore(key, min, max, ret);
+  return zsets_db_->ZRemrangebyscore(key, min, max, left_close, right_close, ret);
 }
 
 Status BlackWidow::ZRevrange(const Slice& key,
