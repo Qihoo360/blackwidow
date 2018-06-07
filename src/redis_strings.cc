@@ -268,22 +268,25 @@ Status RedisStrings::Get(const Slice& key, std::string* value) {
 }
 
 Status RedisStrings::GetBit(const Slice& key, int64_t offset, int32_t* ret) {
-  std::string value;
-  Status s = db_->Get(default_read_options_, key, &value);
+  std::string meta_value;
+  Status s = db_->Get(default_read_options_, key, &meta_value);
   if (s.ok() || s.IsNotFound()) {
-    ParsedStringsValue parsed_strings_value(value);
-    if (parsed_strings_value.IsStale()) {
+    std::string data_value;
+    if (s.ok()) {
+      ParsedStringsValue parsed_strings_value(&meta_value);
+      if (parsed_strings_value.IsStale()) {
+        *ret = 0;
+        return Status::OK();
+      } else {
+        data_value = parsed_strings_value.value().ToString();
+      }
+    }
+    size_t byte = offset >> 3;
+    size_t bit = 7 - (offset & 0x7);
+    if (byte + 1 > data_value.length()) {
       *ret = 0;
     } else {
-      parsed_strings_value.StripSuffix();
-      size_t byte = offset >> 3;
-      size_t bit = 7 - (offset & 0x7);
-      // the offset is beyond the string length
-      if (byte + 1 > value.length()) {
-        *ret = 0;
-      } else {
-        *ret = value[byte] & (1 << bit);
-      }
+      *ret = (data_value[byte] & 1<<bit) >> bit;
     }
   } else {
     return s;
@@ -483,9 +486,6 @@ Status RedisStrings::MSetnx(const std::vector<BlackWidow::KeyValue>& kvs,
         exists = true;
         break;
       }
-    } else if (s.IsNotFound()) {
-      exists = true;
-      break;
     }
   }
   if (!exists) {
@@ -528,50 +528,46 @@ Status RedisStrings::Setxx(const Slice& key, const Slice& value, int32_t* ret) {
 }
 
 Status RedisStrings::SetBit(const Slice& key, int64_t offset,
-                            int32_t value, int32_t* ret) {
-  std::string old_value;
+                            int32_t on, int32_t* ret) {
+  std::string meta_value;
   if (offset < 0) {
     return Status::InvalidArgument("offset < 0");
   }
 
   ScopeRecordLock l(lock_mgr_, key);
-  Status s = db_->Get(default_read_options_, key, &old_value);
+  Status s = db_->Get(default_read_options_, key, &meta_value);
   if (s.ok() || s.IsNotFound()) {
-    ParsedStringsValue parsed_strings_value(old_value);
-    if (parsed_strings_value.IsStale()) {
-      old_value.clear();
-    } else {
-      parsed_strings_value.StripSuffix();
+    std::string data_value;
+    if (s.ok()) {
+      ParsedStringsValue parsed_strings_value(&meta_value);
+      if (!parsed_strings_value.IsStale()) {
+        data_value = parsed_strings_value.value().ToString();
+      }
     }
-    // Get current values
     size_t byte = offset >> 3;
     size_t bit = 7 - (offset & 0x7);
-    int32_t byteval;
-    size_t value_lenth = old_value.length();
+    char byte_val;
+    size_t value_lenth = data_value.length();
     if (byte + 1 > value_lenth) {
       *ret = 0;
-      byteval = 0;
+      byte_val = 0;
     } else {
-      *ret = old_value[byte] & (1 << bit);
-      byteval = old_value[byte];
+      *ret = (data_value[byte] & 1<<bit) >> bit;
+      byte_val = data_value[byte];
     }
-
-    // Bit does not change, return
-    if (*ret == value) {
+    if (*ret == on) {
       return Status::OK();
     }
-
-    // Update byte with new bit value
-    byteval &= ~(1 << bit);   //  set the original value as zero
-    byteval |= ((value & 0x1) << bit);
+    byte_val &= (char) ~(1 << bit);
+    byte_val |= (char) ((on & 0x1) << bit);
     if (byte + 1 <= value_lenth) {
-      old_value.replace(byte, 1, static_cast<char>(byteval), 1);
+      data_value.replace(byte, 1, &byte_val, 1);
     } else {
-      old_value.append(byte - value_lenth, 0);
-      old_value.append(1, static_cast<char>(byteval));
+      data_value.append(byte + 1 - value_lenth - 1, 0);
+      data_value.append(1, byte_val);
     }
-    StringsValue strings_value(old_value);
-    return db_->Put(default_write_options_, key, strings_value.Encode());
+    StringsValue strings_value(data_value);
+    return  db_->Put(rocksdb::WriteOptions(), key, strings_value.Encode());
   } else {
     return s;
   }

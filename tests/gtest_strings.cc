@@ -31,6 +31,17 @@ class StringsTest : public ::testing::Test {
   blackwidow::Status s;
 };
 
+static bool make_expired(blackwidow::BlackWidow *const db,
+                         const Slice& key) {
+  std::map<BlackWidow::DataType, rocksdb::Status> type_status;
+  int ret = db->Expire(key, 1, &type_status);
+  if (!ret || !type_status[BlackWidow::DataType::kStrings].ok()) {
+    return false;
+  }
+  std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+  return true;
+}
+
 // Append
 TEST_F(StringsTest, AppendTest) {
   int32_t ret;
@@ -50,19 +61,21 @@ TEST_F(StringsTest, AppendTest) {
 // BitCount
 TEST_F(StringsTest, BitCountTest) {
   int32_t ret;
-  s = db.Set("BITCOUNT_KEY", "foobar");
+
+  // ***************** Group 1 Test *****************
+  s = db.Set("GP1_BITCOUNT_KEY", "foobar");
   ASSERT_TRUE(s.ok());
 
   // Not have offset
-  s = db.BitCount("BITCOUNT_KEY", 0, -1, &ret, false);
+  s = db.BitCount("GP1_BITCOUNT_KEY", 0, -1, &ret, false);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 26);
 
   // Have offset
-  s = db.BitCount("BITCOUNT_KEY", 0, 0, &ret, true);
+  s = db.BitCount("GP1_BITCOUNT_KEY", 0, 0, &ret, true);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 4);
-  s = db.BitCount("BITCOUNT_KEY", 1, 1, &ret, true);
+  s = db.BitCount("GP1_BITCOUNT_KEY", 1, 1, &ret, true);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 6);
 }
@@ -129,7 +142,7 @@ TEST_F(StringsTest, DecrbyTest) {
   s = db.Set("DECRBY_KEY", "DECRBY_VALUE");
   ASSERT_TRUE(s.ok());
   s = db.Decrby("DECRBY_KEY", 5, &ret);
-  ASSERT_TRUE(s.IsInvalidArgument());
+  ASSERT_TRUE(s.IsCorruption());
 
   // Less than the minimum number -9223372036854775808
   s = db.Set("DECRBY_KEY", "-2");
@@ -141,12 +154,19 @@ TEST_F(StringsTest, DecrbyTest) {
 // Get
 TEST_F(StringsTest, GetTest) {
   std::string value;
-  s = db.Set("GET_KEY", "VALUE");
+  s = db.Set("GET_KEY", "GET_VALUE_1");
   ASSERT_TRUE(s.ok());
 
   s = db.Get("GET_KEY", &value);
   ASSERT_TRUE(s.ok());
-  ASSERT_STREQ(value.c_str(), "VALUE");
+  ASSERT_STREQ(value.c_str(), "GET_VALUE_1");
+
+  s = db.Set("GET_KEY", "GET_VALUE_2");
+  ASSERT_TRUE(s.ok());
+
+  s = db.Get("GET_KEY", &value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_STREQ(value.c_str(), "GET_VALUE_2");
 }
 
 // GetBit
@@ -222,7 +242,7 @@ TEST_F(StringsTest, IncrbyTest) {
   s = db.Set("INCRBY_KEY", "INCRBY_VALUE");
   ASSERT_TRUE(s.ok());
   s = db.Incrby("INCRBY_KEY", 5, &ret);
-  ASSERT_TRUE(s.IsInvalidArgument());
+  ASSERT_TRUE(s.IsCorruption());
 
   s = db.Set("INCRBY_KEY", "1");
   ASSERT_TRUE(s.ok());
@@ -247,7 +267,7 @@ TEST_F(StringsTest, IncrbyfloatTest) {
   s = db.Set("INCRBYFLOAT_KEY", "INCRBY_VALUE");
   ASSERT_TRUE(s.ok());
   s = db.Incrbyfloat("INCRBYFLOAT_KEY", "5", &value);
-  ASSERT_TRUE(s.IsInvalidArgument());
+  ASSERT_TRUE(s.IsCorruption());
 }
 
 // MGet
@@ -310,28 +330,88 @@ TEST_F(StringsTest, MSetnxTest) {
 
 // Set
 TEST_F(StringsTest, SetTest) {
-  s = db.Set("TEST_KEY", "TEST_VALUE");
+  s = db.Set("SET_KEY", "SET_VALUE_1");
   ASSERT_TRUE(s.ok());
+
+  std::string value;
+  s = db.Get("SET_KEY", &value);
+  ASSERT_STREQ(value.c_str(), "SET_VALUE_1");
+
+  s = db.Set("SET_KEY", "SET_VALUE_2");
+  ASSERT_TRUE(s.ok());
+
+  s = db.Get("SET_KEY", &value);
+  ASSERT_STREQ(value.c_str(), "SET_VALUE_2");
 }
 
 // SetBit
 TEST_F(StringsTest, SetBitTest) {
   int32_t ret;
-  s = db.SetBit("SETBIT_KEY", 7, 1, &ret);
+  // ***************** Group 1 Test *****************
+  s = db.SetBit("GP1_SETBIT_KEY", 7, 1, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 0);
 
-  s = db.SetBit("SETBIT_KEY", 7, 0, &ret);
+  s = db.SetBit("GP1_SETBIT_KEY", 7, 0, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 1);
 
   std::string value;
-  s = db.Get("SETBIT_KEY", &value);
+  s = db.Get("GP1_SETBIT_KEY", &value);
   ASSERT_TRUE(s.ok());
   ASSERT_STREQ(value.c_str(), "\x00");
 
+
+  // ***************** Group 2 Test *****************
+  s = db.SetBit("GP2_SETBIT_KEY", 10081, 1, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 0);
+
+  s = db.GetBit("GP2_SETBIT_KEY", 10081, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+
+  s = db.SetBit("GP2_SETBIT_KEY", 10081, 1, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+
+  s = db.GetBit("GP2_SETBIT_KEY", 10081, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+
+
+  // ***************** Group 3 Test *****************
+  s = db.SetBit("GP3_SETBIT_KEY", 1, 1, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 0);
+
+  s = db.GetBit("GP3_SETBIT_KEY", 1, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+
+  s = db.SetBit("GP3_SETBIT_KEY", 1, 0, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+
+  s = db.GetBit("GP3_SETBIT_KEY", 1, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 0);
+
+
+  // ***************** Group 4 Test *****************
+  s = db.SetBit("GP4_SETBIT_KEY", 1, 1, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 0);
+  ASSERT_TRUE(make_expired(&db, "GP4_SETBIT_KEY"));
+
+  s = db.SetBit("GP4_SETBIT_KEY", 1, 1, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 0);
+
+
+  // ***************** Group 5 Test *****************
   // The offset argument is less than 0
-  s = db.SetBit("SETBIT_KEY", -1, 0, &ret);
+  s = db.SetBit("GP5_SETBIT_KEY", -1, 0, &ret);
   ASSERT_TRUE(s.IsInvalidArgument());
 }
 
@@ -362,16 +442,16 @@ TEST_F(StringsTest, SetexTest) {
 
 // Setnx
 TEST_F(StringsTest, SetnxTest) {
-  // If the key was not set, return 0
-  int32_t ret;
-  s = db.Setnx("TEST_KEY", "TEST_VALUE", &ret);
-  ASSERT_TRUE(s.ok());
-  ASSERT_EQ(ret, 0);
-
   // If the key was set, return 1
+  int32_t ret;
   s = db.Setnx("SETNX_KEY", "TEST_VALUE", &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 1);
+
+  // If the key was not set, return 0
+  s = db.Setnx("SETNX_KEY", "TEST_VALUE", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 0);
 }
 
 // Setrange
