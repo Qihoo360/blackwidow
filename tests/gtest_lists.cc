@@ -1326,11 +1326,11 @@ TEST_F(ListsTest, LSetTest) {
   ASSERT_TRUE(elements_match(&db, "GP1_LSET_KEY", {"x", "o", "x", "o", "o"}));
 
   s = db.LSet("GP1_LSET_KEY", 5, "x");
-  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_TRUE(s.IsCorruption());
   ASSERT_TRUE(elements_match(&db, "GP1_LSET_KEY", {"x", "o", "x", "o", "o"}));
 
   s = db.LSet("GP1_LSET_KEY", -100, "x");
-  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_TRUE(s.IsCorruption());
   ASSERT_TRUE(elements_match(&db, "GP1_LSET_KEY", {"x", "o", "x", "o", "o"}));
 
   s = db.LSet("GP1_LSET_KEY", 0, "o");
@@ -1398,7 +1398,7 @@ TEST_F(ListsTest, LSetTest) {
   ASSERT_TRUE(elements_match(&db, "GP4_LSET_KEY", {"o"}));
 
   s = db.LSet("GP4_LSET_KEY", -2, "x");
-  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_TRUE(s.IsCorruption());
   ASSERT_TRUE(elements_match(&db, "GP4_LSET_KEY", {"o"}));
 }
 

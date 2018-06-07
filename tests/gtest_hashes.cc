@@ -204,7 +204,7 @@ TEST_F(HashesTest, HIncrby) {
   s = db.HSet("HINCRBY_KEY", "HINCRBY_STR_FIELD", "HINCRBY_VALEU", &ret);
   ASSERT_TRUE(s.ok());
   s = db.HIncrby("HINCRBY_KEY", "HINCRBY_STR_FIELD", 100, &value);
-  ASSERT_TRUE(s.IsInvalidArgument());
+  ASSERT_TRUE(s.IsCorruption());
 
   // If field does not exist the value is set to 0 before the
   // operation is performed
@@ -258,7 +258,7 @@ TEST_F(HashesTest, HIncrbyfloat) {
   // floating point number
   s = db.HIncrbyfloat("HINCRBYFLOAT_KEY",
           "HINCRBYFLOAT_FIELD", "HINCRBYFLOAT_BY", &new_value);
-  ASSERT_TRUE(s.IsInvalidArgument());
+  ASSERT_TRUE(s.IsCorruption());
   s = db.HGet("HINCRBYFLOAT_KEY", "HINCRBYFLOAT_FIELD", &new_value);
   ASSERT_TRUE(s.IsNotFound());
 
@@ -282,7 +282,7 @@ TEST_F(HashesTest, HIncrbyfloat) {
   ASSERT_TRUE(s.ok());
   s = db.HIncrbyfloat("HINCRBYFLOAT_KEY", "HINCRBYFLOAT_STR_FIELD",
           "123.456", &new_value);
-  ASSERT_TRUE(s.IsInvalidArgument());
+  ASSERT_TRUE(s.IsCorruption());
   s = db.HLen("HINCRBYFLOAT_KEY", &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 2);
