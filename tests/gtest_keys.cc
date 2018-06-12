@@ -36,7 +36,7 @@ class KeysTest : public ::testing::Test {
 // predetermined.
 TEST_F(KeysTest, ScanTest) {
   // Keys
-  std::vector<BlackWidow::KeyValue> kvs;
+  std::vector<blackwidow::KeyValue> kvs;
   int64_t cursor_ret;
   kvs.push_back({"SCAN_KEY_A", "VALUE"});
   kvs.push_back({"SCAN_KEY_B", "VALUE"});
@@ -149,7 +149,7 @@ TEST_F(KeysTest, ScanTest) {
 // Expire
 TEST_F(KeysTest, ExpireTest) {
   std::string value;
-  std::map<BlackWidow::DataType, Status> type_status;
+  std::map<blackwidow::DataType, Status> type_status;
   int32_t ret;
 
   // Strings
@@ -201,7 +201,7 @@ TEST_F(KeysTest, ExpireTest) {
 TEST_F(KeysTest, DelTest) {
   int32_t ret;
   std::string value;
-  std::map<BlackWidow::DataType, Status> type_status;
+  std::map<blackwidow::DataType, Status> type_status;
   std::vector<std::string> keys {"DEL_KEY"};
 
   // Strings
@@ -253,7 +253,7 @@ TEST_F(KeysTest, DelTest) {
 TEST_F(KeysTest, ExistsTest) {
   int32_t ret;
   uint64_t llen;
-  std::map<BlackWidow::DataType, Status> type_status;
+  std::map<blackwidow::DataType, Status> type_status;
   std::vector<std::string> keys {"EXISTS_KEY"};
 
   // Strings
@@ -283,7 +283,7 @@ TEST_F(KeysTest, ExistsTest) {
 // Expireat
 TEST_F(KeysTest, ExpireatTest) {
   // If the key does not exist
-  std::map<BlackWidow::DataType, Status> type_status;
+  std::map<blackwidow::DataType, Status> type_status;
   int32_t ret = db.Expireat("EXPIREAT_KEY", 0, &type_status);
   ASSERT_EQ(ret, 0);
 
@@ -340,7 +340,7 @@ TEST_F(KeysTest, ExpireatTest) {
 // Persist
 TEST_F(KeysTest, PersistTest) {
   // If the key does not exist
-  std::map<BlackWidow::DataType, Status> type_status;
+  std::map<blackwidow::DataType, Status> type_status;
   int32_t ret = db.Persist("EXPIREAT_KEY", &type_status);
   ASSERT_EQ(ret, 0);
 
@@ -376,7 +376,7 @@ TEST_F(KeysTest, PersistTest) {
   ret = db.Persist("PERSIST_KEY", &type_status);
   ASSERT_EQ(ret, 5);
 
-  std::map<BlackWidow::DataType, int64_t> ttl_ret;
+  std::map<blackwidow::DataType, int64_t> ttl_ret;
   ttl_ret = db.TTL("PERSIST_KEY", &type_status);
   ASSERT_EQ(ttl_ret.size(), 5);
   for (auto it = ttl_ret.begin(); it != ttl_ret.end(); it++) {
@@ -387,8 +387,8 @@ TEST_F(KeysTest, PersistTest) {
 // TTL
 TEST_F(KeysTest, TTLTest) {
   // If the key does not exist
-  std::map<BlackWidow::DataType, Status> type_status;
-  std::map<BlackWidow::DataType, int64_t> ttl_ret;
+  std::map<blackwidow::DataType, Status> type_status;
+  std::map<blackwidow::DataType, int64_t> ttl_ret;
   ttl_ret = db.TTL("TTL_KEY", &type_status);
   ASSERT_EQ(ttl_ret.size(), 5);
   for (auto it = ttl_ret.begin(); it != ttl_ret.end(); it++) {

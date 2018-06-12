@@ -33,9 +33,9 @@ class StringsTest : public ::testing::Test {
 
 static bool make_expired(blackwidow::BlackWidow *const db,
                          const Slice& key) {
-  std::map<BlackWidow::DataType, rocksdb::Status> type_status;
+  std::map<blackwidow::DataType, rocksdb::Status> type_status;
   int ret = db->Expire(key, 1, &type_status);
-  if (!ret || !type_status[BlackWidow::DataType::kStrings].ok()) {
+  if (!ret || !type_status[blackwidow::DataType::kStrings].ok()) {
     return false;
   }
   std::this_thread::sleep_for(std::chrono::milliseconds(2000));
@@ -93,7 +93,7 @@ TEST_F(StringsTest, BitOpTest) {
   std::vector<std::string> src_keys {"BITOP_KEY1", "BITOP_KEY2", "BITOP_KEY3"};
 
   // AND
-  s = db.BitOp(BlackWidow::BitOpType::kBitOpAnd,
+  s = db.BitOp(blackwidow::BitOpType::kBitOpAnd,
                "BITOP_DESTKEY", src_keys, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 10);
@@ -101,7 +101,7 @@ TEST_F(StringsTest, BitOpTest) {
   ASSERT_STREQ(value.c_str(), "@@A@AB\x00\x00\x00\x00");
 
   // OR
-  s = db.BitOp(BlackWidow::BitOpType::kBitOpOr,
+  s = db.BitOp(blackwidow::BitOpType::kBitOpOr,
                "BITOP_DESTKEY", src_keys, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 10);
@@ -109,7 +109,7 @@ TEST_F(StringsTest, BitOpTest) {
   ASSERT_STREQ(value.c_str(), "GOOGOWIDOW");
 
   // XOR
-  s = db.BitOp(BlackWidow::BitOpType::kBitOpXor,
+  s = db.BitOp(blackwidow::BitOpType::kBitOpXor,
                "BITOP_DESTKEY", src_keys, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 10);
@@ -118,14 +118,14 @@ TEST_F(StringsTest, BitOpTest) {
 
   // NOT
   std::vector<std::string> not_keys {"BITOP_KEY1"};
-  s = db.BitOp(BlackWidow::BitOpType::kBitOpNot,
+  s = db.BitOp(blackwidow::BitOpType::kBitOpNot,
                "BITOP_DESTKEY", not_keys, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 6);
   s = db.Get("BITOP_DESTKEY", &value);
   ASSERT_STREQ(value.c_str(), "\xb9\xb0\xb0\xbd\xbe\xad");
   // NOT operation more than two parameters
-  s = db.BitOp(BlackWidow::BitOpType::kBitOpNot,
+  s = db.BitOp(blackwidow::BitOpType::kBitOpNot,
                "BITOP_DESTKEY", src_keys, &ret);
   ASSERT_TRUE(s.IsInvalidArgument());
 }
@@ -272,7 +272,7 @@ TEST_F(StringsTest, IncrbyfloatTest) {
 
 // MGet
 TEST_F(StringsTest, MGetTest) {
-  std::vector<BlackWidow::KeyValue> kvs {{"MGET_KEY1", "VALUE1"},
+  std::vector<blackwidow::KeyValue> kvs {{"MGET_KEY1", "VALUE1"},
                                          {"MGET_KEY2", "VALUE2"},
                                          {"MGET_KEY3", "VALUE3"}};
   s = db.MSet(kvs);
@@ -295,7 +295,7 @@ TEST_F(StringsTest, MGetTest) {
 
 // MSet
 TEST_F(StringsTest, MSetTest) {
-  std::vector<BlackWidow::KeyValue> kvs;
+  std::vector<blackwidow::KeyValue> kvs;
   kvs.push_back({"", "MSET_EMPTY_VALUE"});
   kvs.push_back({"MSET_TEST_KEY1", "MSET_TEST_VALUE1"});
   kvs.push_back({"MSET_TEST_KEY2", "MSET_TEST_VALUE2"});
@@ -308,7 +308,7 @@ TEST_F(StringsTest, MSetTest) {
 // MSetnx
 TEST_F(StringsTest, MSetnxTest) {
   int32_t ret;
-  std::vector<BlackWidow::KeyValue> kvs;
+  std::vector<blackwidow::KeyValue> kvs;
   kvs.push_back({"", "MSET_EMPTY_VALUE"});
   kvs.push_back({"MSET_TEST_KEY1", "MSET_TEST_VALUE1"});
   kvs.push_back({"MSET_TEST_KEY2", "MSET_TEST_VALUE2"});
@@ -467,7 +467,7 @@ TEST_F(StringsTest, SetrangeTest) {
   ASSERT_STREQ(value.c_str(), "HELLO REDIS");
 
   std::vector<std::string> keys {"SETRANGE_KEY"};
-  std::map<BlackWidow::DataType, Status> type_status;
+  std::map<blackwidow::DataType, Status> type_status;
   ret = db.Del(keys, &type_status);
   ASSERT_EQ(ret, 1);
   // If not exist, padded with zero-bytes to make offset fit

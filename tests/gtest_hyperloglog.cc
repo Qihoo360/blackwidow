@@ -34,7 +34,7 @@ class HyperLogLogTest : public ::testing::Test {
 TEST_F(HyperLogLogTest, PfaddTest) {
   std::vector<std::string> values;
   bool update;
-  std::map<BlackWidow::DataType, Status> type_status;
+  std::map<blackwidow::DataType, Status> type_status;
   // PFADD without arguments creates an HLL value
   s = db.PfAdd("HLL", values, &update);
   ASSERT_TRUE(s.ok());
@@ -88,7 +88,7 @@ TEST_F(HyperLogLogTest, PfCountTest) {
   // PFCOUNT returns approximated cardinality of set
   std::vector<std::string> values;
   bool update;
-  std::map<BlackWidow::DataType, Status> type_status;
+  std::map<blackwidow::DataType, Status> type_status;
 
   for (int32_t i = 1; i <= 5; i++) {
     values.push_back(std::to_string(i));
@@ -144,7 +144,7 @@ TEST_F(HyperLogLogTest, PfMergeTest) {
   s = db.PfCount(keys, &result);
   ASSERT_EQ(result, 5);
 
-  std::map<BlackWidow::DataType, Status> type_status;
+  std::map<blackwidow::DataType, Status> type_status;
   int64_t nums = db.Del(keys, &type_status);
   ASSERT_EQ(nums, 3);
 }

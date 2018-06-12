@@ -19,44 +19,40 @@ BlackWidow::BlackWidow() :
   strings_db_(nullptr),
   hashes_db_(nullptr),
   sets_db_(nullptr),
-  mutex_factory_(new MutexFactoryImpl) {
+  zsets_db_(nullptr),
+  lists_db_(nullptr),
+  mutex_factory_(new MutexFactoryImpl),
+  bg_tasks_cond_var_(&bg_tasks_mutex_),
+  current_task_type_(0),
+  bg_tasks_should_exit_(false),
+  scan_keynum_exit_(false) {
+
   cursors_store_.max_size_ = 5000;
   cursors_mutex_ = mutex_factory_->AllocateMutex();
+
+  Status s = StartBGThread();
+  if (!s.ok()) {
+    fprintf (stderr, "[FATAL] start bg thread failed, %s\n", s.ToString().c_str());
+    exit(-1);
+  }
 }
 
 BlackWidow::~BlackWidow() {
+
+  bg_tasks_should_exit_ = true;
+  bg_tasks_cond_var_.Signal();
+
+  int ret = 0;
+  if ((ret = pthread_join(bg_tasks_thread_id_, NULL)) != 0) {
+    fprintf (stderr, "pthread_join failed with bgtask thread error %d\n", ret);
+  }
+
   delete strings_db_;
   delete hashes_db_;
   delete sets_db_;
   delete lists_db_;
   delete zsets_db_;
 }
-
-Status BlackWidow::Compact() {
-  Status s;
-  s = strings_db_->CompactRange(NULL, NULL);
-  if (!s.ok()) {
-    return s;
-  }
-  s = hashes_db_->CompactRange(NULL, NULL);
-  if (!s.ok()) {
-    return s;
-  }
-  s = sets_db_->CompactRange(NULL, NULL);
-  if (!s.ok()) {
-    return s;
-  }
-  s = lists_db_->CompactRange(NULL, NULL);
-  if (!s.ok()) {
-    return s;
-  }
-  s = zsets_db_->CompactRange(NULL, NULL);
-  if (!s.ok()) {
-    return s;
-  }
-  return Status::OK();
-}
-
 
 static std::string AppendSubDirectory(const std::string& db_path,
     const std::string& sub_db) {
@@ -165,7 +161,7 @@ Status BlackWidow::GetBit(const Slice& key, int64_t offset, int32_t* ret) {
   return strings_db_->GetBit(key, offset, ret);
 }
 
-Status BlackWidow::MSet(const std::vector<BlackWidow::KeyValue>& kvs) {
+Status BlackWidow::MSet(const std::vector<KeyValue>& kvs) {
   return strings_db_->MSet(kvs);
 }
 
@@ -178,7 +174,7 @@ Status BlackWidow::Setnx(const Slice& key, const Slice& value, int32_t* ret) {
   return strings_db_->Setnx(key, value, ret);
 }
 
-Status BlackWidow::MSetnx(const std::vector<BlackWidow::KeyValue>& kvs,
+Status BlackWidow::MSetnx(const std::vector<KeyValue>& kvs,
                           int32_t* ret) {
   return strings_db_->MSetnx(kvs, ret);
 }
@@ -257,7 +253,7 @@ Status BlackWidow::HGet(const Slice& key, const Slice& field,
 }
 
 Status BlackWidow::HMSet(const Slice& key,
-                         const std::vector<BlackWidow::FieldValue>& fvs) {
+                         const std::vector<FieldValue>& fvs) {
   return hashes_db_->HMSet(key, fvs);
 }
 
@@ -268,7 +264,7 @@ Status BlackWidow::HMGet(const Slice& key,
 }
 
 Status BlackWidow::HGetall(const Slice& key,
-                           std::vector<BlackWidow::FieldValue>* fvs) {
+                           std::vector<FieldValue>* fvs) {
   return hashes_db_->HGetall(key, fvs);
 }
 
@@ -562,7 +558,7 @@ Status BlackWidow::ZScore(const Slice& key,
 Status BlackWidow::ZUnionstore(const Slice& destination,
                                const std::vector<std::string>& keys,
                                const std::vector<double>& weights,
-                               const BlackWidow::AGGREGATE agg,
+                               const AGGREGATE agg,
                                int32_t* ret) {
   return zsets_db_->ZUnionstore(destination, keys, weights, agg, ret);
 }
@@ -570,7 +566,7 @@ Status BlackWidow::ZUnionstore(const Slice& destination,
 Status BlackWidow::ZInterstore(const Slice& destination,
                                const std::vector<std::string>& keys,
                                const std::vector<double>& weights,
-                               const BlackWidow::AGGREGATE agg,
+                               const AGGREGATE agg,
                                int32_t* ret) {
   return zsets_db_->ZInterstore(destination, keys, weights, agg, ret);
 }
@@ -969,8 +965,8 @@ int32_t BlackWidow::Persist(const Slice& key,
   }
 }
 
-std::map<BlackWidow::DataType, int64_t> BlackWidow::TTL(const Slice& key,
-                        std::map<BlackWidow::DataType, Status>* type_status) {
+std::map<DataType, int64_t> BlackWidow::TTL(const Slice& key,
+                        std::map<DataType, Status>* type_status) {
   Status s;
   std::map<DataType, int64_t> ret;
   int64_t timestamp = 0;
@@ -1017,6 +1013,94 @@ std::map<BlackWidow::DataType, int64_t> BlackWidow::TTL(const Slice& key,
   return ret;
 }
 
+//the sequence is kv, hash, list, zset, set
+Status BlackWidow::Type(const std::string &key, std::string* type) {
+  type->clear();
+
+  Status s;
+  std::string value;
+  s = strings_db_->Get(key, &value);
+  if (s.ok()) {
+    *type = "string";
+    return s;
+  } else if (!s.IsNotFound()) {
+    return s;
+  }
+
+  int32_t hashes_len = 0;
+  s = hashes_db_->HLen(key, &hashes_len);
+  if (s.ok() && hashes_len != 0) {
+    *type = "hash";
+    return s;
+  } else if (!s.IsNotFound()) {
+    return s;
+  }
+
+  uint64_t lists_len = 0;
+  s = lists_db_->LLen(key, &lists_len);
+  if (s.ok() && lists_len != 0) {
+    *type = "list";
+    return s;
+  } else if (!s.IsNotFound()) {
+    return s;
+  }
+
+  int32_t zsets_size = 0;
+  s = zsets_db_->ZCard(key, &zsets_size);
+  if (s.ok() && zsets_size != 0) {
+    *type = "zset";
+    return s;
+  } else if (!s.IsNotFound()) {
+    return s;
+  }
+
+  int32_t sets_size = 0;
+  s = sets_db_->SCard(key, &sets_size);
+  if (s.ok() && sets_size != 0) {
+    *type = "set";
+    return s;
+  } else if (!s.IsNotFound()) {
+    return s;
+  }
+
+  *type = "none";
+  return Status::OK();
+}
+
+Status BlackWidow::Keys(const std::string& type,
+                        const std::string& pattern,
+                        std::vector<std::string>* keys) {
+  Status s;
+  if (type == "string") {
+    s = strings_db_->ScanKeys(pattern, keys);
+    if (!s.ok()) return s;
+  } else if (type == "hash") {
+    s = hashes_db_->ScanKeys(pattern, keys);
+    if (!s.ok()) return s;
+  } else if (type == "zset") {
+    s = zsets_db_->ScanKeys(pattern, keys);
+    if (!s.ok()) return s;
+  } else if (type == "set") {
+    s = sets_db_->ScanKeys(pattern, keys);
+    if (!s.ok()) return s;
+  } else if (type == "list") {
+    s = lists_db_->ScanKeys(pattern, keys);
+    if (!s.ok()) return s;
+  } else {
+    s = strings_db_->ScanKeys(pattern, keys);
+    if (!s.ok()) return s;
+    s = hashes_db_->ScanKeys(pattern, keys);
+    if (!s.ok()) return s;
+    s = zsets_db_->ScanKeys(pattern, keys);
+    if (!s.ok()) return s;
+    s = sets_db_->ScanKeys(pattern, keys);
+    if (!s.ok()) return s;
+    s = lists_db_->ScanKeys(pattern, keys);
+    if (!s.ok()) return s;
+  }
+  return s;
+}
+
 void BlackWidow::ScanDatabase(const DataType& type) {
 
   switch (type) {
@@ -1029,11 +1113,18 @@ void BlackWidow::ScanDatabase(const DataType& type) {
     case kSets:
         sets_db_->ScanDatabase();
         break;
+    case kZSets:
+        zsets_db_->ScanDatabase();
+        break;
     case kLists:
         lists_db_->ScanDatabase();
         break;
-    case kZSets:
+    case kAll:
+        strings_db_->ScanDatabase();
+        hashes_db_->ScanDatabase();
+        sets_db_->ScanDatabase();
         zsets_db_->ScanDatabase();
+        lists_db_->ScanDatabase();
         break;
   }
 }
@@ -1132,6 +1223,195 @@ Status BlackWidow::PfMerge(const std::vector<std::string>& keys) {
   }
   s = strings_db_->Set(keys[0], result);
   return s;
+}
+
+static void* StartBGThreadWrapper(void* arg) {
+  BlackWidow* bw = reinterpret_cast<BlackWidow*>(arg);
+  bw->RunBGTask();
+  return NULL;
+}
+
+Status BlackWidow::StartBGThread() {
+  int result = pthread_create(&bg_tasks_thread_id_, NULL, StartBGThreadWrapper, this);
+  if (result != 0) {
+    char msg[128];
+    snprintf (msg, 128, "pthread create: %s", strerror(result));
+    return Status::Corruption(msg);
+  }
+  return Status::OK();
+}
+
+Status BlackWidow::AddBGTask(const BGTask& bg_task) {
+  bg_tasks_mutex_.Lock();
+  bg_tasks_queue_.push(bg_task);
+  bg_tasks_cond_var_.Signal();
+  bg_tasks_mutex_.Unlock();
+  return Status::OK();
+}
+
+Status BlackWidow::RunBGTask() {
+  BGTask task;
+  while (!bg_tasks_should_exit_) {
+
+    bg_tasks_mutex_.Lock();
+    while (bg_tasks_queue_.empty() && !bg_tasks_should_exit_) {
+      bg_tasks_cond_var_.Wait();
+    }
+
+    if (!bg_tasks_queue_.empty()) {
+      task = bg_tasks_queue_.front();
+      bg_tasks_queue_.pop();
+    }
+    bg_tasks_mutex_.Unlock();
+
+    if (bg_tasks_should_exit_) {
+      return Status::Incomplete("bgtask return with bg_tasks_should_exit_ true");
+    }
+    DoCompact(task.type);
+  }
+  return Status::OK();
+}
+
+Status BlackWidow::Compact(DataType type, bool sync) {
+  if (sync) {
+    return DoCompact(type);
+  } else {
+    AddBGTask({type});
+  }
+  return Status::OK();
+}
+
+Status BlackWidow::DoCompact(DataType type) {
+  if (type != kAll
+    && type != kStrings
+    && type != kHashes
+    && type != kSets
+    && type != kZSets
+    && type != kLists) {
+    return Status::InvalidArgument("");
+  }
+
+  Status s;
+  if (type == kStrings) {
+    current_task_type_ = Operation::kCleanStrings;
+    s = strings_db_->CompactRange(NULL, NULL);
+  } else if (type == kHashes) {
+    current_task_type_ = Operation::kCleanHashes;
+    s = hashes_db_->CompactRange(NULL, NULL);
+  } else if (type == kSets) {
+    current_task_type_ = Operation::kCleanSets;
+    s = sets_db_->CompactRange(NULL, NULL);
+  } else if (type == kZSets) {
+    current_task_type_ = Operation::kCleanZSets;
+    s = zsets_db_->CompactRange(NULL, NULL);
+  } else if (type == kLists) {
+    current_task_type_ = Operation::kCleanLists;
+    s = lists_db_->CompactRange(NULL, NULL);
+  } else {
+    current_task_type_ = Operation::kCleanAll;
+    s = strings_db_->CompactRange(NULL, NULL);
+    s = hashes_db_->CompactRange(NULL, NULL);
+    s = sets_db_->CompactRange(NULL, NULL);
+    s = zsets_db_->CompactRange(NULL, NULL);
+    s = lists_db_->CompactRange(NULL, NULL);
+  }
+  current_task_type_ = Operation::kNone;
+  return s;
+}
+
+std::string BlackWidow::GetCurrentTaskType() {
+  int type = current_task_type_;
+  switch (type) {
+    case kCleanAll:
+      return "All";
+    case kCleanStrings:
+      return "String";
+    case kCleanHashes:
+      return "Hash";
+    case kCleanZSets:
+      return "ZSet";
+    case kCleanSets:
+      return "Set";
+    case kCleanLists:
+      return "List";
+    case kNone:
+    default:
+      return "No";
+  }
+}
+
+Status BlackWidow::GetUsage(const std::string& type, uint64_t *result) {
+  *result = 0;
+  if (type == USAGE_TYPE_ALL || type == USAGE_TYPE_ROCKSDB || type == USAGE_TYPE_ROCKSDB_MEMTABLE) {
+    *result += GetProperty("rocksdb.cur-size-all-mem-tables");
+  }
+  if (type == USAGE_TYPE_ALL || type == USAGE_TYPE_ROCKSDB || type == USAGE_TYPE_ROCKSDB_TABLE_READER) {
+    *result += GetProperty("rocksdb.estimate-table-readers-mem");
+  }
+  if (type == USAGE_TYPE_ALL || type == USAGE_TYPE_NEMO) {
+    //*result += GetLockUsage();
+  }
+  return Status::OK();
+}
+
+uint64_t BlackWidow::GetProperty(const std::string &property) {
+  uint64_t result = 0;
+  char *pEnd;
+  std::string out;
+
+  strings_db_->GetProperty(property, &out);
+  result += std::strtoull(out.c_str(), &pEnd, 10);
+  hashes_db_->GetProperty(property, &out);
+  result += std::strtoull(out.c_str(), &pEnd, 10);
+  zsets_db_->GetProperty(property, &out);
+  result += std::strtoull(out.c_str(), &pEnd, 10);
+  sets_db_->GetProperty(property, &out);
+  result += std::strtoull(out.c_str(), &pEnd, 10);
+  lists_db_->GetProperty(property, &out);
+  result += std::strtoull(out.c_str(), &pEnd, 10);
+
+  //printf ("cur-size-all-mem-tables: (%s)\n", out.c_str());
+  return result;
+}
+
+Status BlackWidow::GetKeyNum(std::vector<uint64_t>* nums) {
+  uint64_t num;
+  if (!scan_keynum_exit_) {
+    strings_db_->ScanKeyNum(&num);
+    nums->push_back(num);
+  }
+
+  if (!scan_keynum_exit_) {
+    hashes_db_->ScanKeyNum(&num);
+    nums->push_back(num);
+  }
+
+  if (!scan_keynum_exit_) {
+    lists_db_->ScanKeyNum(&num);
+    nums->push_back(num);
+  }
+
+  if (!scan_keynum_exit_) {
+    zsets_db_->ScanKeyNum(&num);
+    nums->push_back(num);
+  }
+
+  if (!scan_keynum_exit_) {
+    sets_db_->ScanKeyNum(&num);
+    nums->push_back(num);
+  }
+
+  if (scan_keynum_exit_) {
+    scan_keynum_exit_ = false;
+    return Status::Corruption("exit");
+  }
+  return Status::OK();
+}
+
+Status BlackWidow::StopScanKeyNum() {
+  sleep(1);
+  scan_keynum_exit_ = true;
+  return Status::OK();
 }
 
 }  //  namespace blackwidow

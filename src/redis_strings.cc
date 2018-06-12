@@ -29,6 +29,63 @@ Status RedisStrings::CompactRange(const rocksdb::Slice* begin,
   return db_->CompactRange(default_compact_range_options_, begin, end);
 }
 
+Status RedisStrings::GetProperty(const std::string& property, std::string* out) {
+  db_->GetProperty(property, out);
+  return Status::OK();
+}
+
+Status RedisStrings::ScanKeyNum(uint64_t* num) {
+
+  uint64_t count = 0;
+  rocksdb::ReadOptions iterator_options;
+  const rocksdb::Snapshot* snapshot;
+  ScopeSnapshot ss(db_, &snapshot);
+  iterator_options.snapshot = snapshot;
+  iterator_options.fill_cache = false;
+
+  // Note: This is a string type and does not need to pass the column family as
+  // a parameter, use the default column family
+  rocksdb::Iterator* iter = db_->NewIterator(iterator_options);
+  for (iter->SeekToFirst();
+       iter->Valid();
+       iter->Next()) {
+    ParsedStringsValue parsed_strings_value(iter->value());
+    if (!parsed_strings_value.IsStale()) {
+      count++;
+    }
+  }
+  *num = count;
+  delete iter;
+  return Status::OK();
+}
+
+Status RedisStrings::ScanKeys(const std::string& pattern,
+                              std::vector<std::string>* keys) {
+  std::string key;
+  rocksdb::ReadOptions iterator_options;
+  const rocksdb::Snapshot* snapshot;
+  ScopeSnapshot ss(db_, &snapshot);
+  iterator_options.snapshot = snapshot;
+  iterator_options.fill_cache = false;
+
+  // Note: This is a string type and does not need to pass the column family as
+  // a parameter, use the default column family
+  rocksdb::Iterator* iter = db_->NewIterator(iterator_options);
+  for (iter->SeekToFirst();
+       iter->Valid();
+       iter->Next()) {
+    ParsedStringsValue parsed_strings_value(iter->value());
+    if (!parsed_strings_value.IsStale()) {
+      key = iter->key().ToString();
+      if (StringMatch(pattern.data(), pattern.size(), key.data(), key.size(), 0)) {
+        keys->push_back(key);
+      }
+    }
+  }
+  delete iter;
+  return Status::OK();
+}
+
 Status RedisStrings::Append(const Slice& key, const Slice& value,
     int32_t* ret) {
   std::string old_value;
@@ -129,7 +186,7 @@ Status RedisStrings::BitCount(const Slice& key,
   return Status::OK();
 }
 
-std::string BitOpOperate(BlackWidow::BitOpType op,
+std::string BitOpOperate(BitOpType op,
                          const std::vector<std::string> &src_values,
                          int64_t max_len) {
   char* dest_value = new char[max_len];
@@ -141,7 +198,7 @@ std::string BitOpOperate(BlackWidow::BitOpType op,
     } else {
       output = 0;
     }
-    if (op == BlackWidow::kBitOpNot) {
+    if (op == kBitOpNot) {
       output = ~(output);
     }
     for (size_t i = 1; i < src_values.size(); i++) {
@@ -151,18 +208,18 @@ std::string BitOpOperate(BlackWidow::BitOpType op,
         byte = 0;
       }
       switch (op) {
-        case BlackWidow::kBitOpNot:
+        case kBitOpNot:
           break;
-        case BlackWidow::kBitOpAnd:
+        case kBitOpAnd:
           output &= byte;
           break;
-        case BlackWidow::kBitOpOr:
+        case kBitOpOr:
           output |= byte;
           break;
-        case BlackWidow::kBitOpXor:
+        case kBitOpXor:
           output ^= byte;
           break;
-        case BlackWidow::kBitOpDefault:
+        case kBitOpDefault:
           break;
       }
     }
@@ -171,12 +228,12 @@ std::string BitOpOperate(BlackWidow::BitOpType op,
   return std::string(dest_value, max_len);
 }
 
-Status RedisStrings::BitOp(BlackWidow::BitOpType op,
+Status RedisStrings::BitOp(BitOpType op,
                            const std::string& dest_key,
                            const std::vector<std::string>& src_keys,
                            int64_t* ret) {
   Status s;
-  if (op == BlackWidow::kBitOpNot && src_keys.size() != 1) {
+  if (op == kBitOpNot && src_keys.size() != 1) {
     return Status::InvalidArgument("the number of source keys is not right");
   } else if (src_keys.size() < 1) {
     return Status::InvalidArgument("the number of source keys is not right");
@@ -457,7 +514,7 @@ Status RedisStrings::MGet(const std::vector<std::string>& keys,
   return Status::OK();
 }
 
-Status RedisStrings::MSet(const std::vector<BlackWidow::KeyValue>& kvs) {
+Status RedisStrings::MSet(const std::vector<KeyValue>& kvs) {
   std::vector<std::string> keys;
   for (const auto& kv :  kvs) {
     keys.push_back(kv.key);
@@ -472,7 +529,7 @@ Status RedisStrings::MSet(const std::vector<BlackWidow::KeyValue>& kvs) {
   return db_->Write(default_write_options_, &batch);
 }
 
-Status RedisStrings::MSetnx(const std::vector<BlackWidow::KeyValue>& kvs,
+Status RedisStrings::MSetnx(const std::vector<KeyValue>& kvs,
                             int32_t* ret) {
   Status s;
   bool exists = false;

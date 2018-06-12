@@ -43,6 +43,13 @@ endif
 ROCKSDB_INCLUDE_DIR=$(ROCKSDB_PATH)/include
 ROCKSDB_LIBRARY=$(ROCKSDB_PATH)/librocksdb.a
 
+ifndef SLASH_PATH
+  $(warning Warning: missing slash path, using default)
+	SLASH_PATH=../deps/slash
+endif
+SLASH_INCLUDE_DIR=$(SLASH_PATH)
+SLASH_LIBRARY=$(SLASH_PATH)/slash/lib/libslash.a
+
 ifndef GOOGLETEST_PATH
   $(warning Warning: missing googletest path, using default)
 	GOOGLETEST_PATH=../deps/googletest/googletest
@@ -50,12 +57,12 @@ endif
 GOOGLETEST_INCLUDE_DIR=$(GOOGLETEST_PATH)/include
 GOOGLETEST_LIBRARY=$(GOOGLETEST_PATH)/libgtest.a
 
-CXXFLAGS+= -I$(BLACKWIDOW_PATH) -I$(BLACKWIDOW_INCLUDE_DIR) -I$(ROCKSDB_INCLUDE_DIR) -I$(GOOGLETEST_INCLUDE_DIR) $(OPT)
+CXXFLAGS+= -I$(BLACKWIDOW_PATH) -I$(BLACKWIDOW_INCLUDE_DIR) -I$(ROCKSDB_INCLUDE_DIR) -I$(SLASH_INCLUDE_DIR) -I$(GOOGLETEST_INCLUDE_DIR) $(OPT)
 
-DEP_LIBS = $(BLACKWIDOW_LIBRARY) $(ROCKSDB_LIBRARY) $(GOOGLETEST_LIBRARY)
+DEP_LIBS = $(BLACKWIDOW_LIBRARY) $(ROCKSDB_LIBRARY) $(SLASH_LIBRARY) $(GOOGLETEST_LIBRARY)
 LDFLAGS := $(DEP_LIBS) $(LDFLAGS)
 
-OBJECTS= GOOGLETEST ROCKSDB lock_mgr gtest_keys gtest_strings gtest_hashes gtest_lists gtest_sets gtest_zsets gtest_strings_filter gtest_hashes_filter gtest_hyperloglog gtest_lists_filter
+OBJECTS= GOOGLETEST ROCKSDB SLASH main lock_mgr gtest_keys gtest_strings gtest_hashes gtest_lists gtest_sets gtest_zsets gtest_strings_filter gtest_hashes_filter gtest_hyperloglog gtest_lists_filter
 
 all: $(OBJECTS)
 
@@ -81,6 +88,12 @@ GOOGLETEST:
 
 ROCKSDB:
 	$(AM_V_at)make -j $(PROCESSOR_NUMS) -C $(ROCKSDB_PATH)/ static_lib
+
+SLASH:
+	$(AM_V_at)make -C $(SLASH_PATH)/slash
+
+main: main.cc
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 
 lock_mgr: lock_mgr.cc
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
@@ -120,4 +133,4 @@ clean:
 	find . -name "*.[oda]" -exec rm -f {} \;
 	rm -f ./make_config.mk
 	rm -rf db
-	rm -rf ./lock_mgr ./gtest_keys ./gtest_strings ./gtest_hashes ./gtest_lists ./gtest_sets ./gtest_zsets ./gtest_strings_filter ./gtest_hashes_filter ./gtest_hyperloglog ./gtest_lists_filter
+	rm -rf ./main ./lock_mgr ./gtest_keys ./gtest_strings ./gtest_hashes ./gtest_lists ./gtest_sets ./gtest_zsets ./gtest_strings_filter ./gtest_hashes_filter ./gtest_hyperloglog ./gtest_lists_filter

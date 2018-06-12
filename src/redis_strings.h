@@ -25,12 +25,16 @@ class RedisStrings : public Redis {
                         const std::string& db_path) override;
     virtual Status CompactRange(const rocksdb::Slice* begin,
                                 const rocksdb::Slice* end) override;
+    virtual Status GetProperty(const std::string& property, std::string* out) override;
+    virtual Status ScanKeyNum(uint64_t* num) override;
+    virtual Status ScanKeys(const std::string& pattern,
+                            std::vector<std::string>* keys) override;
 
     // Strings Commands
     Status Append(const Slice& key, const Slice& value, int32_t* ret);
     Status BitCount(const Slice& key, int64_t start_offset, int64_t end_offset,
                     int32_t* ret, bool have_offset);
-    Status BitOp(BlackWidow::BitOpType op, const std::string& dest_key,
+    Status BitOp(BitOpType op, const std::string& dest_key,
                  const std::vector<std::string>& src_keys, int64_t* ret);
     Status Decrby(const Slice& key, int64_t value, int64_t* ret);
     Status Get(const Slice& key, std::string* value);
@@ -42,8 +46,8 @@ class RedisStrings : public Redis {
     Status Incrbyfloat(const Slice& key, const Slice& value, std::string* ret);
     Status MGet(const std::vector<std::string>& keys,
                 std::vector<std::string>* values);
-    Status MSet(const std::vector<BlackWidow::KeyValue>& kvs);
-    Status MSetnx(const std::vector<BlackWidow::KeyValue>& kvs, int32_t* ret);
+    Status MSet(const std::vector<KeyValue>& kvs);
+    Status MSetnx(const std::vector<KeyValue>& kvs, int32_t* ret);
     Status Set(const Slice& key, const Slice& value);
     Status Setxx(const Slice& key, const Slice& value, int32_t* ret);
     Status SetBit(const Slice& key, int64_t offset, int32_t value, int32_t* ret);

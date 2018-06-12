@@ -25,6 +25,10 @@ class RedisHashes : public Redis {
                         const std::string& db_path) override;
     virtual Status CompactRange(const rocksdb::Slice* begin,
                                 const rocksdb::Slice* end) override;
+    virtual Status GetProperty(const std::string& property, std::string* out) override;
+    virtual Status ScanKeyNum(uint64_t* num) override;
+    virtual Status ScanKeys(const std::string& pattern,
+                            std::vector<std::string>* keys) override;
 
     // Hashes Commands
     Status HDel(const Slice& key, const std::vector<std::string>& fields,
@@ -32,7 +36,7 @@ class RedisHashes : public Redis {
     Status HExists(const Slice& key, const Slice& field);
     Status HGet(const Slice& key, const Slice& field, std::string* value);
     Status HGetall(const Slice& key,
-                   std::vector<BlackWidow::FieldValue>* fvs);
+                   std::vector<FieldValue>* fvs);
     Status HIncrby(const Slice& key, const Slice& field, int64_t value,
                    int64_t* ret);
     Status HIncrbyfloat(const Slice& key, const Slice& field,
@@ -43,7 +47,7 @@ class RedisHashes : public Redis {
     Status HMGet(const Slice& key, const std::vector<std::string>& fields,
                  std::vector<std::string>* values);
     Status HMSet(const Slice& key,
-                 const std::vector<BlackWidow::FieldValue>& fvs);
+                 const std::vector<FieldValue>& fvs);
     Status HSet(const Slice& key, const Slice& field, const Slice& value,
                 int32_t* ret);
     Status HSetnx(const Slice& key, const Slice& field, const Slice& value,

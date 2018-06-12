@@ -39,6 +39,13 @@ endif
 ROCKSDB_INCLUDE_DIR=$(ROCKSDB_PATH)/include
 ROCKSDB_LIBRARY=$(ROCKSDB_PATH)/librocksdb.a
 
+ifndef SLASH_PATH
+  $(warning Warning: missing slash path, using default)
+  SLASH_PATH=$(DEPS_DIR)/slash
+endif
+SLASH_INCLUDE_DIR=$(SLASH_PATH)
+SLASH_LIBRARY=$(SLASH_PATH)/slash/lib/libslash.a
+
 AM_DEFAULT_VERBOSITY = 0
 
 AM_V_GEN = $(am__v_GEN_$(V))
@@ -78,7 +85,7 @@ ifndef DISABLE_WARNING_AS_ERROR
   WARNING_FLAGS += -Werror
 endif
 
-CXXFLAGS += $(WARNING_FLAGS) -I. -I./include -I$(ROCKSDB_INCLUDE_DIR) $(OPT)
+CXXFLAGS += $(WARNING_FLAGS) -I. -I./include -I$(ROCKSDB_INCLUDE_DIR) -I$(SLASH_INCLUDE_DIR) $(OPT)
 
 date := $(shell date +%F)
 git_sha := $(shell git rev-parse HEAD 2>/dev/null)

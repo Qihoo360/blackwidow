@@ -66,6 +66,62 @@ Status RedisHashes::CompactRange(const rocksdb::Slice* begin,
       handles_[1], begin, end);
 }
 
+Status RedisHashes::GetProperty(const std::string& property, std::string* out) {
+  db_->GetProperty(property, out);
+  return Status::OK();
+}
+
+Status RedisHashes::ScanKeyNum(uint64_t* num) {
+
+  uint64_t count = 0;
+  rocksdb::ReadOptions iterator_options;
+  const rocksdb::Snapshot* snapshot;
+  ScopeSnapshot ss(db_, &snapshot);
+  iterator_options.snapshot = snapshot;
+  iterator_options.fill_cache = false;
+
+  rocksdb::Iterator* iter = db_->NewIterator(iterator_options, handles_[0]);
+  for (iter->SeekToFirst();
+       iter->Valid();
+       iter->Next()) {
+    ParsedHashesMetaValue parsed_hashes_meta_value(iter->value());
+    if (!parsed_hashes_meta_value.IsStale()
+      && parsed_hashes_meta_value.count() != 0) {
+      count++;
+    }
+  }
+  *num = count;
+  delete iter;
+  return Status::OK();
+}
+
+Status RedisHashes::ScanKeys(const std::string& pattern,
+                             std::vector<std::string>* keys) {
+
+  std::string key;
+  rocksdb::ReadOptions iterator_options;
+  const rocksdb::Snapshot* snapshot;
+  ScopeSnapshot ss(db_, &snapshot);
+  iterator_options.snapshot = snapshot;
+  iterator_options.fill_cache = false;
+
+  rocksdb::Iterator* iter = db_->NewIterator(iterator_options, handles_[0]);
+  for (iter->SeekToFirst();
+       iter->Valid();
+       iter->Next()) {
+    ParsedHashesMetaValue parsed_hashes_meta_value(iter->value());
+    if (!parsed_hashes_meta_value.IsStale()
+      && parsed_hashes_meta_value.count() != 0) {
+      key = iter->key().ToString();
+      if (StringMatch(pattern.data(), pattern.size(), key.data(), key.size(), 0)) {
+        keys->push_back(key);
+      }
+    }
+  }
+  delete iter;
+  return Status::OK();
+}
+
 Status RedisHashes::HDel(const Slice& key,
                          const std::vector<std::string>& fields,
                          int32_t* ret) {
@@ -154,7 +210,7 @@ Status RedisHashes::HGet(const Slice& key, const Slice& field,
 }
 
 Status RedisHashes::HGetall(const Slice& key,
-                            std::vector<BlackWidow::FieldValue>* fvs) {
+                            std::vector<FieldValue>* fvs) {
   rocksdb::ReadOptions read_options;
   const rocksdb::Snapshot* snapshot;
 
@@ -411,9 +467,9 @@ Status RedisHashes::HMGet(const Slice& key,
 }
 
 Status RedisHashes::HMSet(const Slice& key,
-                          const std::vector<BlackWidow::FieldValue>& fvs) {
+                          const std::vector<FieldValue>& fvs) {
   std::unordered_set<std::string> fields;
-  std::vector<BlackWidow::FieldValue> filtered_fvs;
+  std::vector<FieldValue> filtered_fvs;
   for (auto iter = fvs.rbegin(); iter != fvs.rend(); ++iter) {
     std::string field = iter->field;
     if (fields.find(field) == fields.end()) {

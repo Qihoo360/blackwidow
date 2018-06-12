@@ -69,6 +69,62 @@ Status RedisSets::CompactRange(const rocksdb::Slice* begin,
       handles_[1], begin, end);
 }
 
+Status RedisSets::GetProperty(const std::string& property, std::string* out) {
+  db_->GetProperty(property, out);
+  return Status::OK();
+}
+
+Status RedisSets::ScanKeyNum(uint64_t* num) {
+
+  uint64_t count = 0;
+  rocksdb::ReadOptions iterator_options;
+  const rocksdb::Snapshot* snapshot;
+  ScopeSnapshot ss(db_, &snapshot);
+  iterator_options.snapshot = snapshot;
+  iterator_options.fill_cache = false;
+
+  rocksdb::Iterator* iter = db_->NewIterator(iterator_options, handles_[0]);
+  for (iter->SeekToFirst();
+       iter->Valid();
+       iter->Next()) {
+    ParsedSetsMetaValue parsed_sets_meta_value(iter->value());
+    if (!parsed_sets_meta_value.IsStale()
+      && parsed_sets_meta_value.count() != 0) {
+      count++;
+    }
+  }
+  *num = count;
+  delete iter;
+  return Status::OK();
+}
+
+Status RedisSets::ScanKeys(const std::string& pattern,
+                             std::vector<std::string>* keys) {
+
+  std::string key;
+  rocksdb::ReadOptions iterator_options;
+  const rocksdb::Snapshot* snapshot;
+  ScopeSnapshot ss(db_, &snapshot);
+  iterator_options.snapshot = snapshot;
+  iterator_options.fill_cache = false;
+
+  rocksdb::Iterator* iter = db_->NewIterator(iterator_options, handles_[0]);
+  for (iter->SeekToFirst();
+       iter->Valid();
+       iter->Next()) {
+    ParsedSetsMetaValue parsed_sets_meta_value(iter->value());
+    if (!parsed_sets_meta_value.IsStale()
+      && parsed_sets_meta_value.count() != 0) {
+      key = iter->key().ToString();
+      if (StringMatch(pattern.data(), pattern.size(), key.data(), key.size(), 0)) {
+        keys->push_back(key);
+      }
+    }
+  }
+  delete iter;
+  return Status::OK();
+}
+
 Status RedisSets::SAdd(const Slice& key,
                        const std::vector<std::string>& members, int32_t* ret) {
   std::unordered_set<std::string> unique;
@@ -164,7 +220,7 @@ Status RedisSets::SDiff(const std::vector<std::string>& keys,
   int32_t version = 0;
   ScopeSnapshot ss(db_, &snapshot);
   read_options.snapshot = snapshot;
-  std::vector<BlackWidow::KeyVersion> vaild_sets;
+  std::vector<KeyVersion> vaild_sets;
   Status s;
 
   for (uint32_t idx = 1; idx < keys.size(); ++idx) {
@@ -238,7 +294,7 @@ Status RedisSets::SDiffstore(const Slice& destination,
   ScopeRecordLock l(lock_mgr_, destination);
   ScopeSnapshot ss(db_, &snapshot);
   read_options.snapshot = snapshot;
-  std::vector<BlackWidow::KeyVersion> vaild_sets;
+  std::vector<KeyVersion> vaild_sets;
   Status s;
 
   for (uint32_t idx = 1; idx < keys.size(); ++idx) {
@@ -330,7 +386,7 @@ Status RedisSets::SInter(const std::vector<std::string>& keys,
   int32_t version = 0;
   ScopeSnapshot ss(db_, &snapshot);
   read_options.snapshot = snapshot;
-  std::vector<BlackWidow::KeyVersion> vaild_sets;
+  std::vector<KeyVersion> vaild_sets;
   Status s;
 
   for (uint32_t idx = 1; idx < keys.size(); ++idx) {
@@ -416,7 +472,7 @@ Status RedisSets::SInterstore(const Slice& destination,
   ScopeRecordLock l(lock_mgr_, destination);
   ScopeSnapshot ss(db_, &snapshot);
   read_options.snapshot = snapshot;
-  std::vector<BlackWidow::KeyVersion> vaild_sets;
+  std::vector<KeyVersion> vaild_sets;
   Status s;
 
   for (uint32_t idx = 1; idx < keys.size(); ++idx) {
@@ -845,7 +901,7 @@ Status RedisSets::SUnion(const std::vector<std::string>& keys,
   std::string meta_value;
   ScopeSnapshot ss(db_, &snapshot);
   read_options.snapshot = snapshot;
-  std::vector<BlackWidow::KeyVersion> vaild_sets;
+  std::vector<KeyVersion> vaild_sets;
   Status s;
 
   for (uint32_t idx = 0; idx < keys.size(); ++idx) {
@@ -898,7 +954,7 @@ Status RedisSets::SUnionstore(const Slice& destination,
   ScopeRecordLock l(lock_mgr_, destination);
   ScopeSnapshot ss(db_, &snapshot);
   read_options.snapshot = snapshot;
-  std::vector<BlackWidow::KeyVersion> vaild_sets;
+  std::vector<KeyVersion> vaild_sets;
   Status s;
 
   for (uint32_t idx = 0; idx < keys.size(); ++idx) {

@@ -34,7 +34,7 @@ class HashesTest : public ::testing::Test {
 // HDel
 TEST_F(HashesTest, HDel) {
   int32_t ret = 0;
-  std::vector<BlackWidow::FieldValue> fvs;
+  std::vector<blackwidow::FieldValue> fvs;
   fvs.push_back({"TEST_FIELD1", "TEST_VALUE1"});
   fvs.push_back({"TEST_FIELD2", "TEST_VALUE2"});
   fvs.push_back({"TEST_FIELD3", "TEST_VALUE3"});
@@ -62,9 +62,9 @@ TEST_F(HashesTest, HDel) {
   s = db.HMSet("HDEL_TIMEOUT_KEY", fvs);
   ASSERT_TRUE(s.ok());
 
-  std::map<BlackWidow::DataType, rocksdb::Status> type_status;
+  std::map<blackwidow::DataType, rocksdb::Status> type_status;
   db.Expire("HDEL_TIMEOUT_KEY", 1, &type_status);
-  ASSERT_TRUE(type_status[BlackWidow::DataType::kHashes].ok());
+  ASSERT_TRUE(type_status[blackwidow::DataType::kHashes].ok());
   std::this_thread::sleep_for(std::chrono::milliseconds(2000));
   s = db.HDel("HDEL_TIMEOUT_KEY", fields, &ret);
   ASSERT_TRUE(s.ok());
@@ -112,14 +112,14 @@ TEST_F(HashesTest, HGetTest) {
 // HGetall
 TEST_F(HashesTest, HGetall) {
   int32_t ret = 0;
-  std::vector<BlackWidow::FieldValue> mid_fvs_in;
+  std::vector<blackwidow::FieldValue> mid_fvs_in;
   mid_fvs_in.push_back({"MID_TEST_FIELD1", "MID_TEST_VALUE1"});
   mid_fvs_in.push_back({"MID_TEST_FIELD2", "MID_TEST_VALUE2"});
   mid_fvs_in.push_back({"MID_TEST_FIELD3", "MID_TEST_VALUE3"});
   s = db.HMSet("B_HGETALL_KEY", mid_fvs_in);
   ASSERT_TRUE(s.ok());
 
-  std::vector<BlackWidow::FieldValue> fvs_out;
+  std::vector<blackwidow::FieldValue> fvs_out;
   s = db.HGetall("B_HGETALL_KEY", &fvs_out);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(fvs_out.size(), 3);
@@ -131,7 +131,7 @@ TEST_F(HashesTest, HGetall) {
   ASSERT_EQ(fvs_out[2].value, "MID_TEST_VALUE3");
 
   // Insert some kv who's position above "mid kv"
-  std::vector<BlackWidow::FieldValue> pre_fvs_in;
+  std::vector<blackwidow::FieldValue> pre_fvs_in;
   pre_fvs_in.push_back({"PRE_TEST_FIELD1", "PRE_TEST_VALUE1"});
   pre_fvs_in.push_back({"PRE_TEST_FIELD2", "PRE_TEST_VALUE2"});
   pre_fvs_in.push_back({"PRE_TEST_FIELD3", "PRE_TEST_VALUE3"});
@@ -149,7 +149,7 @@ TEST_F(HashesTest, HGetall) {
   ASSERT_EQ(fvs_out[2].value, "MID_TEST_VALUE3");
 
   // Insert some kv who's position below "mid kv"
-  std::vector<BlackWidow::FieldValue> suf_fvs_in;
+  std::vector<blackwidow::FieldValue> suf_fvs_in;
   suf_fvs_in.push_back({"SUF_TEST_FIELD1", "SUF_TEST_VALUE1"});
   suf_fvs_in.push_back({"SUF_TEST_FIELD2", "SUF_TEST_VALUE2"});
   suf_fvs_in.push_back({"SUF_TEST_FIELD3", "SUF_TEST_VALUE3"});
@@ -168,9 +168,9 @@ TEST_F(HashesTest, HGetall) {
 
   // HGetall timeout hash table
   fvs_out.clear();
-  std::map<BlackWidow::DataType, rocksdb::Status> type_status;
+  std::map<blackwidow::DataType, rocksdb::Status> type_status;
   db.Expire("B_HGETALL_KEY", 1, &type_status);
-  ASSERT_TRUE(type_status[BlackWidow::DataType::kHashes].ok());
+  ASSERT_TRUE(type_status[blackwidow::DataType::kHashes].ok());
   std::this_thread::sleep_for(std::chrono::milliseconds(2000));
   s = db.HGetall("B_HGETALL_KEY", &fvs_out);
   ASSERT_TRUE(s.IsNotFound());
@@ -427,7 +427,7 @@ TEST_F(HashesTest, HIncrbyfloat) {
 // HKeys
 TEST_F(HashesTest, HKeys) {
   int32_t ret = 0;
-  std::vector<BlackWidow::FieldValue> mid_fvs_in;
+  std::vector<blackwidow::FieldValue> mid_fvs_in;
   mid_fvs_in.push_back({"MID_TEST_FIELD1", "MID_TEST_VALUE1"});
   mid_fvs_in.push_back({"MID_TEST_FIELD2", "MID_TEST_VALUE2"});
   mid_fvs_in.push_back({"MID_TEST_FIELD3", "MID_TEST_VALUE3"});
@@ -443,7 +443,7 @@ TEST_F(HashesTest, HKeys) {
   ASSERT_EQ(fields[2], "MID_TEST_FIELD3");
 
   // Insert some kv who's position above "mid kv"
-  std::vector<BlackWidow::FieldValue> pre_fvs_in;
+  std::vector<blackwidow::FieldValue> pre_fvs_in;
   pre_fvs_in.push_back({"PRE_TEST_FIELD1", "PRE_TEST_VALUE1"});
   pre_fvs_in.push_back({"PRE_TEST_FIELD2", "PRE_TEST_VALUE2"});
   pre_fvs_in.push_back({"PRE_TEST_FIELD3", "PRE_TEST_VALUE3"});
@@ -458,7 +458,7 @@ TEST_F(HashesTest, HKeys) {
   ASSERT_EQ(fields[2], "MID_TEST_FIELD3");
 
   // Insert some kv who's position below "mid kv"
-  std::vector<BlackWidow::FieldValue> suf_fvs_in;
+  std::vector<blackwidow::FieldValue> suf_fvs_in;
   suf_fvs_in.push_back({"SUF_TEST_FIELD1", "SUF_TEST_VALUE1"});
   suf_fvs_in.push_back({"SUF_TEST_FIELD2", "SUF_TEST_VALUE2"});
   suf_fvs_in.push_back({"SUF_TEST_FIELD3", "SUF_TEST_VALUE3"});
@@ -474,9 +474,9 @@ TEST_F(HashesTest, HKeys) {
 
   // HKeys timeout hash table
   fields.clear();
-  std::map<BlackWidow::DataType, rocksdb::Status> type_status;
+  std::map<blackwidow::DataType, rocksdb::Status> type_status;
   db.Expire("B_HKEYS_KEY", 1, &type_status);
-  ASSERT_TRUE(type_status[BlackWidow::DataType::kHashes].ok());
+  ASSERT_TRUE(type_status[blackwidow::DataType::kHashes].ok());
   std::this_thread::sleep_for(std::chrono::milliseconds(2000));
   s = db.HKeys("B_HKEYS_KEY", &fields);
   ASSERT_TRUE(s.IsNotFound());
@@ -492,7 +492,7 @@ TEST_F(HashesTest, HKeys) {
 // HLen
 TEST_F(HashesTest, HLenTest) {
   int32_t ret = 0;
-  std::vector<BlackWidow::FieldValue> fvs;
+  std::vector<blackwidow::FieldValue> fvs;
   fvs.push_back({"TEST_FIELD1", "TEST_VALUE1"});
   fvs.push_back({"TEST_FIELD2", "TEST_VALUE2"});
   fvs.push_back({"TEST_FIELD3", "TEST_VALUE3"});
@@ -507,7 +507,7 @@ TEST_F(HashesTest, HLenTest) {
 // HMGet
 TEST_F(HashesTest, HMGetTest) {
   int32_t ret = 0;
-  std::vector<BlackWidow::FieldValue> fvs;
+  std::vector<blackwidow::FieldValue> fvs;
   fvs.push_back({"TEST_FIELD1", "TEST_VALUE1"});
   fvs.push_back({"TEST_FIELD2", "TEST_VALUE2"});
   fvs.push_back({"TEST_FIELD3", "TEST_VALUE3"});
@@ -535,12 +535,12 @@ TEST_F(HashesTest, HMGetTest) {
 // HMSet
 TEST_F(HashesTest, HMSetTest) {
   int32_t ret = 0;
-  std::vector<BlackWidow::FieldValue> fvs1;
+  std::vector<blackwidow::FieldValue> fvs1;
   fvs1.push_back({"TEST_FIELD1", "TEST_VALUE1"});
   fvs1.push_back({"TEST_FIELD2", "TEST_VALUE2"});
 
   // If field already exists in the hash, it is overwritten
-  std::vector<BlackWidow::FieldValue> fvs2;
+  std::vector<blackwidow::FieldValue> fvs2;
   fvs2.push_back({"TEST_FIELD2", "TEST_VALUE2"});
   fvs2.push_back({"TEST_FIELD3", "TEST_VALUE3"});
   fvs2.push_back({"TEST_FIELD4", "TEST_VALUE4"});
@@ -571,13 +571,13 @@ TEST_F(HashesTest, HMSetTest) {
   ASSERT_EQ(values1[2], "TEST_VALUE5");
   ASSERT_EQ(values1[3], "TEST_VALUE4");
 
-  std::map<BlackWidow::DataType, rocksdb::Status> type_status;
+  std::map<blackwidow::DataType, rocksdb::Status> type_status;
   db.Expire("HMSET_KEY", 1, &type_status);
-  ASSERT_TRUE(type_status[BlackWidow::DataType::kHashes].ok());
+  ASSERT_TRUE(type_status[blackwidow::DataType::kHashes].ok());
 
   // The key has timeout
   std::this_thread::sleep_for(std::chrono::milliseconds(2000));
-  std::vector<BlackWidow::FieldValue> fvs3;
+  std::vector<blackwidow::FieldValue> fvs3;
   fvs3.push_back({"TEST_FIELD3", "TEST_VALUE3"});
   fvs3.push_back({"TEST_FIELD4", "TEST_VALUE4"});
   fvs3.push_back({"TEST_FIELD5", "TEST_VALUE5"});
@@ -646,7 +646,7 @@ TEST_F(HashesTest, HSetnxTest) {
 // HVals
 TEST_F(HashesTest, HVals) {
   int32_t ret = 0;
-  std::vector<BlackWidow::FieldValue> mid_fvs_in;
+  std::vector<blackwidow::FieldValue> mid_fvs_in;
   mid_fvs_in.push_back({"MID_TEST_FIELD1", "MID_TEST_VALUE1"});
   mid_fvs_in.push_back({"MID_TEST_FIELD2", "MID_TEST_VALUE2"});
   mid_fvs_in.push_back({"MID_TEST_FIELD3", "MID_TEST_VALUE3"});
@@ -662,7 +662,7 @@ TEST_F(HashesTest, HVals) {
   ASSERT_EQ(values[2], "MID_TEST_VALUE3");
 
   // Insert some kv who's position above "mid kv"
-  std::vector<BlackWidow::FieldValue> pre_fvs_in;
+  std::vector<blackwidow::FieldValue> pre_fvs_in;
   pre_fvs_in.push_back({"PRE_TEST_FIELD1", "PRE_TEST_VALUE1"});
   pre_fvs_in.push_back({"PRE_TEST_FIELD2", "PRE_TEST_VALUE2"});
   pre_fvs_in.push_back({"PRE_TEST_FIELD3", "PRE_TEST_VALUE3"});
@@ -677,7 +677,7 @@ TEST_F(HashesTest, HVals) {
   ASSERT_EQ(values[2], "MID_TEST_VALUE3");
 
   // Insert some kv who's position below "mid kv"
-  std::vector<BlackWidow::FieldValue> suf_fvs_in;
+  std::vector<blackwidow::FieldValue> suf_fvs_in;
   suf_fvs_in.push_back({"SUF_TEST_FIELD1", "SUF_TEST_VALUE1"});
   suf_fvs_in.push_back({"SUF_TEST_FIELD2", "SUF_TEST_VALUE2"});
   suf_fvs_in.push_back({"SUF_TEST_FIELD3", "SUF_TEST_VALUE3"});
@@ -693,9 +693,9 @@ TEST_F(HashesTest, HVals) {
 
   // HVals timeout hash table
   values.clear();
-  std::map<BlackWidow::DataType, rocksdb::Status> type_status;
+  std::map<blackwidow::DataType, rocksdb::Status> type_status;
   db.Expire("B_HVALS_KEY", 1, &type_status);
-  ASSERT_TRUE(type_status[BlackWidow::DataType::kHashes].ok());
+  ASSERT_TRUE(type_status[blackwidow::DataType::kHashes].ok());
   std::this_thread::sleep_for(std::chrono::milliseconds(2000));
   s = db.HVals("B_HVALS_KEY", &values);
   ASSERT_TRUE(s.IsNotFound());

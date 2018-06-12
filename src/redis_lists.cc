@@ -73,6 +73,61 @@ Status RedisLists::CompactRange(const rocksdb::Slice* begin,
       handles_[1], begin, end);
 }
 
+Status RedisLists::GetProperty(const std::string& property, std::string* out) {
+  db_->GetProperty(property, out);
+  return Status::OK();
+}
+
+Status RedisLists::ScanKeyNum(uint64_t* num) {
+
+  uint64_t count = 0;
+  rocksdb::ReadOptions iterator_options;
+  const rocksdb::Snapshot* snapshot;
+  ScopeSnapshot ss(db_, &snapshot);
+  iterator_options.snapshot = snapshot;
+  iterator_options.fill_cache = false;
+
+  rocksdb::Iterator* iter = db_->NewIterator(iterator_options, handles_[0]);
+  for (iter->SeekToFirst();
+       iter->Valid();
+       iter->Next()) {
+    ParsedListsMetaValue parsed_lists_meta_value(iter->value());
+    if (!parsed_lists_meta_value.IsStale()
+      && parsed_lists_meta_value.count() != 0) {
+      count++;
+    }
+  }
+  *num = count;
+  delete iter;
+  return Status::OK();
+}
+
+Status RedisLists::ScanKeys(const std::string& pattern,
+                              std::vector<std::string>* keys) {
+  std::string key;
+  rocksdb::ReadOptions iterator_options;
+  const rocksdb::Snapshot* snapshot;
+  ScopeSnapshot ss(db_, &snapshot);
+  iterator_options.snapshot = snapshot;
+  iterator_options.fill_cache = false;
+
+  rocksdb::Iterator* iter = db_->NewIterator(iterator_options, handles_[0]);
+  for (iter->SeekToFirst();
+       iter->Valid();
+       iter->Next()) {
+    ParsedListsMetaValue parsed_lists_meta_value(iter->value());
+    if (!parsed_lists_meta_value.IsStale()
+      && parsed_lists_meta_value.count() != 0) {
+      key = iter->key().ToString();
+      if (StringMatch(pattern.data(), pattern.size(), key.data(), key.size(), 0)) {
+        keys->push_back(key);
+      }
+    }
+  }
+  delete iter;
+  return Status::OK();
+}
+
 Status RedisLists::LIndex(const Slice& key, int64_t index, std::string* element) {
   rocksdb::ReadOptions read_options;
   const rocksdb::Snapshot* snapshot;
@@ -104,7 +159,7 @@ Status RedisLists::LIndex(const Slice& key, int64_t index, std::string* element)
 }
 
 Status RedisLists::LInsert(const Slice& key,
-                           const BlackWidow::BeforeOrAfter& before_or_after,
+                           const BeforeOrAfter& before_or_after,
                            const std::string& pivot,
                            const std::string& value,
                            int64_t* ret) {
@@ -147,7 +202,7 @@ Status RedisLists::LInsert(const Slice& key,
         uint64_t mid_index = parsed_lists_meta_value.left_index()
             + (parsed_lists_meta_value.right_index() - parsed_lists_meta_value.left_index()) / 2;
         if (pivot_index <= mid_index) {
-          target_index = (before_or_after == BlackWidow::Before) ? pivot_index - 1 : pivot_index;
+          target_index = (before_or_after == Before) ? pivot_index - 1 : pivot_index;
           current_index = parsed_lists_meta_value.left_index() + 1;
           rocksdb::Iterator* first_half_iter = db_->NewIterator(default_read_options_, handles_[1]);
           ListsDataKey start_data_key(key, version, current_index);
@@ -155,7 +210,7 @@ Status RedisLists::LInsert(const Slice& key,
                first_half_iter->Valid() && current_index <= pivot_index;
                first_half_iter->Next(), current_index++) {
               if (current_index == pivot_index) {
-                if (before_or_after == BlackWidow::After) {
+                if (before_or_after == After) {
                   list_nodes.push_back(first_half_iter->value().ToString());
                 }
                 break;
@@ -171,7 +226,7 @@ Status RedisLists::LInsert(const Slice& key,
           }
           parsed_lists_meta_value.ModifyLeftIndex(1);
         } else {
-          target_index = (before_or_after == BlackWidow::Before) ? pivot_index : pivot_index + 1;
+          target_index = (before_or_after == Before) ? pivot_index : pivot_index + 1;
           current_index = pivot_index;
           rocksdb::Iterator* after_half_iter = db_->NewIterator(default_read_options_, handles_[1]);
           ListsDataKey start_data_key(key, version, current_index);
@@ -179,7 +234,7 @@ Status RedisLists::LInsert(const Slice& key,
                after_half_iter->Valid() && current_index < parsed_lists_meta_value.right_index();
                after_half_iter->Next(), current_index++) {
               if (current_index == pivot_index
-                && before_or_after == BlackWidow::BeforeOrAfter::After) {
+                && before_or_after == BeforeOrAfter::After) {
                 continue;
               }
               list_nodes.push_back(after_half_iter->value().ToString());

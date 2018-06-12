@@ -85,12 +85,68 @@ Status RedisZSets::CompactRange(const rocksdb::Slice* begin,
           handles_[2], begin, end);
 }
 
+Status RedisZSets::GetProperty(const std::string& property, std::string* out) {
+  db_->GetProperty(property, out);
+  return Status::OK();
+}
+
+Status RedisZSets::ScanKeyNum(uint64_t* num) {
+
+  uint64_t count = 0;
+  rocksdb::ReadOptions iterator_options;
+  const rocksdb::Snapshot* snapshot;
+  ScopeSnapshot ss(db_, &snapshot);
+  iterator_options.snapshot = snapshot;
+  iterator_options.fill_cache = false;
+
+  rocksdb::Iterator* iter = db_->NewIterator(iterator_options, handles_[0]);
+  for (iter->SeekToFirst();
+       iter->Valid();
+       iter->Next()) {
+    ParsedZSetsMetaValue parsed_zsets_meta_value(iter->value());
+    if (!parsed_zsets_meta_value.IsStale()
+      && parsed_zsets_meta_value.count() != 0) {
+      count++;
+    }
+  }
+  *num = count;
+  delete iter;
+  return Status::OK();
+}
+
+Status RedisZSets::ScanKeys(const std::string& pattern,
+                            std::vector<std::string>* keys) {
+
+  std::string key;
+  rocksdb::ReadOptions iterator_options;
+  const rocksdb::Snapshot* snapshot;
+  ScopeSnapshot ss(db_, &snapshot);
+  iterator_options.snapshot = snapshot;
+  iterator_options.fill_cache = false;
+
+  rocksdb::Iterator* iter = db_->NewIterator(iterator_options, handles_[0]);
+  for (iter->SeekToFirst();
+       iter->Valid();
+       iter->Next()) {
+    ParsedZSetsMetaValue parsed_zsets_meta_value(iter->value());
+    if (!parsed_zsets_meta_value.IsStale()
+      && parsed_zsets_meta_value.count() != 0) {
+      key = iter->key().ToString();
+      if (StringMatch(pattern.data(), pattern.size(), key.data(), key.size(), 0)) {
+        keys->push_back(key);
+      }
+    }
+  }
+  delete iter;
+  return Status::OK();
+}
+
 Status RedisZSets::ZAdd(const Slice& key,
-                        const std::vector<BlackWidow::ScoreMember>& score_members,
+                        const std::vector<ScoreMember>& score_members,
                         int32_t* ret) {
   *ret = 0;
   std::unordered_set<std::string> unique;
-  std::vector<BlackWidow::ScoreMember> filtered_score_members;
+  std::vector<ScoreMember> filtered_score_members;
   for (const auto& sm : score_members) {
     if (unique.find(sm.member) == unique.end()) {
       unique.insert(sm.member);
@@ -221,7 +277,7 @@ Status RedisZSets::ZCount(const Slice& key,
       int32_t cnt = 0;
       int32_t cur_index = 0;
       int32_t stop_index = parsed_zsets_meta_value.count() - 1;
-      BlackWidow::ScoreMember score_member;
+      ScoreMember score_member;
       ZSetsScoreKey zsets_score_key(key, version, std::numeric_limits<double>::lowest(), Slice());
       rocksdb::Iterator* iter = db_->NewIterator(read_options, handles_[2]);
       for (iter->Seek(zsets_score_key.Encode());
@@ -311,7 +367,7 @@ Status RedisZSets::ZIncrby(const Slice& key,
 Status RedisZSets::ZRange(const Slice& key,
                           int32_t start,
                           int32_t stop,
-                          std::vector<BlackWidow::ScoreMember>* score_members) {
+                          std::vector<ScoreMember>* score_members) {
   score_members->clear();
   rocksdb::ReadOptions read_options;
   const rocksdb::Snapshot* snapshot = nullptr;
@@ -340,7 +396,7 @@ Status RedisZSets::ZRange(const Slice& key,
         return s;
       }
       int32_t cur_index = 0;
-      BlackWidow::ScoreMember score_member;
+      ScoreMember score_member;
       ZSetsScoreKey zsets_score_key(key, version, std::numeric_limits<double>::lowest(), Slice());
       rocksdb::Iterator* iter = db_->NewIterator(read_options, handles_[2]);
       for (iter->Seek(zsets_score_key.Encode());
@@ -364,7 +420,7 @@ Status RedisZSets::ZRangebyscore(const Slice& key,
                                  double max,
                                  bool left_close,
                                  bool right_close,
-                                 std::vector<BlackWidow::ScoreMember>* score_members) {
+                                 std::vector<ScoreMember>* score_members) {
   score_members->clear();
   rocksdb::ReadOptions read_options;
   const rocksdb::Snapshot* snapshot = nullptr;
@@ -383,7 +439,7 @@ Status RedisZSets::ZRangebyscore(const Slice& key,
       int32_t version = parsed_zsets_meta_value.version();
       int32_t index = 0;
       int32_t stop_index = parsed_zsets_meta_value.count() - 1;
-      BlackWidow::ScoreMember score_member;
+      ScoreMember score_member;
       ZSetsScoreKey zsets_score_key(key, version, std::numeric_limits<double>::lowest(), Slice());
       rocksdb::Iterator* iter = db_->NewIterator(read_options, handles_[2]);
       for (iter->Seek(zsets_score_key.Encode());
@@ -437,7 +493,7 @@ Status RedisZSets::ZRank(const Slice& key,
       int32_t version = parsed_zsets_meta_value.version();
       int32_t index = 0;
       int32_t stop_index = parsed_zsets_meta_value.count() - 1;
-      BlackWidow::ScoreMember score_member;
+      ScoreMember score_member;
       ZSetsScoreKey zsets_score_key(key, version, std::numeric_limits<double>::lowest(), Slice());
       rocksdb::Iterator* iter = db_->NewIterator(read_options, handles_[2]);
       for (iter->Seek(zsets_score_key.Encode());
@@ -624,7 +680,7 @@ Status RedisZSets::ZRemrangebyscore(const Slice& key,
 Status RedisZSets::ZRevrange(const Slice& key,
                              int32_t start,
                              int32_t stop,
-                             std::vector<BlackWidow::ScoreMember>* score_members) {
+                             std::vector<ScoreMember>* score_members) {
   score_members->clear();
   rocksdb::ReadOptions read_options;
   const rocksdb::Snapshot* snapshot = nullptr;
@@ -653,8 +709,8 @@ Status RedisZSets::ZRevrange(const Slice& key,
         return s;
       }
       int32_t cur_index = 0;
-      std::vector<BlackWidow::ScoreMember> tmp_sms;
-      BlackWidow::ScoreMember score_member;
+      std::vector<ScoreMember> tmp_sms;
+      ScoreMember score_member;
       ZSetsScoreKey zsets_score_key(key, version, std::numeric_limits<double>::lowest(), Slice());
       rocksdb::Iterator* iter = db_->NewIterator(read_options, handles_[2]);
       for (iter->Seek(zsets_score_key.Encode());
@@ -679,7 +735,7 @@ Status RedisZSets::ZRevrangebyscore(const Slice& key,
                                     double max,
                                     bool left_close,
                                     bool right_close,
-                                    std::vector<BlackWidow::ScoreMember>* score_members) {
+                                    std::vector<ScoreMember>* score_members) {
   score_members->clear();
   rocksdb::ReadOptions read_options;
   const rocksdb::Snapshot* snapshot = nullptr;
@@ -697,7 +753,7 @@ Status RedisZSets::ZRevrangebyscore(const Slice& key,
     } else {
       int32_t version = parsed_zsets_meta_value.version();
       int32_t left = parsed_zsets_meta_value.count();
-      BlackWidow::ScoreMember score_member;
+      ScoreMember score_member;
       ZSetsScoreKey zsets_score_key(key, version, std::numeric_limits<double>::max(), Slice());
       rocksdb::Iterator* iter = db_->NewIterator(read_options, handles_[2]);
       for (iter->SeekForPrev(zsets_score_key.Encode());
@@ -813,7 +869,7 @@ Status RedisZSets::ZScore(const Slice& key, const Slice& member, double* score) 
 Status RedisZSets::ZUnionstore(const Slice& destination,
                                const std::vector<std::string>& keys,
                                const std::vector<double>& weights,
-                               const BlackWidow::AGGREGATE agg,
+                               const AGGREGATE agg,
                                int32_t* ret) {
   *ret = 0;
   rocksdb::WriteBatch batch;
@@ -822,7 +878,7 @@ Status RedisZSets::ZUnionstore(const Slice& destination,
 
   int32_t version;
   std::string meta_value;
-  BlackWidow::ScoreMember sm;
+  ScoreMember sm;
   ScopeSnapshot ss(db_, &snapshot);
   read_options.snapshot = snapshot;
   ScopeRecordLock l(lock_mgr_, destination);
@@ -852,9 +908,9 @@ Status RedisZSets::ZUnionstore(const Slice& destination,
           } else {
             double score = member_score_map[sm.member];
             switch (agg) {
-              case BlackWidow::SUM: score += weight * sm.score; break;
-              case BlackWidow::MIN: score  = std::min(score, weight * sm.score); break;
-              case BlackWidow::MAX: score  = std::max(score, weight * sm.score); break;
+              case SUM: score += weight * sm.score; break;
+              case MIN: score  = std::min(score, weight * sm.score); break;
+              case MAX: score  = std::max(score, weight * sm.score); break;
             }
             member_score_map[sm.member] = score;
           }
@@ -898,7 +954,7 @@ Status RedisZSets::ZUnionstore(const Slice& destination,
 Status RedisZSets::ZInterstore(const Slice& destination,
                                const std::vector<std::string>& keys,
                                const std::vector<double>& weights,
-                               const BlackWidow::AGGREGATE agg,
+                               const AGGREGATE agg,
                                int32_t* ret) {
   if (keys.size() <= 0) {
     return Status::Corruption("ZInterstore invalid parameter, no keys");
@@ -915,10 +971,10 @@ Status RedisZSets::ZInterstore(const Slice& destination,
   std::string meta_value;
   int32_t version = 0;
   bool have_invalid_zsets = false;
-  BlackWidow::ScoreMember item;
-  std::vector<BlackWidow::KeyVersion> vaild_zsets;
-  std::vector<BlackWidow::ScoreMember> score_members;
-  std::vector<BlackWidow::ScoreMember> final_score_members;
+  ScoreMember item;
+  std::vector<KeyVersion> vaild_zsets;
+  std::vector<ScoreMember> score_members;
+  std::vector<ScoreMember> final_score_members;
   Status s;
 
   int32_t cur_index = 0;
@@ -970,9 +1026,9 @@ Status RedisZSets::ZInterstore(const Slice& destination,
           const void* ptr_tmp = reinterpret_cast<const void*>(&tmp);
           double score = *reinterpret_cast<const double*>(ptr_tmp);
           switch (agg) {
-            case BlackWidow::SUM: item.score += weight * score; break;
-            case BlackWidow::MIN: item.score  = std::min(item.score, weight * score); break;
-            case BlackWidow::MAX: item.score  = std::max(item.score, weight * score); break;
+            case SUM: item.score += weight * score; break;
+            case MIN: item.score  = std::min(item.score, weight * score); break;
+            case MAX: item.score  = std::max(item.score, weight * score); break;
           }
         } else if (s.IsNotFound()) {
           reliable = false;

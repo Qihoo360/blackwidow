@@ -62,9 +62,9 @@ static bool len_match(blackwidow::BlackWidow *const db,
 
 static bool make_expired(blackwidow::BlackWidow *const db,
                          const Slice& key) {
-  std::map<BlackWidow::DataType, rocksdb::Status> type_status;
+  std::map<blackwidow::DataType, rocksdb::Status> type_status;
   int ret = db->Expire(key, 1, &type_status);
-  if (!ret || !type_status[BlackWidow::DataType::kLists].ok()) {
+  if (!ret || !type_status[blackwidow::DataType::kLists].ok()) {
     return false;
   }
   std::this_thread::sleep_for(std::chrono::milliseconds(2000));
@@ -174,9 +174,9 @@ TEST_F(ListsTest, RIndexTest) {
   ASSERT_TRUE(elements_match(&db, "GP3_LINDEX_KEY", {"m", "i", "s", "t", "y"}));
 
   std::vector<std::string> del_keys = {"GP3_LINDEX_KEY"};
-  std::map<BlackWidow::DataType, blackwidow::Status> type_status;
+  std::map<blackwidow::DataType, blackwidow::Status> type_status;
   db.Del(del_keys, &type_status);
-  ASSERT_TRUE(type_status[BlackWidow::DataType::kLists].ok());
+  ASSERT_TRUE(type_status[blackwidow::DataType::kLists].ok());
   ASSERT_TRUE(len_match(&db, "GP3_LINDEX_KEY", 0));
   ASSERT_TRUE(elements_match(&db, "GP3_LINDEX_KEY", {}));
 
@@ -197,7 +197,7 @@ TEST_F(ListsTest, LInsertTest) {
 
   // ***************** Group 1 Test *****************
   // LInsert not exist key
-  s = db.LInsert("GP1_LINSERT_KEY", BlackWidow::Before, "pivot", "value", &ret);
+  s = db.LInsert("GP1_LINSERT_KEY", blackwidow::Before, "pivot", "value", &ret);
   ASSERT_TRUE(s.IsNotFound());
   ASSERT_EQ(ret, 0);
 
@@ -212,7 +212,7 @@ TEST_F(ListsTest, LInsertTest) {
   ASSERT_TRUE(len_match(&db, "GP2_LINSERT_KEY", gp2_nodes.size()));
   ASSERT_TRUE(elements_match(&db, "GP2_LINSERT_KEY", {"w", "e", "r", "u", "n"}));
 
-  s = db.LInsert("GP2_LINSERT_KEY", BlackWidow::Before, "pivot", "value", &ret);
+  s = db.LInsert("GP2_LINSERT_KEY", blackwidow::Before, "pivot", "value", &ret);
   ASSERT_TRUE(s.IsNotFound());
   ASSERT_EQ(ret, -1);
 
@@ -228,11 +228,11 @@ TEST_F(ListsTest, LInsertTest) {
   ASSERT_TRUE(elements_match(&db, "GP3_LINSERT_KEY", {"a", "p", "p", "l", "e"}));
   ASSERT_TRUE(make_expired(&db, "GP3_LINSERT_KEY"));
 
-  s = db.LInsert("GP3_LINSERT_KEY", BlackWidow::Before, "pivot", "value", &ret);
+  s = db.LInsert("GP3_LINSERT_KEY", blackwidow::Before, "pivot", "value", &ret);
   ASSERT_TRUE(s.IsNotFound());
   ASSERT_EQ(ret, 0);
 
-  s = db.LInsert("GP3_LINSERT_KEY", BlackWidow::Before, "a", "value", &ret);
+  s = db.LInsert("GP3_LINSERT_KEY", blackwidow::Before, "a", "value", &ret);
   ASSERT_TRUE(s.IsNotFound());
   ASSERT_EQ(ret, 0);
 
@@ -247,7 +247,7 @@ TEST_F(ListsTest, LInsertTest) {
   ASSERT_TRUE(elements_match(&db, "GP4_LINSERT_KEY", {"a"}));
 
   // "x" -> "a"
-  s = db.LInsert("GP4_LINSERT_KEY", BlackWidow::Before, "a", "x", &ret);
+  s = db.LInsert("GP4_LINSERT_KEY", blackwidow::Before, "a", "x", &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 2);
   ASSERT_TRUE(len_match(&db, "GP4_LINSERT_KEY", 2));
@@ -264,7 +264,7 @@ TEST_F(ListsTest, LInsertTest) {
   ASSERT_TRUE(elements_match(&db, "GP5_LINSERT_KEY", {"a"}));
 
   // "a" -> "x"
-  s = db.LInsert("GP5_LINSERT_KEY", BlackWidow::After, "a", "x", &ret);
+  s = db.LInsert("GP5_LINSERT_KEY", blackwidow::After, "a", "x", &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 2);
   ASSERT_TRUE(len_match(&db, "GP5_LINSERT_KEY", 2));
@@ -281,7 +281,7 @@ TEST_F(ListsTest, LInsertTest) {
   ASSERT_TRUE(elements_match(&db, "GP6_LINSERT_KEY", {"a", "b"}));
 
   // "x" -> "a" -> "b"
-  s = db.LInsert("GP6_LINSERT_KEY", BlackWidow::Before, "a", "x", &ret);
+  s = db.LInsert("GP6_LINSERT_KEY", blackwidow::Before, "a", "x", &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 3);
   ASSERT_TRUE(len_match(&db, "GP6_LINSERT_KEY", 3));
@@ -298,7 +298,7 @@ TEST_F(ListsTest, LInsertTest) {
   ASSERT_TRUE(elements_match(&db, "GP7_LINSERT_KEY", {"a", "b"}));
 
   // "a" -> "x" -> "b"
-  s = db.LInsert("GP7_LINSERT_KEY", BlackWidow::After, "a", "x", &ret);
+  s = db.LInsert("GP7_LINSERT_KEY", blackwidow::After, "a", "x", &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 3);
   ASSERT_TRUE(len_match(&db, "GP7_LINSERT_KEY", 3));
@@ -315,7 +315,7 @@ TEST_F(ListsTest, LInsertTest) {
   ASSERT_TRUE(elements_match(&db, "GP8_LINSERT_KEY", {"a", "b"}));
 
   // "a" -> "x" -> "b"
-  s = db.LInsert("GP8_LINSERT_KEY", BlackWidow::Before, "b", "x", &ret);
+  s = db.LInsert("GP8_LINSERT_KEY", blackwidow::Before, "b", "x", &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 3);
   ASSERT_TRUE(len_match(&db, "GP8_LINSERT_KEY", 3));
@@ -332,7 +332,7 @@ TEST_F(ListsTest, LInsertTest) {
   ASSERT_TRUE(elements_match(&db, "GP9_LINSERT_KEY", {"a", "b"}));
 
   // "a" -> "b" -> "x"
-  s = db.LInsert("GP9_LINSERT_KEY", BlackWidow::After, "b", "x", &ret);
+  s = db.LInsert("GP9_LINSERT_KEY", blackwidow::After, "b", "x", &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 3);
   ASSERT_TRUE(len_match(&db, "GP9_LINSERT_KEY", 3));
@@ -349,42 +349,42 @@ TEST_F(ListsTest, LInsertTest) {
   ASSERT_TRUE(elements_match(&db, "GP10_LINSERT_KEY", {"1", "2", "3"}));
 
   // "1" -> "2" -> "4" -> "3"
-  s = db.LInsert("GP10_LINSERT_KEY", BlackWidow::After, "2", "4", &ret);
+  s = db.LInsert("GP10_LINSERT_KEY", blackwidow::After, "2", "4", &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 4);
   ASSERT_TRUE(len_match(&db, "GP10_LINSERT_KEY", 4));
   ASSERT_TRUE(elements_match(&db, "GP10_LINSERT_KEY", {"1", "2", "4", "3"}));
 
   // "1" -> "2" -> "4" -> "3" -> "5"
-  s = db.LInsert("GP10_LINSERT_KEY", BlackWidow::After, "3", "5", &ret);
+  s = db.LInsert("GP10_LINSERT_KEY", blackwidow::After, "3", "5", &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 5);
   ASSERT_TRUE(len_match(&db, "GP10_LINSERT_KEY", 5));
   ASSERT_TRUE(elements_match(&db, "GP10_LINSERT_KEY", {"1", "2", "4", "3", "5"}));
 
   // "1" -> "2" -> "4" -> "3" -> "6" -> "5"
-  s = db.LInsert("GP10_LINSERT_KEY", BlackWidow::Before, "5", "6", &ret);
+  s = db.LInsert("GP10_LINSERT_KEY", blackwidow::Before, "5", "6", &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 6);
   ASSERT_TRUE(len_match(&db, "GP10_LINSERT_KEY", 6));
   ASSERT_TRUE(elements_match(&db, "GP10_LINSERT_KEY", {"1", "2", "4", "3", "6", "5"}));
 
   // "7" -> "1" -> "2" -> "4" -> "3" -> "6" -> "5"
-  s = db.LInsert("GP10_LINSERT_KEY", BlackWidow::Before, "1", "7", &ret);
+  s = db.LInsert("GP10_LINSERT_KEY", blackwidow::Before, "1", "7", &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 7);
   ASSERT_TRUE(len_match(&db, "GP10_LINSERT_KEY", 7));
   ASSERT_TRUE(elements_match(&db, "GP10_LINSERT_KEY", {"7", "1", "2", "4", "3", "6", "5"}));
 
   // "7" -> "1" -> "8" -> "2" -> "4" -> "3" -> "6" -> "5"
-  s = db.LInsert("GP10_LINSERT_KEY", BlackWidow::After, "1", "8", &ret);
+  s = db.LInsert("GP10_LINSERT_KEY", blackwidow::After, "1", "8", &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 8);
   ASSERT_TRUE(len_match(&db, "GP10_LINSERT_KEY", 8));
   ASSERT_TRUE(elements_match(&db, "GP10_LINSERT_KEY", {"7", "1", "8", "2", "4", "3", "6", "5"}));
 
   // "7" -> "1" -> "8" -> "9" -> "2" -> "4" -> "3" -> "6" -> "5"
-  s = db.LInsert("GP10_LINSERT_KEY", BlackWidow::Before, "2", "9", &ret);
+  s = db.LInsert("GP10_LINSERT_KEY", blackwidow::Before, "2", "9", &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 9);
   ASSERT_TRUE(len_match(&db, "GP10_LINSERT_KEY", 9));
@@ -419,9 +419,9 @@ TEST_F(ListsTest, LLenTest) {
 
   // Delete the key
   std::vector<std::string> del_keys = {"GP2_LLEN_KEY"};
-  std::map<BlackWidow::DataType, blackwidow::Status> type_status;
+  std::map<blackwidow::DataType, blackwidow::Status> type_status;
   db.Del(del_keys, &type_status);
-  ASSERT_TRUE(type_status[BlackWidow::DataType::kLists].ok());
+  ASSERT_TRUE(type_status[blackwidow::DataType::kLists].ok());
   ASSERT_TRUE(len_match(&db, "GP2_LLEN_KEY", 0));
   ASSERT_TRUE(elements_match(&db, "GP2_LLEN_KEY", {}));
 }
@@ -489,9 +489,9 @@ TEST_F(ListsTest, LPopTest) {
 
   // Delete the key, then try lpop
   std::vector<std::string> del_keys = {"GP3_LPOP_KEY"};
-  std::map<BlackWidow::DataType, blackwidow::Status> type_status;
+  std::map<blackwidow::DataType, blackwidow::Status> type_status;
   db.Del(del_keys, &type_status);
-  ASSERT_TRUE(type_status[BlackWidow::DataType::kLists].ok());
+  ASSERT_TRUE(type_status[blackwidow::DataType::kLists].ok());
   ASSERT_TRUE(len_match(&db, "GP3_LPOP_KEY", 0));
   ASSERT_TRUE(elements_match(&db, "GP3_LPOP_KEY", {}));
 
@@ -544,9 +544,9 @@ TEST_F(ListsTest, LPushTest) {
 
   // Delete the key
   std::vector<std::string> del_keys = {"GP3_LPUSH_KEY"};
-  std::map<BlackWidow::DataType, blackwidow::Status> type_status;
+  std::map<blackwidow::DataType, blackwidow::Status> type_status;
   db.Del(del_keys, &type_status);
-  ASSERT_TRUE(type_status[BlackWidow::DataType::kLists].ok());
+  ASSERT_TRUE(type_status[blackwidow::DataType::kLists].ok());
 
   // "g" -> "i" -> "l" -> "m" -> "o" -> "u" -> "r"
   std::vector<std::string> gp3_nodes2 {"r", "u", "o", "m", "l", "i", "g"};
@@ -648,9 +648,9 @@ TEST_F(ListsTest, LPushxTest) {
 
   // Delete the key
   std::vector<std::string> del_keys = {"GP4_LPUSHX_KEY"};
-  std::map<BlackWidow::DataType, blackwidow::Status> type_status;
+  std::map<blackwidow::DataType, blackwidow::Status> type_status;
   db.Del(del_keys, &type_status);
-  ASSERT_TRUE(type_status[BlackWidow::DataType::kLists].ok());
+  ASSERT_TRUE(type_status[blackwidow::DataType::kLists].ok());
 
   s = db.LPushx("GP4_LPUSHX_KEY", "x", &num);
   ASSERT_TRUE(s.IsNotFound());
@@ -899,9 +899,9 @@ TEST_F(ListsTest, LRangeTest) {
 
   // Delete the key
   std::vector<std::string> del_keys = {"GP5_LRANGE_KEY"};
-  std::map<BlackWidow::DataType, blackwidow::Status> type_status;
+  std::map<blackwidow::DataType, blackwidow::Status> type_status;
   db.Del(del_keys, &type_status);
-  ASSERT_TRUE(type_status[BlackWidow::DataType::kLists].ok());
+  ASSERT_TRUE(type_status[blackwidow::DataType::kLists].ok());
 
   std::vector<std::string> gp5_range_nodes;
   s = db.LRange("GP5_LRANGE_KEY", 0, 2, &gp5_range_nodes);
@@ -1993,9 +1993,9 @@ TEST_F(ListsTest, RPopTest) {
 
   // Delete the key, then try lpop
   std::vector<std::string> del_keys = {"GP3_RPOP_KEY"};
-  std::map<BlackWidow::DataType, blackwidow::Status> type_status;
+  std::map<blackwidow::DataType, blackwidow::Status> type_status;
   db.Del(del_keys, &type_status);
-  ASSERT_TRUE(type_status[BlackWidow::DataType::kLists].ok());
+  ASSERT_TRUE(type_status[blackwidow::DataType::kLists].ok());
   ASSERT_TRUE(len_match(&db, "GP3_RPOP_KEY", 0));
   ASSERT_TRUE(elements_match(&db, "GP3_RPOP_KEY", {}));
 
@@ -2358,9 +2358,9 @@ TEST_F(ListsTest, RPushTest) {
 
   // Delete the key
   std::vector<std::string> del_keys = {"GP3_RPUSH_KEY"};
-  std::map<BlackWidow::DataType, blackwidow::Status> type_status;
+  std::map<blackwidow::DataType, blackwidow::Status> type_status;
   db.Del(del_keys, &type_status);
-  ASSERT_TRUE(type_status[BlackWidow::DataType::kLists].ok());
+  ASSERT_TRUE(type_status[blackwidow::DataType::kLists].ok());
 
   // "g" -> "i" -> "l" -> "m" -> "o" -> "u" -> "r"
   std::vector<std::string> gp3_nodes2 {"g", "i", "l", "m", "o", "u", "r"};
@@ -2461,9 +2461,9 @@ TEST_F(ListsTest, RPushxTest) {
 
   // Delete the key
   std::vector<std::string> del_keys = {"GP4_RPUSHX_KEY"};
-  std::map<BlackWidow::DataType, blackwidow::Status> type_status;
+  std::map<blackwidow::DataType, blackwidow::Status> type_status;
   db.Del(del_keys, &type_status);
-  ASSERT_TRUE(type_status[BlackWidow::DataType::kLists].ok());
+  ASSERT_TRUE(type_status[blackwidow::DataType::kLists].ok());
 
   s = db.RPushx("GP4_RPUSHX_KEY", "x", &num);
   ASSERT_TRUE(s.IsNotFound());

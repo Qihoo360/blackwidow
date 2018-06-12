@@ -50,8 +50,8 @@ static bool members_match(const std::vector<std::string>& mm_out,
 
 static bool score_members_match(blackwidow::BlackWidow *const db,
                                 const Slice& key,
-                                const std::vector<BlackWidow::ScoreMember>& expect_sm) {
-  std::vector<BlackWidow::ScoreMember> sm_out;
+                                const std::vector<blackwidow::ScoreMember>& expect_sm) {
+  std::vector<blackwidow::ScoreMember> sm_out;
   Status s = db->ZRange(key, 0, -1, &sm_out);
   if (!s.ok() && !s.IsNotFound()) {
     return false;
@@ -71,8 +71,8 @@ static bool score_members_match(blackwidow::BlackWidow *const db,
   return true;
 }
 
-static bool score_members_match(const std::vector<BlackWidow::ScoreMember>& sm_out,
-                                const std::vector<BlackWidow::ScoreMember>& expect_sm) {
+static bool score_members_match(const std::vector<blackwidow::ScoreMember>& sm_out,
+                                const std::vector<blackwidow::ScoreMember>& expect_sm) {
   if (sm_out.size() != expect_sm.size()) {
     return false;
   }
@@ -101,9 +101,9 @@ static bool size_match(blackwidow::BlackWidow *const db,
 
 static bool make_expired(blackwidow::BlackWidow *const db,
                          const Slice& key) {
-  std::map<BlackWidow::DataType, rocksdb::Status> type_status;
+  std::map<blackwidow::DataType, rocksdb::Status> type_status;
   int ret = db->Expire(key, 1, &type_status);
-  if (!ret || !type_status[BlackWidow::DataType::kZSets].ok()) {
+  if (!ret || !type_status[blackwidow::DataType::kZSets].ok()) {
     return false;
   }
   std::this_thread::sleep_for(std::chrono::milliseconds(2000));
@@ -113,9 +113,9 @@ static bool make_expired(blackwidow::BlackWidow *const db,
 static bool delete_key(blackwidow::BlackWidow *const db,
                        const Slice& key) {
   std::vector<std::string> del_keys = {key.ToString()};
-  std::map<BlackWidow::DataType, blackwidow::Status> type_status;
+  std::map<blackwidow::DataType, blackwidow::Status> type_status;
   db->Del(del_keys, &type_status);
-  return type_status[BlackWidow::DataType::kZSets].ok();
+  return type_status[blackwidow::DataType::kZSets].ok();
 }
 
 // ZAdd
@@ -123,7 +123,7 @@ TEST_F(ZSetsTest, ZAddTest) {
   int32_t ret;
 
   // ***************** Group 1 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp1_sm {{3.23, "MM1"}, {0, "MM2"}, {8.0004, "MM3"}, {-0.54, "MM4"}};
+  std::vector<blackwidow::ScoreMember> gp1_sm {{3.23, "MM1"}, {0, "MM2"}, {8.0004, "MM3"}, {-0.54, "MM4"}};
   s = db.ZAdd("GP1_ZADD_KEY", gp1_sm, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(4, ret);
@@ -132,7 +132,7 @@ TEST_F(ZSetsTest, ZAddTest) {
 
 
   // ***************** Group 2 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp2_sm {{0, "MM1"}, {0, "MM1"}, {0, "MM2"}, {0, "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp2_sm {{0, "MM1"}, {0, "MM1"}, {0, "MM2"}, {0, "MM3"}};
   s = db.ZAdd("GP2_ZADD_KEY", gp2_sm, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(3, ret);
@@ -141,7 +141,7 @@ TEST_F(ZSetsTest, ZAddTest) {
 
 
   // ***************** Group 3 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp3_sm {{1/1.0, "MM1"}, {1/3.0, "MM2"}, {1/6.0, "MM3"}, {1/7.0, "MM4"}};
+  std::vector<blackwidow::ScoreMember> gp3_sm {{1/1.0, "MM1"}, {1/3.0, "MM2"}, {1/6.0, "MM3"}, {1/7.0, "MM4"}};
   s = db.ZAdd("GP3_ZADD_KEY", gp3_sm, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(4, ret);
@@ -150,7 +150,7 @@ TEST_F(ZSetsTest, ZAddTest) {
 
 
   // ***************** Group 4 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp4_sm {{-1/1.0, "MM1"}, {-1/3.0, "MM2"}, {-1/6.0, "MM3"}, {-1/7.0, "MM4"}};
+  std::vector<blackwidow::ScoreMember> gp4_sm {{-1/1.0, "MM1"}, {-1/3.0, "MM2"}, {-1/6.0, "MM3"}, {-1/7.0, "MM4"}};
   s = db.ZAdd("GP4_ZADD_KEY", gp4_sm, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(4, ret);
@@ -309,7 +309,7 @@ TEST_F(ZSetsTest, ZAddTest) {
 
 
   // ***************** Group 6 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp6_sm1 {{-1, "MM1"}, {0, "MM2"}, {1, "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp6_sm1 {{-1, "MM1"}, {0, "MM2"}, {1, "MM3"}};
   s = db.ZAdd("GP6_ZADD_KEY", gp6_sm1, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(3, ret);
@@ -319,7 +319,7 @@ TEST_F(ZSetsTest, ZAddTest) {
   ASSERT_TRUE(size_match(&db, "GP6_ZADD_KEY", 0));
   ASSERT_TRUE(score_members_match(&db, "GP6_ZADD_KEY", {}));
 
-  std::vector<BlackWidow::ScoreMember> gp6_sm2 {{-100, "MM1"}, {0, "MM2"}, {100, "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp6_sm2 {{-100, "MM1"}, {0, "MM2"}, {100, "MM3"}};
   s = db.ZAdd("GP6_ZADD_KEY", gp6_sm2, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(3, ret);
@@ -328,7 +328,7 @@ TEST_F(ZSetsTest, ZAddTest) {
 
 
   // ***************** Group 7 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp7_sm1 {{-0.123456789, "MM1"}, {0, "MM2"}, {0.123456789, "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp7_sm1 {{-0.123456789, "MM1"}, {0, "MM2"}, {0.123456789, "MM3"}};
   s = db.ZAdd("GP7_ZADD_KEY", gp7_sm1, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(3, ret);
@@ -338,7 +338,7 @@ TEST_F(ZSetsTest, ZAddTest) {
   ASSERT_TRUE(size_match(&db, "GP7_ZADD_KEY", 0));
   ASSERT_TRUE(score_members_match(&db, "GP7_ZADD_KEY", {}));
 
-  std::vector<BlackWidow::ScoreMember> gp7_sm2 {{-1234.56789, "MM1"}, {0, "MM2"}, {1234.56789, "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp7_sm2 {{-1234.56789, "MM1"}, {0, "MM2"}, {1234.56789, "MM3"}};
   s = db.ZAdd("GP7_ZADD_KEY", gp7_sm2, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(3, ret);
@@ -359,7 +359,7 @@ TEST_F(ZSetsTest, ZCardTest) {
   double score;
 
   // ***************** Group 1 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp1_sm {{-1, "MM1"}, {-2, "MM2"}, {-3, "MM3"}, {-4, "MM4"}};
+  std::vector<blackwidow::ScoreMember> gp1_sm {{-1, "MM1"}, {-2, "MM2"}, {-3, "MM3"}, {-4, "MM4"}};
   s = db.ZAdd("GP1_ZCARD_KEY", gp1_sm, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(4, ret);
@@ -371,7 +371,7 @@ TEST_F(ZSetsTest, ZCardTest) {
 
 
   // ***************** Group 2 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp2_sm {{1, "MM1"}, {2, "MM2"}, {3, "MM3"}, {4, "MM4"}, {5, "MM5"}};
+  std::vector<blackwidow::ScoreMember> gp2_sm {{1, "MM1"}, {2, "MM2"}, {3, "MM3"}, {4, "MM4"}, {5, "MM5"}};
   s = db.ZAdd("GP2_ZCARD_KEY", gp2_sm, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(5, ret);
@@ -383,7 +383,7 @@ TEST_F(ZSetsTest, ZCardTest) {
 
 
   // ***************** Group 3 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp3_sm {{1, "MM1"}, {2, "MM2"}, {3, "MM3"}, {4, "MM4"}, {5, "MM5"}};
+  std::vector<blackwidow::ScoreMember> gp3_sm {{1, "MM1"}, {2, "MM2"}, {3, "MM3"}, {4, "MM4"}, {5, "MM5"}};
   s = db.ZAdd("GP3_ZCARD_KEY", gp3_sm, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(5, ret);
@@ -407,7 +407,7 @@ TEST_F(ZSetsTest, ZCountTest) {
   int32_t ret;
 
   // ***************** Group 1 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp1_sm {{101010.1010101, "MM1"}, {101010.0101010, "MM2"},
+  std::vector<blackwidow::ScoreMember> gp1_sm {{101010.1010101, "MM1"}, {101010.0101010, "MM2"},
                                                {-100.000000001, "MM3"}, {-100.000000002, "MM4"},
                                                {-100.000000001, "MM5"}, {-100.000000002, "MM6"}};
   s = db.ZAdd("GP1_ZCOUNT_KEY", gp1_sm, &ret);
@@ -472,7 +472,7 @@ TEST_F(ZSetsTest, ZCountTest) {
 
 
   // ***************** Group 2 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp2_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+  std::vector<blackwidow::ScoreMember> gp2_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
                                                {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
                                                {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
   s = db.ZAdd("GP2_ZCOUNT_KEY", gp2_sm, &ret);
@@ -495,7 +495,7 @@ TEST_F(ZSetsTest, ZCountTest) {
 
 
   // ***************** Group 4 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp4_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+  std::vector<blackwidow::ScoreMember> gp4_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
                                                {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
                                                {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
   s = db.ZAdd("GP4_ZCOUNT_KEY", gp4_sm, &ret);
@@ -597,7 +597,7 @@ TEST_F(ZSetsTest, ZIncrbyTest) {
   double score;
 
   // ***************** Group 1 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp1_sm {{101010.1010101, "MM1"}, {101010.0101010, "MM2"}};
+  std::vector<blackwidow::ScoreMember> gp1_sm {{101010.1010101, "MM1"}, {101010.0101010, "MM2"}};
   s = db.ZAdd("GP1_ZINCRBY_KEY", gp1_sm, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(2, ret);
@@ -621,7 +621,7 @@ TEST_F(ZSetsTest, ZIncrbyTest) {
 
 
   // ***************** Group 2 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp2_sm {{101010.1010101010, "MM1"}};
+  std::vector<blackwidow::ScoreMember> gp2_sm {{101010.1010101010, "MM1"}};
   s = db.ZAdd("GP2_ZINCRBY_KEY", gp2_sm, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(1, ret);
@@ -649,7 +649,7 @@ TEST_F(ZSetsTest, ZIncrbyTest) {
 
 
   // ***************** Group 3 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp3_sm {{1, "MM1"}, {2, "MM2"}, {3, "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp3_sm {{1, "MM1"}, {2, "MM2"}, {3, "MM3"}};
   s = db.ZAdd("GP3_ZINCRBY_KEY", gp3_sm, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(3, ret);
@@ -702,10 +702,10 @@ TEST_F(ZSetsTest, ZIncrbyTest) {
 // ZRange
 TEST_F(ZSetsTest, ZRangeTest) {
   int32_t ret;
-  std::vector<BlackWidow::ScoreMember> score_members;
+  std::vector<blackwidow::ScoreMember> score_members;
 
   // ***************** Group 1 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp1_sm {{0, "MM1"}};
+  std::vector<blackwidow::ScoreMember> gp1_sm {{0, "MM1"}};
   s = db.ZAdd("GP1_ZRANGE_KEY", gp1_sm, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(1, ret);
@@ -722,7 +722,7 @@ TEST_F(ZSetsTest, ZRangeTest) {
   // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
   //    0        1        2        3        4        5        6        7        8
   //   -9       -8       -7       -6       -5       -4       -3       -2       -1
-  std::vector<BlackWidow::ScoreMember> gp2_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+  std::vector<blackwidow::ScoreMember> gp2_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
                                                {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
                                                {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
   s = db.ZAdd("GP2_ZRANGE_KEY", gp2_sm, &ret);
@@ -870,7 +870,7 @@ TEST_F(ZSetsTest, ZRangeTest) {
 
 
   // ***************** Group 3 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp3_sm {{0, "MM1"}};
+  std::vector<blackwidow::ScoreMember> gp3_sm {{0, "MM1"}};
   s = db.ZAdd("GP3_ZRANGE_KEY", gp3_sm, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(1, ret);
@@ -892,10 +892,10 @@ TEST_F(ZSetsTest, ZRangeTest) {
 // ZRangebyscore
 TEST_F(ZSetsTest, ZRangebyscoreTest) {
   int32_t ret;
-  std::vector<BlackWidow::ScoreMember> score_members;
+  std::vector<blackwidow::ScoreMember> score_members;
 
   // ***************** Group 1 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp1_sm {{-987654321.0000001, "MM1" }, {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
+  std::vector<blackwidow::ScoreMember> gp1_sm {{-987654321.0000001, "MM1" }, {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
                                                {-654321.0000000001, "MM4" }, {-54321.00000000001, "MM5" }, {-4321.000000000001, "MM6" },
                                                {-1000.000000000001, "MM7" }, {-1000.000000000001, "MM8" }, {-1000.000000000001, "MM9" },
                                                {-100.0000000000001, "MM10"}, { 0,                 "MM11"}, { 100.0000000000001, "MM12"},
@@ -1018,7 +1018,7 @@ TEST_F(ZSetsTest, ZRangebyscoreTest) {
 
 
   // ***************** Group 2 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp2_sm {{-5, "MM0"}, {-3, "MM1"}, {-1, "MM2"},
+  std::vector<blackwidow::ScoreMember> gp2_sm {{-5, "MM0"}, {-3, "MM1"}, {-1, "MM2"},
                                                {0,  "MM3"}, {1,  "MM4"}, {3,  "MM5"},
                                                {5, "MM6"}};
   s = db.ZAdd("GP2_ZRANGEBYSCORE_KEY", gp2_sm, &ret);
@@ -1037,7 +1037,7 @@ TEST_F(ZSetsTest, ZRangebyscoreTest) {
 
 
   // ***************** Group 4 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp4_sm {{std::numeric_limits<double>::lowest(), "MM0"},
+  std::vector<blackwidow::ScoreMember> gp4_sm {{std::numeric_limits<double>::lowest(), "MM0"},
                                                {0, "MM1"},
                                                {std::numeric_limits<double>::max(), "MM2"}};
   s = db.ZAdd("GP4_ZRANGEBYSCORE_KEY", gp4_sm, &ret);
@@ -1068,7 +1068,7 @@ TEST_F(ZSetsTest, ZRankTest) {
   // ***************** Group 1 Test *****************
   // {-5, MM0} {-3, MM1} {-1, MM2} {0, MM3} {1, MM4} {3, MM5} {5, MM6}
   //     0         1         2        3        4        5        6
-  std::vector<BlackWidow::ScoreMember> gp1_sm {{-5, "MM0"}, {-3, "MM1"}, {-1, "MM2"}, {0, "MM3"}, {1, "MM4"}, {3, "MM5"}, {5, "MM6"}};
+  std::vector<blackwidow::ScoreMember> gp1_sm {{-5, "MM0"}, {-3, "MM1"}, {-1, "MM2"}, {0, "MM3"}, {1, "MM4"}, {3, "MM5"}, {5, "MM6"}};
   s = db.ZAdd("GP1_ZRANK_KEY", gp1_sm, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(7, ret);
@@ -1095,7 +1095,7 @@ TEST_F(ZSetsTest, ZRankTest) {
 
 
   // ***************** Group 2 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp2_sm {{-5, "MM0"}, {-3, "MM1"}, {-1, "MM2"}, {0, "MM3"}, {1, "MM4"}, {3, "MM5"}, {5, "MM6"}};
+  std::vector<blackwidow::ScoreMember> gp2_sm {{-5, "MM0"}, {-3, "MM1"}, {-1, "MM2"}, {0, "MM3"}, {1, "MM4"}, {3, "MM5"}, {5, "MM6"}};
   s = db.ZAdd("GP2_ZRANK_KEY", gp2_sm, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(7, ret);
@@ -1119,7 +1119,7 @@ TEST_F(ZSetsTest, ZRemTest) {
   // ***************** Group 1 Test *****************
   // {-5, MM0} {-3, MM1} {-1, MM2} {0, MM3} {1, MM4} {3, MM5} {5, MM6}
   //     0         1         2        3        4        5        6
-  std::vector<BlackWidow::ScoreMember> gp1_sm {{-5, "MM0"}, {-3, "MM1"}, {-1, "MM2"}, {0, "MM3"}, {1, "MM4"}, {3, "MM5"}, {5, "MM6"}};
+  std::vector<blackwidow::ScoreMember> gp1_sm {{-5, "MM0"}, {-3, "MM1"}, {-1, "MM2"}, {0, "MM3"}, {1, "MM4"}, {3, "MM5"}, {5, "MM6"}};
   s = db.ZAdd("GP1_ZREM_KEY", gp1_sm, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(7, ret);
@@ -1136,7 +1136,7 @@ TEST_F(ZSetsTest, ZRemTest) {
   // ***************** Group 2 Test *****************
   // {-5, MM0} {-3, MM1} {-1, MM2} {0, MM3} {1, MM4} {3, MM5} {5, MM6}
   //     0         1         2        3        4        5        6
-  std::vector<BlackWidow::ScoreMember> gp2_sm {{-5, "MM0"}, {-3, "MM1"}, {-1, "MM2"}, {0, "MM3"}, {1, "MM4"}, {3, "MM5"}, {5, "MM6"}};
+  std::vector<blackwidow::ScoreMember> gp2_sm {{-5, "MM0"}, {-3, "MM1"}, {-1, "MM2"}, {0, "MM3"}, {1, "MM4"}, {3, "MM5"}, {5, "MM6"}};
   s = db.ZAdd("GP2_ZREM_KEY", gp2_sm, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(7, ret);
@@ -1159,7 +1159,7 @@ TEST_F(ZSetsTest, ZRemTest) {
   // ***************** Group 3 Test *****************
   // {-5, MM0} {-3, MM1} {-1, MM2} {0, MM3} {1, MM4} {3, MM5} {5, MM6}
   //     0         1         2        3        4        5        6
-  std::vector<BlackWidow::ScoreMember> gp3_sm {{-5, "MM0"}, {-3, "MM1"}, {-1, "MM2"}, {0, "MM3"}, {1, "MM4"}, {3, "MM5"}, {5, "MM6"}};
+  std::vector<blackwidow::ScoreMember> gp3_sm {{-5, "MM0"}, {-3, "MM1"}, {-1, "MM2"}, {0, "MM3"}, {1, "MM4"}, {3, "MM5"}, {5, "MM6"}};
   s = db.ZAdd("GP3_ZREM_KEY", gp3_sm, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(7, ret);
@@ -1176,7 +1176,7 @@ TEST_F(ZSetsTest, ZRemTest) {
   // ***************** Group 4 Test *****************
   // {-5, MM0} {-3, MM1} {-1, MM2} {0, MM3} {1, MM4} {3, MM5} {5, MM6}
   //     0         1         2        3        4        5        6
-  std::vector<BlackWidow::ScoreMember> gp4_sm {{-5, "MM0"}, {-3, "MM1"}, {-1, "MM2"}, {0, "MM3"}, {1, "MM4"}, {3, "MM5"}, {5, "MM6"}};
+  std::vector<blackwidow::ScoreMember> gp4_sm {{-5, "MM0"}, {-3, "MM1"}, {-1, "MM2"}, {0, "MM3"}, {1, "MM4"}, {3, "MM5"}, {5, "MM6"}};
   s = db.ZAdd("GP4_ZREM_KEY", gp4_sm, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(7, ret);
@@ -1193,7 +1193,7 @@ TEST_F(ZSetsTest, ZRemTest) {
   // ***************** Group 5 Test *****************
   // {-5, MM0} {-3, MM1} {-1, MM2} {0, MM3} {1, MM4} {3, MM5} {5, MM6}
   //     0         1         2        3        4        5        6
-  std::vector<BlackWidow::ScoreMember> gp5_sm {{-5, "MM0"}, {-3, "MM1"}, {-1, "MM2"}, {0, "MM3"}, {1, "MM4"}, {3, "MM5"}, {5, "MM6"}};
+  std::vector<blackwidow::ScoreMember> gp5_sm {{-5, "MM0"}, {-3, "MM1"}, {-1, "MM2"}, {0, "MM3"}, {1, "MM4"}, {3, "MM5"}, {5, "MM6"}};
   s = db.ZAdd("GP5_ZREM_KEY", gp4_sm, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(7, ret);
@@ -1221,10 +1221,10 @@ TEST_F(ZSetsTest, ZRemTest) {
 // ZRemrangebyrank
 TEST_F(ZSetsTest, ZRemrangebyrankTest) {
   int32_t ret;
-  std::vector<BlackWidow::ScoreMember> score_members;
+  std::vector<blackwidow::ScoreMember> score_members;
 
   // ***************** Group 1 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp1_sm {{0, "MM1"}};
+  std::vector<blackwidow::ScoreMember> gp1_sm {{0, "MM1"}};
   s = db.ZAdd("GP1_ZREMMRANGEBYRANK_KEY", gp1_sm, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(1, ret);
@@ -1242,7 +1242,7 @@ TEST_F(ZSetsTest, ZRemrangebyrankTest) {
   // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
   //    0        1        2        3        4        5        6        7        8
   //   -9       -8       -7       -6       -5       -4       -3       -2       -1
-  std::vector<BlackWidow::ScoreMember> gp2_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+  std::vector<blackwidow::ScoreMember> gp2_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
                                                {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
                                                {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
   s = db.ZAdd("GP2_ZREMRANGEBYRANK_KEY", gp2_sm, &ret);
@@ -1265,7 +1265,7 @@ TEST_F(ZSetsTest, ZRemrangebyrankTest) {
   // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
   //    0        1        2        3        4        5        6        7        8
   //   -9       -8       -7       -6       -5       -4       -3       -2       -1
-  std::vector<BlackWidow::ScoreMember> gp3_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+  std::vector<blackwidow::ScoreMember> gp3_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
                                                {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
                                                {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
   s = db.ZAdd("GP3_ZREMRANGEBYRANK_KEY", gp3_sm, &ret);
@@ -1288,7 +1288,7 @@ TEST_F(ZSetsTest, ZRemrangebyrankTest) {
   // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
   //    0        1        2        3        4        5        6        7        8
   //   -9       -8       -7       -6       -5       -4       -3       -2       -1
-  std::vector<BlackWidow::ScoreMember> gp4_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+  std::vector<blackwidow::ScoreMember> gp4_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
                                                {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
                                                {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
   s = db.ZAdd("GP4_ZREMRANGEBYRANK_KEY", gp4_sm, &ret);
@@ -1310,7 +1310,7 @@ TEST_F(ZSetsTest, ZRemrangebyrankTest) {
   // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
   //    0        1        2        3        4        5        6        7        8
   //   -9       -8       -7       -6       -5       -4       -3       -2       -1
-  std::vector<BlackWidow::ScoreMember> gp5_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+  std::vector<blackwidow::ScoreMember> gp5_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
                                                {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
                                                {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
   s = db.ZAdd("GP5_ZREMRANGEBYRANK_KEY", gp5_sm, &ret);
@@ -1332,7 +1332,7 @@ TEST_F(ZSetsTest, ZRemrangebyrankTest) {
   // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
   //    0        1        2        3        4        5        6        7        8
   //   -9       -8       -7       -6       -5       -4       -3       -2       -1
-  std::vector<BlackWidow::ScoreMember> gp6_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+  std::vector<blackwidow::ScoreMember> gp6_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
                                                {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
                                                {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
   s = db.ZAdd("GP6_ZREMRANGEBYRANK_KEY", gp6_sm, &ret);
@@ -1354,7 +1354,7 @@ TEST_F(ZSetsTest, ZRemrangebyrankTest) {
   // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
   //    0        1        2        3        4        5        6        7        8
   //   -9       -8       -7       -6       -5       -4       -3       -2       -1
-  std::vector<BlackWidow::ScoreMember> gp7_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+  std::vector<blackwidow::ScoreMember> gp7_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
                                                {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
                                                {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
   s = db.ZAdd("GP7_ZREMRANGEBYRANK_KEY", gp7_sm, &ret);
@@ -1376,7 +1376,7 @@ TEST_F(ZSetsTest, ZRemrangebyrankTest) {
   // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
   //    0        1        2        3        4        5        6        7        8
   //   -9       -8       -7       -6       -5       -4       -3       -2       -1
-  std::vector<BlackWidow::ScoreMember> gp8_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+  std::vector<blackwidow::ScoreMember> gp8_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
                                                {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
                                                {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
   s = db.ZAdd("GP8_ZREMRANGEBYRANK_KEY", gp8_sm, &ret);
@@ -1398,7 +1398,7 @@ TEST_F(ZSetsTest, ZRemrangebyrankTest) {
   // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
   //    0        1        2        3        4        5        6        7        8
   //   -9       -8       -7       -6       -5       -4       -3       -2       -1
-  std::vector<BlackWidow::ScoreMember> gp9_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+  std::vector<blackwidow::ScoreMember> gp9_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
                                                {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
                                                {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
   s = db.ZAdd("GP9_ZREMRANGEBYRANK_KEY", gp9_sm, &ret);
@@ -1422,7 +1422,7 @@ TEST_F(ZSetsTest, ZRemrangebyrankTest) {
   // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
   //    0        1        2        3        4        5        6        7        8
   //   -9       -8       -7       -6       -5       -4       -3       -2       -1
-  std::vector<BlackWidow::ScoreMember> gp10_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+  std::vector<blackwidow::ScoreMember> gp10_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
                                                 {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
                                                 {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
   s = db.ZAdd("GP10_ZREMRANGEBYRANK_KEY", gp10_sm, &ret);
@@ -1446,7 +1446,7 @@ TEST_F(ZSetsTest, ZRemrangebyrankTest) {
   // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
   //    0        1        2        3        4        5        6        7        8
   //   -9       -8       -7       -6       -5       -4       -3       -2       -1
-  std::vector<BlackWidow::ScoreMember> gp11_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+  std::vector<blackwidow::ScoreMember> gp11_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
                                                 {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
                                                 {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
   s = db.ZAdd("GP11_ZREMRANGEBYRANK_KEY", gp11_sm, &ret);
@@ -1470,7 +1470,7 @@ TEST_F(ZSetsTest, ZRemrangebyrankTest) {
   // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
   //    0        1        2        3        4        5        6        7        8
   //   -9       -8       -7       -6       -5       -4       -3       -2       -1
-  std::vector<BlackWidow::ScoreMember> gp12_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+  std::vector<blackwidow::ScoreMember> gp12_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
                                                 {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
                                                 {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
   s = db.ZAdd("GP12_ZREMRANGEBYRANK_KEY", gp12_sm, &ret);
@@ -1494,7 +1494,7 @@ TEST_F(ZSetsTest, ZRemrangebyrankTest) {
   // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
   //    0        1        2        3        4        5        6        7        8
   //   -9       -8       -7       -6       -5       -4       -3       -2       -1
-  std::vector<BlackWidow::ScoreMember> gp13_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+  std::vector<blackwidow::ScoreMember> gp13_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
                                                 {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
                                                 {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
   s = db.ZAdd("GP13_ZREMRANGEBYRANK_KEY", gp13_sm, &ret);
@@ -1516,7 +1516,7 @@ TEST_F(ZSetsTest, ZRemrangebyrankTest) {
   // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
   //    0        1        2        3        4        5        6        7        8
   //   -9       -8       -7       -6       -5       -4       -3       -2       -1
-  std::vector<BlackWidow::ScoreMember> gp14_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+  std::vector<blackwidow::ScoreMember> gp14_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
                                                 {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
                                                 {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
   s = db.ZAdd("GP14_ZREMRANGEBYRANK_KEY", gp14_sm, &ret);
@@ -1538,7 +1538,7 @@ TEST_F(ZSetsTest, ZRemrangebyrankTest) {
   // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
   //    0        1        2        3        4        5        6        7        8
   //   -9       -8       -7       -6       -5       -4       -3       -2       -1
-  std::vector<BlackWidow::ScoreMember> gp15_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+  std::vector<blackwidow::ScoreMember> gp15_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
                                                 {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
                                                 {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
   s = db.ZAdd("GP15_ZREMRANGEBYRANK_KEY", gp15_sm, &ret);
@@ -1560,7 +1560,7 @@ TEST_F(ZSetsTest, ZRemrangebyrankTest) {
   // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
   //    0        1        2        3        4        5        6        7        8
   //   -9       -8       -7       -6       -5       -4       -3       -2       -1
-  std::vector<BlackWidow::ScoreMember> gp16_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+  std::vector<blackwidow::ScoreMember> gp16_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
                                                 {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
                                                 {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
   s = db.ZAdd("GP16_ZREMRANGEBYRANK_KEY", gp16_sm, &ret);
@@ -1582,7 +1582,7 @@ TEST_F(ZSetsTest, ZRemrangebyrankTest) {
   // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
   //    0        1        2        3        4        5        6        7        8
   //   -9       -8       -7       -6       -5       -4       -3       -2       -1
-  std::vector<BlackWidow::ScoreMember> gp17_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+  std::vector<blackwidow::ScoreMember> gp17_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
                                                 {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
                                                 {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
   s = db.ZAdd("GP17_ZREMRANGEBYRANK_KEY", gp17_sm, &ret);
@@ -1604,7 +1604,7 @@ TEST_F(ZSetsTest, ZRemrangebyrankTest) {
   // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
   //    0        1        2        3        4        5        6        7        8
   //   -9       -8       -7       -6       -5       -4       -3       -2       -1
-  std::vector<BlackWidow::ScoreMember> gp18_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+  std::vector<blackwidow::ScoreMember> gp18_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
                                                 {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
                                                 {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
   s = db.ZAdd("GP18_ZREMRANGEBYRANK_KEY", gp18_sm, &ret);
@@ -1626,7 +1626,7 @@ TEST_F(ZSetsTest, ZRemrangebyrankTest) {
   // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
   //    0        1        2        3        4        5        6        7        8
   //   -9       -8       -7       -6       -5       -4       -3       -2       -1
-  std::vector<BlackWidow::ScoreMember> gp19_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+  std::vector<blackwidow::ScoreMember> gp19_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
                                                 {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
                                                 {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
   s = db.ZAdd("GP19_ZREMRANGEBYRANK_KEY", gp19_sm, &ret);
@@ -1649,7 +1649,7 @@ TEST_F(ZSetsTest, ZRemrangebyrankTest) {
   // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
   //    0        1        2        3        4        5        6        7        8
   //   -9       -8       -7       -6       -5       -4       -3       -2       -1
-  std::vector<BlackWidow::ScoreMember> gp20_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+  std::vector<blackwidow::ScoreMember> gp20_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
                                                 {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
                                                 {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
   s = db.ZAdd("GP20_ZREMRANGEBYRANK_KEY", gp20_sm, &ret);
@@ -1672,7 +1672,7 @@ TEST_F(ZSetsTest, ZRemrangebyrankTest) {
   // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
   //    0        1        2        3        4        5        6        7        8
   //   -9       -8       -7       -6       -5       -4       -3       -2       -1
-  std::vector<BlackWidow::ScoreMember> gp21_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+  std::vector<blackwidow::ScoreMember> gp21_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
                                                 {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
                                                 {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
   s = db.ZAdd("GP21_ZREMRANGEBYRANK_KEY", gp21_sm, &ret);
@@ -1695,7 +1695,7 @@ TEST_F(ZSetsTest, ZRemrangebyrankTest) {
   // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
   //    0        1        2        3        4        5        6        7        8
   //   -9       -8       -7       -6       -5       -4       -3       -2       -1
-  std::vector<BlackWidow::ScoreMember> gp22_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+  std::vector<blackwidow::ScoreMember> gp22_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
                                                 {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
                                                 {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
   s = db.ZAdd("GP22_ZREMRANGEBYRANK_KEY", gp22_sm, &ret);
@@ -1718,7 +1718,7 @@ TEST_F(ZSetsTest, ZRemrangebyrankTest) {
   // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
   //    0        1        2        3        4        5        6        7        8
   //   -9       -8       -7       -6       -5       -4       -3       -2       -1
-  std::vector<BlackWidow::ScoreMember> gp23_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+  std::vector<blackwidow::ScoreMember> gp23_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
                                                 {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
                                                 {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
   s = db.ZAdd("GP23_ZREMRANGEBYRANK_KEY", gp23_sm, &ret);
@@ -1740,7 +1740,7 @@ TEST_F(ZSetsTest, ZRemrangebyrankTest) {
   // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
   //    0        1        2        3        4        5        6        7        8
   //   -9       -8       -7       -6       -5       -4       -3       -2       -1
-  std::vector<BlackWidow::ScoreMember> gp24_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+  std::vector<blackwidow::ScoreMember> gp24_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
                                                 {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
                                                 {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
   s = db.ZAdd("GP24_ZREMRANGEBYRANK_KEY", gp24_sm, &ret);
@@ -1762,7 +1762,7 @@ TEST_F(ZSetsTest, ZRemrangebyrankTest) {
   // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
   //    0        1        2        3        4        5        6        7        8
   //   -9       -8       -7       -6       -5       -4       -3       -2       -1
-  std::vector<BlackWidow::ScoreMember> gp25_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+  std::vector<blackwidow::ScoreMember> gp25_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
                                                 {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
                                                 {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
   s = db.ZAdd("GP25_ZREMRANGEBYRANK_KEY", gp25_sm, &ret);
@@ -1784,7 +1784,7 @@ TEST_F(ZSetsTest, ZRemrangebyrankTest) {
   // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
   //    0        1        2        3        4        5        6        7        8
   //   -9       -8       -7       -6       -5       -4       -3       -2       -1
-  std::vector<BlackWidow::ScoreMember> gp26_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+  std::vector<blackwidow::ScoreMember> gp26_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
                                                 {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
                                                 {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
   s = db.ZAdd("GP26_ZREMRANGEBYRANK_KEY", gp26_sm, &ret);
@@ -1806,7 +1806,7 @@ TEST_F(ZSetsTest, ZRemrangebyrankTest) {
   // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
   //    0        1        2        3        4        5        6        7        8
   //   -9       -8       -7       -6       -5       -4       -3       -2       -1
-  std::vector<BlackWidow::ScoreMember> gp27_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+  std::vector<blackwidow::ScoreMember> gp27_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
                                                 {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
                                                 {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
   s = db.ZAdd("GP27_ZREMRANGEBYRANK_KEY", gp27_sm, &ret);
@@ -1828,7 +1828,7 @@ TEST_F(ZSetsTest, ZRemrangebyrankTest) {
   // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
   //    0        1        2        3        4        5        6        7        8
   //   -9       -8       -7       -6       -5       -4       -3       -2       -1
-  std::vector<BlackWidow::ScoreMember> gp28_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+  std::vector<blackwidow::ScoreMember> gp28_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
                                                 {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
                                                 {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
   s = db.ZAdd("GP28_ZREMRANGEBYRANK_KEY", gp28_sm, &ret);
@@ -1850,7 +1850,7 @@ TEST_F(ZSetsTest, ZRemrangebyrankTest) {
   // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
   //    0        1        2        3        4        5        6        7        8
   //   -9       -8       -7       -6       -5       -4       -3       -2       -1
-  std::vector<BlackWidow::ScoreMember> gp29_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+  std::vector<blackwidow::ScoreMember> gp29_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
                                                 {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
                                                 {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
   s = db.ZAdd("GP29_ZREMRANGEBYRANK_KEY", gp29_sm, &ret);
@@ -1881,7 +1881,7 @@ TEST_F(ZSetsTest, ZRemrangebyscoreTest) {
   int32_t ret;
 
   // ***************** Group 1 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp1_sm {{-987654321.0000001, "MM1" }, {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
+  std::vector<blackwidow::ScoreMember> gp1_sm {{-987654321.0000001, "MM1" }, {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
                                                {-654321.0000000001, "MM4" }, {-54321.00000000001, "MM5" }, {-4321.000000000001, "MM6" },
                                                {-1000.000000000001, "MM7" }, {-1000.000000000001, "MM8" }, {-1000.000000000001, "MM9" },
                                                {-100.0000000000001, "MM10"}, { 0,                 "MM11"}, { 100.0000000000001, "MM12"},
@@ -1900,7 +1900,7 @@ TEST_F(ZSetsTest, ZRemrangebyscoreTest) {
 
 
   // ***************** Group 2 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp2_sm {{-987654321.0000001, "MM1" }, {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
+  std::vector<blackwidow::ScoreMember> gp2_sm {{-987654321.0000001, "MM1" }, {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
                                                {-654321.0000000001, "MM4" }, {-54321.00000000001, "MM5" }, {-4321.000000000001, "MM6" },
                                                {-1000.000000000001, "MM7" }, {-1000.000000000001, "MM8" }, {-1000.000000000001, "MM9" },
                                                {-100.0000000000001, "MM10"}, { 0,                 "MM11"}, { 100.0000000000001, "MM12"},
@@ -1923,7 +1923,7 @@ TEST_F(ZSetsTest, ZRemrangebyscoreTest) {
 
 
   // ***************** Group 3 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp3_sm {{-987654321.0000001, "MM1" }, {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
+  std::vector<blackwidow::ScoreMember> gp3_sm {{-987654321.0000001, "MM1" }, {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
                                                {-654321.0000000001, "MM4" }, {-54321.00000000001, "MM5" }, {-4321.000000000001, "MM6" },
                                                {-1000.000000000001, "MM7" }, {-1000.000000000001, "MM8" }, {-1000.000000000001, "MM9" },
                                                {-100.0000000000001, "MM10"}, { 0,                 "MM11"}, { 100.0000000000001, "MM12"},
@@ -1945,7 +1945,7 @@ TEST_F(ZSetsTest, ZRemrangebyscoreTest) {
 
 
   // ***************** Group 4 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp4_sm {{-987654321.0000001, "MM1" }, {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
+  std::vector<blackwidow::ScoreMember> gp4_sm {{-987654321.0000001, "MM1" }, {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
                                                {-654321.0000000001, "MM4" }, {-54321.00000000001, "MM5" }, {-4321.000000000001, "MM6" },
                                                {-1000.000000000001, "MM7" }, {-1000.000000000001, "MM8" }, {-1000.000000000001, "MM9" },
                                                {-100.0000000000001, "MM10"}, { 0,                 "MM11"}, { 100.0000000000001, "MM12"},
@@ -1966,7 +1966,7 @@ TEST_F(ZSetsTest, ZRemrangebyscoreTest) {
 
 
   // ***************** Group 5 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp5_sm {{-987654321.0000001, "MM1" }, {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
+  std::vector<blackwidow::ScoreMember> gp5_sm {{-987654321.0000001, "MM1" }, {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
                                                {-654321.0000000001, "MM4" }, {-54321.00000000001, "MM5" }, {-4321.000000000001, "MM6" },
                                                {-1000.000000000001, "MM7" }, {-1000.000000000001, "MM8" }, {-1000.000000000001, "MM9" },
                                                {-100.0000000000001, "MM10"}, { 0,                 "MM11"}, { 100.0000000000001, "MM12"},
@@ -1988,7 +1988,7 @@ TEST_F(ZSetsTest, ZRemrangebyscoreTest) {
 
 
   // ***************** Group 6 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp6_sm {{-987654321.0000001, "MM1" }, {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
+  std::vector<blackwidow::ScoreMember> gp6_sm {{-987654321.0000001, "MM1" }, {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
                                                {-654321.0000000001, "MM4" }, {-54321.00000000001, "MM5" }, {-4321.000000000001, "MM6" },
                                                {-1000.000000000001, "MM7" }, {-1000.000000000001, "MM8" }, {-1000.000000000001, "MM9" },
                                                {-100.0000000000001, "MM10"}, { 0,                 "MM11"}, { 100.0000000000001, "MM12"},
@@ -2010,7 +2010,7 @@ TEST_F(ZSetsTest, ZRemrangebyscoreTest) {
 
 
   // ***************** Group 7 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp7_sm {{-987654321.0000001, "MM1" }, {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
+  std::vector<blackwidow::ScoreMember> gp7_sm {{-987654321.0000001, "MM1" }, {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
                                                {-654321.0000000001, "MM4" }, {-54321.00000000001, "MM5" }, {-4321.000000000001, "MM6" },
                                                {-1000.000000000001, "MM7" }, {-1000.000000000001, "MM8" }, {-1000.000000000001, "MM9" },
                                                {-100.0000000000001, "MM10"}, { 0,                 "MM11"}, { 100.0000000000001, "MM12"},
@@ -2033,7 +2033,7 @@ TEST_F(ZSetsTest, ZRemrangebyscoreTest) {
 
 
   // ***************** Group 8 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp8_sm {{-987654321.0000001, "MM1" }, {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
+  std::vector<blackwidow::ScoreMember> gp8_sm {{-987654321.0000001, "MM1" }, {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
                                                {-654321.0000000001, "MM4" }, {-54321.00000000001, "MM5" }, {-4321.000000000001, "MM6" },
                                                {-1000.000000000001, "MM7" }, {-1000.000000000001, "MM8" }, {-1000.000000000001, "MM9" },
                                                {-100.0000000000001, "MM10"}, { 0,                 "MM11"}, { 100.0000000000001, "MM12"},
@@ -2055,7 +2055,7 @@ TEST_F(ZSetsTest, ZRemrangebyscoreTest) {
 
 
   // ***************** Group 9 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp9_sm {{-987654321.0000001, "MM1" }, {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
+  std::vector<blackwidow::ScoreMember> gp9_sm {{-987654321.0000001, "MM1" }, {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
                                                {-654321.0000000001, "MM4" }, {-54321.00000000001, "MM5" }, {-4321.000000000001, "MM6" },
                                                {-1000.000000000001, "MM7" }, {-1000.000000000001, "MM8" }, {-1000.000000000001, "MM9" },
                                                {-100.0000000000001, "MM10"}, { 0,                 "MM11"}, { 100.0000000000001, "MM12"},
@@ -2076,7 +2076,7 @@ TEST_F(ZSetsTest, ZRemrangebyscoreTest) {
 
 
   // ***************** Group 10 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp10_sm {{-987654321.0000001, "MM1" }, {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
+  std::vector<blackwidow::ScoreMember> gp10_sm {{-987654321.0000001, "MM1" }, {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
                                                 {-654321.0000000001, "MM4" }, {-54321.00000000001, "MM5" }, {-4321.000000000001, "MM6" },
                                                 {-1000.000000000001, "MM7" }, {-1000.000000000001, "MM8" }, {-1000.000000000001, "MM9" },
                                                 {-100.0000000000001, "MM10"}, { 0,                 "MM11"}, { 100.0000000000001, "MM12"},
@@ -2099,7 +2099,7 @@ TEST_F(ZSetsTest, ZRemrangebyscoreTest) {
 
 
   // ***************** Group 11 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp11_sm {{-987654321.0000001, "MM1" }, {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
+  std::vector<blackwidow::ScoreMember> gp11_sm {{-987654321.0000001, "MM1" }, {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
                                                 {-654321.0000000001, "MM4" }, {-54321.00000000001, "MM5" }, {-4321.000000000001, "MM6" },
                                                 {-1000.000000000001, "MM7" }, {-1000.000000000001, "MM8" }, {-1000.000000000001, "MM9" },
                                                 {-100.0000000000001, "MM10"}, { 0,                 "MM11"}, { 100.0000000000001, "MM12"},
@@ -2126,7 +2126,7 @@ TEST_F(ZSetsTest, ZRemrangebyscoreTest) {
 
 
   // ***************** Group 13 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp13_sm {{0, "MM0"}};
+  std::vector<blackwidow::ScoreMember> gp13_sm {{0, "MM0"}};
 
   s = db.ZAdd("GP13_ZREMRANGEBYSCORE_KEY", gp13_sm, &ret);
   ASSERT_TRUE(s.ok());
@@ -2140,7 +2140,7 @@ TEST_F(ZSetsTest, ZRemrangebyscoreTest) {
 
 
   // ***************** Group 14 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp14_sm {{-987654321.0000001, "MM1" }, {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
+  std::vector<blackwidow::ScoreMember> gp14_sm {{-987654321.0000001, "MM1" }, {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
                                                 {-654321.0000000001, "MM4" }, {-54321.00000000001, "MM5" }, {-4321.000000000001, "MM6" },
                                                 {-1000.000000000001, "MM7" }, {-1000.000000000001, "MM8" }, {-1000.000000000001, "MM9" },
                                                 {-100.0000000000001, "MM10"}, { 0,                 "MM11"}, { 100.0000000000001, "MM12"},
@@ -2162,7 +2162,7 @@ TEST_F(ZSetsTest, ZRemrangebyscoreTest) {
                                                                     { 7654321.000000001, "MM16"}, { 87654321.00000001, "MM17"}, { 987654321.0000001, "MM18"}}));
 
   // ***************** Group 15 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp15_sm {{-987654321.0000001, "MM1" }, {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
+  std::vector<blackwidow::ScoreMember> gp15_sm {{-987654321.0000001, "MM1" }, {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
                                                 {-654321.0000000001, "MM4" }, {-54321.00000000001, "MM5" }, {-4321.000000000001, "MM6" },
                                                 {-1000.000000000001, "MM7" }, {-1000.000000000001, "MM8" }, {-1000.000000000001, "MM9" },
                                                 {-100.0000000000001, "MM10"}, { 0,                 "MM11"}, { 100.0000000000001, "MM12"},
@@ -2184,7 +2184,7 @@ TEST_F(ZSetsTest, ZRemrangebyscoreTest) {
                                                                     { 7654321.000000001, "MM16"}, { 87654321.00000001, "MM17"}, { 987654321.0000001, "MM18"}}));
 
   // ***************** Group 16 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp16_sm {{-987654321.0000001, "MM1" }, {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
+  std::vector<blackwidow::ScoreMember> gp16_sm {{-987654321.0000001, "MM1" }, {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
                                                 {-654321.0000000001, "MM4" }, {-54321.00000000001, "MM5" }, {-4321.000000000001, "MM6" },
                                                 {-1000.000000000001, "MM7" }, {-1000.000000000001, "MM8" }, {-1000.000000000001, "MM9" },
                                                 {-100.0000000000001, "MM10"}, { 0,                 "MM11"}, { 100.0000000000001, "MM12"},
@@ -2209,10 +2209,10 @@ TEST_F(ZSetsTest, ZRemrangebyscoreTest) {
 // ZRevrange
 TEST_F(ZSetsTest, ZRevrangeTest) {
   int32_t ret;
-  std::vector<BlackWidow::ScoreMember> score_members;
+  std::vector<blackwidow::ScoreMember> score_members;
 
   // ***************** Group 1 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp1_sm {{0, "MM1"}};
+  std::vector<blackwidow::ScoreMember> gp1_sm {{0, "MM1"}};
   s = db.ZAdd("GP1_ZREVRANGE_KEY", gp1_sm, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(1, ret);
@@ -2229,7 +2229,7 @@ TEST_F(ZSetsTest, ZRevrangeTest) {
   // {0, MM0} {1, MM1} {2, MM2} {3, MM3} {4, MM4} {5, MM5} {6, MM6} {7, MM7} {8, MM8}
   //    0        1        2        3        4        5        6        7        8
   //   -9       -8       -7       -6       -5       -4       -3       -2       -1
-  std::vector<BlackWidow::ScoreMember> gp2_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
+  std::vector<blackwidow::ScoreMember> gp2_sm {{0, "MM0"}, {1, "MM1"}, {2, "MM2"},
                                                {3, "MM3"}, {4, "MM4"}, {5, "MM5"},
                                                {6, "MM6"}, {7, "MM7"}, {8, "MM8"}};
   s = db.ZAdd("GP2_ZREVRANGE_KEY", gp2_sm, &ret);
@@ -2380,7 +2380,7 @@ TEST_F(ZSetsTest, ZRevrangeTest) {
 
 
   // ***************** Group 3 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp3_sm {{0, "MM1"}};
+  std::vector<blackwidow::ScoreMember> gp3_sm {{0, "MM1"}};
   s = db.ZAdd("GP3_ZREVRANGE_KEY", gp3_sm, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(1, ret);
@@ -2402,10 +2402,10 @@ TEST_F(ZSetsTest, ZRevrangeTest) {
 // ZRevrangebyscore
 TEST_F(ZSetsTest, ZRevrangebyscoreTest) {
   int32_t ret;
-  std::vector<BlackWidow::ScoreMember> score_members;
+  std::vector<blackwidow::ScoreMember> score_members;
 
   // ***************** Group 1 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp1_sm {{-987654321.0000001, "MM1" }, {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
+  std::vector<blackwidow::ScoreMember> gp1_sm {{-987654321.0000001, "MM1" }, {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
                                                {-654321.0000000001, "MM4" }, {-54321.00000000001, "MM5" }, {-4321.000000000001, "MM6" },
                                                {-1000.000000000001, "MM7" }, {-1000.000000000001, "MM8" }, {-1000.000000000001, "MM9" },
                                                {-100.0000000000001, "MM10"}, { 0,                 "MM11"}, { 100.0000000000001, "MM12"},
@@ -2528,7 +2528,7 @@ TEST_F(ZSetsTest, ZRevrangebyscoreTest) {
 
 
   // ***************** Group 2 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp2_sm {{-5, "MM0"}, {-3, "MM1"}, {-1, "MM2"},
+  std::vector<blackwidow::ScoreMember> gp2_sm {{-5, "MM0"}, {-3, "MM1"}, {-1, "MM2"},
                                                {0,  "MM3"}, {1,  "MM4"}, {3,  "MM5"},
                                                {5, "MM6"}};
   s = db.ZAdd("GP2_ZREVRANGEBYSCORE_KEY", gp2_sm, &ret);
@@ -2547,7 +2547,7 @@ TEST_F(ZSetsTest, ZRevrangebyscoreTest) {
 
 
   // ***************** Group 4 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp4_sm {{-1000000000.0000000001, "MM0"},
+  std::vector<blackwidow::ScoreMember> gp4_sm {{-1000000000.0000000001, "MM0"},
                                                {0, "MM1"},
                                                { 1000000000.0000000001, "MM2"}};
   s = db.ZAdd("GP4_ZREVRANGEBYSCORE_KEY", gp4_sm, &ret);
@@ -2578,7 +2578,7 @@ TEST_F(ZSetsTest, ZRevrankTest) {
   // ***************** Group 1 Test *****************
   // {-5, MM0} {-3, MM1} {-1, MM2} {0, MM3} {1, MM4} {3, MM5} {5, MM6}
   //     6         5         4        3        2        1        0
-  std::vector<BlackWidow::ScoreMember> gp1_sm {{-5, "MM0"}, {-3, "MM1"}, {-1, "MM2"}, {0, "MM3"}, {1, "MM4"}, {3, "MM5"}, {5, "MM6"}};
+  std::vector<blackwidow::ScoreMember> gp1_sm {{-5, "MM0"}, {-3, "MM1"}, {-1, "MM2"}, {0, "MM3"}, {1, "MM4"}, {3, "MM5"}, {5, "MM6"}};
   s = db.ZAdd("GP1_ZREVRANK_KEY", gp1_sm, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(7, ret);
@@ -2605,7 +2605,7 @@ TEST_F(ZSetsTest, ZRevrankTest) {
 
 
   // ***************** Group 2 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp2_sm {{-5, "MM0"}, {-3, "MM1"}, {-1, "MM2"}, {0, "MM3"}, {1, "MM4"}, {3, "MM5"}, {5, "MM6"}};
+  std::vector<blackwidow::ScoreMember> gp2_sm {{-5, "MM0"}, {-3, "MM1"}, {-1, "MM2"}, {0, "MM3"}, {1, "MM4"}, {3, "MM5"}, {5, "MM6"}};
   s = db.ZAdd("GP2_ZREVRANK_KEY", gp2_sm, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(7, ret);
@@ -2628,7 +2628,7 @@ TEST_F(ZSetsTest, ZScoreTest) {
   double score;
 
   // ***************** Group 1 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp1_sm {{54354.497895352, "MM1"}, {100.987654321,  "MM2"},
+  std::vector<blackwidow::ScoreMember> gp1_sm {{54354.497895352, "MM1"}, {100.987654321,  "MM2"},
                                                {-100.000000001,  "MM3"}, {-100.000000002, "MM4"},
                                                {-100.000000001,  "MM5"}, {-100.000000002, "MM6"}};
   s = db.ZAdd("GP1_ZSCORE_KEY", gp1_sm, &ret);
@@ -2668,7 +2668,7 @@ TEST_F(ZSetsTest, ZScoreTest) {
 
 
   // ***************** Group 2 Test *****************
-  std::vector<BlackWidow::ScoreMember> gp2_sm {{4, "MM1"}, {3, "MM2"}, {2, "MM3"}, {1, "MM4"}};
+  std::vector<blackwidow::ScoreMember> gp2_sm {{4, "MM1"}, {3, "MM2"}, {2, "MM3"}, {1, "MM4"}};
   s = db.ZAdd("GP2_ZSCORE_KEY", gp2_sm, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(4, ret);
@@ -2697,13 +2697,13 @@ TEST_F(ZSetsTest, ZUnionstoreTest) {
   //
   // {1001001, MM1} {10010010, MM2} {100100100, MM3}
   //
-  std::vector<BlackWidow::ScoreMember> gp1_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp1_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp1_sm3 {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp1_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp1_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp1_sm3 {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}};
   s = db.ZAdd("GP1_ZUNIONSTORE_SM1", gp1_sm1, &ret);
   s = db.ZAdd("GP1_ZUNIONSTORE_SM2", gp1_sm2, &ret);
   s = db.ZAdd("GP1_ZUNIONSTORE_SM3", gp1_sm3, &ret);
-  s = db.ZUnionstore("GP1_ZUNIONSTORE_DESTINATION", {"GP1_ZUNIONSTORE_SM1", "GP1_ZUNIONSTORE_SM2", "GP1_ZUNIONSTORE_SM3"}, {1, 1, 1}, BlackWidow::SUM, &ret);
+  s = db.ZUnionstore("GP1_ZUNIONSTORE_DESTINATION", {"GP1_ZUNIONSTORE_SM1", "GP1_ZUNIONSTORE_SM2", "GP1_ZUNIONSTORE_SM3"}, {1, 1, 1}, blackwidow::SUM, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 3);
   ASSERT_TRUE(size_match(&db, "GP1_ZUNIONSTORE_DESTINATION", 3));
@@ -2717,13 +2717,13 @@ TEST_F(ZSetsTest, ZUnionstoreTest) {
   //
   // {      1, MM1} {      10, MM2} {      100, MM3}
   //
-  std::vector<BlackWidow::ScoreMember> gp2_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp2_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp2_sm3 {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp2_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp2_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp2_sm3 {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}};
   s = db.ZAdd("GP2_ZUNIONSTORE_SM1", gp2_sm1, &ret);
   s = db.ZAdd("GP2_ZUNIONSTORE_SM2", gp2_sm2, &ret);
   s = db.ZAdd("GP2_ZUNIONSTORE_SM3", gp2_sm3, &ret);
-  s = db.ZUnionstore("GP2_ZUNIONSTORE_DESTINATION", {"GP2_ZUNIONSTORE_SM1", "GP2_ZUNIONSTORE_SM2", "GP2_ZUNIONSTORE_SM3"}, {1, 1, 1}, BlackWidow::MIN, &ret);
+  s = db.ZUnionstore("GP2_ZUNIONSTORE_DESTINATION", {"GP2_ZUNIONSTORE_SM1", "GP2_ZUNIONSTORE_SM2", "GP2_ZUNIONSTORE_SM3"}, {1, 1, 1}, blackwidow::MIN, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 3);
   ASSERT_TRUE(size_match(&db, "GP2_ZUNIONSTORE_DESTINATION", 3));
@@ -2737,13 +2737,13 @@ TEST_F(ZSetsTest, ZUnionstoreTest) {
   //
   // {1000000, MM1} {10000000, MM2} {100000000, MM3}
   //
-  std::vector<BlackWidow::ScoreMember> gp3_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp3_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp3_sm3 {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp3_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp3_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp3_sm3 {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}};
   s = db.ZAdd("GP3_ZUNIONSTORE_SM1", gp3_sm1, &ret);
   s = db.ZAdd("GP3_ZUNIONSTORE_SM2", gp3_sm2, &ret);
   s = db.ZAdd("GP3_ZUNIONSTORE_SM3", gp3_sm3, &ret);
-  s = db.ZUnionstore("GP3_ZUNIONSTORE_DESTINATION", {"GP3_ZUNIONSTORE_SM1", "GP3_ZUNIONSTORE_SM2", "GP3_ZUNIONSTORE_SM3"}, {1, 1, 1}, BlackWidow::MAX, &ret);
+  s = db.ZUnionstore("GP3_ZUNIONSTORE_DESTINATION", {"GP3_ZUNIONSTORE_SM1", "GP3_ZUNIONSTORE_SM2", "GP3_ZUNIONSTORE_SM3"}, {1, 1, 1}, blackwidow::MAX, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 3);
   ASSERT_TRUE(size_match(&db, "GP3_ZUNIONSTORE_DESTINATION", 3));
@@ -2757,13 +2757,13 @@ TEST_F(ZSetsTest, ZUnionstoreTest) {
   //
   // {3002001, MM1} {30020010, MM2} {300200100, MM3}
   //
-  std::vector<BlackWidow::ScoreMember> gp4_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp4_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp4_sm3 {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp4_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp4_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp4_sm3 {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}};
   s = db.ZAdd("GP4_ZUNIONSTORE_SM1", gp4_sm1, &ret);
   s = db.ZAdd("GP4_ZUNIONSTORE_SM2", gp4_sm2, &ret);
   s = db.ZAdd("GP4_ZUNIONSTORE_SM3", gp4_sm3, &ret);
-  s = db.ZUnionstore("GP4_ZUNIONSTORE_DESTINATION", {"GP4_ZUNIONSTORE_SM1", "GP4_ZUNIONSTORE_SM2", "GP4_ZUNIONSTORE_SM3"}, {1, 2, 3}, BlackWidow::SUM, &ret);
+  s = db.ZUnionstore("GP4_ZUNIONSTORE_DESTINATION", {"GP4_ZUNIONSTORE_SM1", "GP4_ZUNIONSTORE_SM2", "GP4_ZUNIONSTORE_SM3"}, {1, 2, 3}, blackwidow::SUM, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 3);
   ASSERT_TRUE(size_match(&db, "GP4_ZUNIONSTORE_DESTINATION", 3));
@@ -2777,13 +2777,13 @@ TEST_F(ZSetsTest, ZUnionstoreTest) {
   //
   // {3002001, MM1} {   20010, MM2} {300200100, MM3}
   //
-  std::vector<BlackWidow::ScoreMember> gp5_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp5_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp5_sm3 {{1000000, "MM1"},                    {100000000, "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp5_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp5_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp5_sm3 {{1000000, "MM1"},                    {100000000, "MM3"}};
   s = db.ZAdd("GP5_ZUNIONSTORE_SM1", gp5_sm1, &ret);
   s = db.ZAdd("GP5_ZUNIONSTORE_SM2", gp5_sm2, &ret);
   s = db.ZAdd("GP5_ZUNIONSTORE_SM3", gp5_sm3, &ret);
-  s = db.ZUnionstore("GP5_ZUNIONSTORE_DESTINATION", {"GP5_ZUNIONSTORE_SM1", "GP5_ZUNIONSTORE_SM2", "GP5_ZUNIONSTORE_SM3"}, {1, 2, 3}, BlackWidow::SUM, &ret);
+  s = db.ZUnionstore("GP5_ZUNIONSTORE_DESTINATION", {"GP5_ZUNIONSTORE_SM1", "GP5_ZUNIONSTORE_SM2", "GP5_ZUNIONSTORE_SM3"}, {1, 2, 3}, blackwidow::SUM, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 3);
   ASSERT_TRUE(size_match(&db, "GP5_ZUNIONSTORE_DESTINATION", 3));
@@ -2797,14 +2797,14 @@ TEST_F(ZSetsTest, ZUnionstoreTest) {
   //
   // {3000001, MM1} {      10, MM2} {300000100, MM3}
   //
-  std::vector<BlackWidow::ScoreMember> gp6_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp6_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp6_sm3 {{1000000, "MM1"},                    {100000000, "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp6_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp6_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp6_sm3 {{1000000, "MM1"},                    {100000000, "MM3"}};
   s = db.ZAdd("GP6_ZUNIONSTORE_SM1", gp6_sm1, &ret);
   s = db.ZAdd("GP6_ZUNIONSTORE_SM2", gp6_sm2, &ret);
   s = db.ZAdd("GP6_ZUNIONSTORE_SM3", gp6_sm3, &ret);
   ASSERT_TRUE(make_expired(&db, "GP6_ZUNIONSTORE_SM2"));
-  s = db.ZUnionstore("GP6_ZUNIONSTORE_DESTINATION", {"GP6_ZUNIONSTORE_SM1", "GP6_ZUNIONSTORE_SM2", "GP6_ZUNIONSTORE_SM3"}, {1, 2, 3}, BlackWidow::SUM, &ret);
+  s = db.ZUnionstore("GP6_ZUNIONSTORE_DESTINATION", {"GP6_ZUNIONSTORE_SM1", "GP6_ZUNIONSTORE_SM2", "GP6_ZUNIONSTORE_SM3"}, {1, 2, 3}, blackwidow::SUM, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 3);
   ASSERT_TRUE(size_match(&db, "GP6_ZUNIONSTORE_DESTINATION", 3));
@@ -2818,14 +2818,14 @@ TEST_F(ZSetsTest, ZUnionstoreTest) {
   //
   // {   1, MM1} {   10, MM2} {   100, MM3} {3000, MM4}
   //
-  std::vector<BlackWidow::ScoreMember> gp7_sm1 {{1,    "MM1"}, {10,    "MM2"}, {100,    "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp7_sm2 {{1000, "MM1"}, {10000, "MM2"}, {100000, "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp7_sm3 {                                              {1000, "MM4"}};
+  std::vector<blackwidow::ScoreMember> gp7_sm1 {{1,    "MM1"}, {10,    "MM2"}, {100,    "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp7_sm2 {{1000, "MM1"}, {10000, "MM2"}, {100000, "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp7_sm3 {                                              {1000, "MM4"}};
   s = db.ZAdd("GP7_ZUNIONSTORE_SM1", gp7_sm1, &ret);
   s = db.ZAdd("GP7_ZUNIONSTORE_SM2", gp7_sm2, &ret);
   s = db.ZAdd("GP7_ZUNIONSTORE_SM3", gp7_sm3, &ret);
   ASSERT_TRUE(make_expired(&db, "GP7_ZUNIONSTORE_SM2"));
-  s = db.ZUnionstore("GP7_ZUNIONSTORE_DESTINATION", {"GP7_ZUNIONSTORE_SM1", "GP7_ZUNIONSTORE_SM2", "GP7_ZUNIONSTORE_SM3"}, {1, 2, 3}, BlackWidow::SUM, &ret);
+  s = db.ZUnionstore("GP7_ZUNIONSTORE_DESTINATION", {"GP7_ZUNIONSTORE_SM1", "GP7_ZUNIONSTORE_SM2", "GP7_ZUNIONSTORE_SM3"}, {1, 2, 3}, blackwidow::SUM, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 4);
   ASSERT_TRUE(size_match(&db, "GP7_ZUNIONSTORE_DESTINATION", 4));
@@ -2839,13 +2839,13 @@ TEST_F(ZSetsTest, ZUnionstoreTest) {
   //
   // {1, MM1}   {1, MM2}   {1, MM3}
   //
-  std::vector<BlackWidow::ScoreMember> gp8_sm1 {{1, "MM1"}};
-  std::vector<BlackWidow::ScoreMember> gp8_sm2 {{1, "MM2"}};
-  std::vector<BlackWidow::ScoreMember> gp8_sm3 {{1, "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp8_sm1 {{1, "MM1"}};
+  std::vector<blackwidow::ScoreMember> gp8_sm2 {{1, "MM2"}};
+  std::vector<blackwidow::ScoreMember> gp8_sm3 {{1, "MM3"}};
   s = db.ZAdd("GP8_ZUNIONSTORE_SM1", gp8_sm1, &ret);
   s = db.ZAdd("GP8_ZUNIONSTORE_SM2", gp8_sm2, &ret);
   s = db.ZAdd("GP8_ZUNIONSTORE_SM3", gp8_sm3, &ret);
-  s = db.ZUnionstore("GP8_ZUNIONSTORE_DESTINATION", {"GP8_ZUNIONSTORE_SM1", "GP8_ZUNIONSTORE_SM2", "GP8_ZUNIONSTORE_SM3"}, {1, 1, 1}, BlackWidow::MIN, &ret);
+  s = db.ZUnionstore("GP8_ZUNIONSTORE_DESTINATION", {"GP8_ZUNIONSTORE_SM1", "GP8_ZUNIONSTORE_SM2", "GP8_ZUNIONSTORE_SM3"}, {1, 1, 1}, blackwidow::MIN, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 3);
   ASSERT_TRUE(size_match(&db, "GP8_ZUNIONSTORE_DESTINATION", 3));
@@ -2859,10 +2859,10 @@ TEST_F(ZSetsTest, ZUnionstoreTest) {
   //
   // {1001001, MM1} {10010010, MM2} {100100100, MM3}
   //
-  std::vector<BlackWidow::ScoreMember> gp9_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp9_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp9_sm3 {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp9_destination {{1, "MM1"}};
+  std::vector<blackwidow::ScoreMember> gp9_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp9_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp9_sm3 {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp9_destination {{1, "MM1"}};
   s = db.ZAdd("GP9_ZUNIONSTORE_SM1", gp9_sm1, &ret);
   s = db.ZAdd("GP9_ZUNIONSTORE_SM2", gp9_sm2, &ret);
   s = db.ZAdd("GP9_ZUNIONSTORE_SM3", gp9_sm3, &ret);
@@ -2872,7 +2872,7 @@ TEST_F(ZSetsTest, ZUnionstoreTest) {
   ASSERT_TRUE(size_match(&db, "GP9_ZUNIONSTORE_DESTINATION", 1));
   ASSERT_TRUE(score_members_match(&db, "GP9_ZUNIONSTORE_DESTINATION", {{1, "MM1"}}));
 
-  s = db.ZUnionstore("GP9_ZUNIONSTORE_DESTINATION", {"GP9_ZUNIONSTORE_SM1", "GP9_ZUNIONSTORE_SM2", "GP9_ZUNIONSTORE_SM3"}, {1, 1, 1}, BlackWidow::SUM, &ret);
+  s = db.ZUnionstore("GP9_ZUNIONSTORE_DESTINATION", {"GP9_ZUNIONSTORE_SM1", "GP9_ZUNIONSTORE_SM2", "GP9_ZUNIONSTORE_SM3"}, {1, 1, 1}, blackwidow::SUM, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 3);
   ASSERT_TRUE(size_match(&db, "GP9_ZUNIONSTORE_DESTINATION", 3));
@@ -2886,14 +2886,14 @@ TEST_F(ZSetsTest, ZUnionstoreTest) {
   //
   // {1001001, MM1} {10010010, MM2} {100100100, MM3}
   //
-  std::vector<BlackWidow::ScoreMember> gp10_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp10_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp10_sm3 {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp10_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp10_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp10_sm3 {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}};
   s = db.ZAdd("GP10_ZUNIONSTORE_SM1", gp10_sm1, &ret);
   s = db.ZAdd("GP10_ZUNIONSTORE_SM2", gp10_sm2, &ret);
   s = db.ZAdd("GP10_ZUNIONSTORE_SM3", gp10_sm3, &ret);
   s = db.ZUnionstore("GP10_ZUNIONSTORE_DESTINATION",
-      {"GP10_ZUNIONSTORE_SM1", "GP10_ZUNIONSTORE_SM2", "GP10_ZUNIONSTORE_SM3","GP10_ZUNIONSTORE_SM4"}, {1, 1, 1, 1}, BlackWidow::SUM, &ret);
+      {"GP10_ZUNIONSTORE_SM1", "GP10_ZUNIONSTORE_SM2", "GP10_ZUNIONSTORE_SM3","GP10_ZUNIONSTORE_SM4"}, {1, 1, 1, 1}, blackwidow::SUM, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 3);
   ASSERT_TRUE(size_match(&db, "GP10_ZUNIONSTORE_DESTINATION", 3));
@@ -2911,13 +2911,13 @@ TEST_F(ZSetsTest, ZInterstoreTest) {
   //
   // {1001001, MM1} {10010010, MM2} {100100100, MM3}
   //
-  std::vector<BlackWidow::ScoreMember> gp1_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp1_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp1_sm3 {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp1_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp1_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp1_sm3 {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}};
   s = db.ZAdd("GP1_ZINTERSTORE_SM1", gp1_sm1, &ret);
   s = db.ZAdd("GP1_ZINTERSTORE_SM2", gp1_sm2, &ret);
   s = db.ZAdd("GP1_ZINTERSTORE_SM3", gp1_sm3, &ret);
-  s = db.ZInterstore("GP1_ZINTERSTORE_DESTINATION", {"GP1_ZINTERSTORE_SM1", "GP1_ZINTERSTORE_SM2", "GP1_ZINTERSTORE_SM3"}, {1, 1, 1}, BlackWidow::SUM, &ret);
+  s = db.ZInterstore("GP1_ZINTERSTORE_DESTINATION", {"GP1_ZINTERSTORE_SM1", "GP1_ZINTERSTORE_SM2", "GP1_ZINTERSTORE_SM3"}, {1, 1, 1}, blackwidow::SUM, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 3);
   ASSERT_TRUE(size_match(&db, "GP1_ZINTERSTORE_DESTINATION", 3));
@@ -2931,13 +2931,13 @@ TEST_F(ZSetsTest, ZInterstoreTest) {
   //
   // {      1, MM1} {      10, MM2} {      100, MM3}
   //
-  std::vector<BlackWidow::ScoreMember> gp2_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp2_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp2_sm3 {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp2_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp2_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp2_sm3 {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}};
   s = db.ZAdd("GP2_ZINTERSTORE_SM1", gp2_sm1, &ret);
   s = db.ZAdd("GP2_ZINTERSTORE_SM2", gp2_sm2, &ret);
   s = db.ZAdd("GP2_ZINTERSTORE_SM3", gp2_sm3, &ret);
-  s = db.ZInterstore("GP2_ZINTERSTORE_DESTINATION", {"GP2_ZINTERSTORE_SM1", "GP2_ZINTERSTORE_SM2", "GP2_ZINTERSTORE_SM3"}, {1, 1, 1}, BlackWidow::MIN, &ret);
+  s = db.ZInterstore("GP2_ZINTERSTORE_DESTINATION", {"GP2_ZINTERSTORE_SM1", "GP2_ZINTERSTORE_SM2", "GP2_ZINTERSTORE_SM3"}, {1, 1, 1}, blackwidow::MIN, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 3);
   ASSERT_TRUE(size_match(&db, "GP2_ZINTERSTORE_DESTINATION", 3));
@@ -2951,13 +2951,13 @@ TEST_F(ZSetsTest, ZInterstoreTest) {
   //
   // {1000000, MM1} {10000000, MM2} {100000000, MM3}
   //
-  std::vector<BlackWidow::ScoreMember> gp3_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp3_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp3_sm3 {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp3_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp3_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp3_sm3 {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}};
   s = db.ZAdd("GP3_ZINTERSTORE_SM1", gp3_sm1, &ret);
   s = db.ZAdd("GP3_ZINTERSTORE_SM2", gp3_sm2, &ret);
   s = db.ZAdd("GP3_ZINTERSTORE_SM3", gp3_sm3, &ret);
-  s = db.ZInterstore("GP3_ZINTERSTORE_DESTINATION", {"GP3_ZINTERSTORE_SM1", "GP3_ZINTERSTORE_SM2", "GP3_ZINTERSTORE_SM3"}, {1, 1, 1}, BlackWidow::MAX, &ret);
+  s = db.ZInterstore("GP3_ZINTERSTORE_DESTINATION", {"GP3_ZINTERSTORE_SM1", "GP3_ZINTERSTORE_SM2", "GP3_ZINTERSTORE_SM3"}, {1, 1, 1}, blackwidow::MAX, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 3);
   ASSERT_TRUE(size_match(&db, "GP3_ZINTERSTORE_DESTINATION", 3));
@@ -2971,13 +2971,13 @@ TEST_F(ZSetsTest, ZInterstoreTest) {
   //
   // {3002001, MM1} {30020010, MM2} {300200100, MM3}
   //
-  std::vector<BlackWidow::ScoreMember> gp4_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp4_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp4_sm3 {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp4_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp4_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp4_sm3 {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}};
   s = db.ZAdd("GP4_ZINTERSTORE_SM1", gp4_sm1, &ret);
   s = db.ZAdd("GP4_ZINTERSTORE_SM2", gp4_sm2, &ret);
   s = db.ZAdd("GP4_ZINTERSTORE_SM3", gp4_sm3, &ret);
-  s = db.ZInterstore("GP4_ZINTERSTORE_DESTINATION", {"GP4_ZINTERSTORE_SM1", "GP4_ZINTERSTORE_SM2", "GP4_ZINTERSTORE_SM3"}, {1, 2, 3}, BlackWidow::SUM, &ret);
+  s = db.ZInterstore("GP4_ZINTERSTORE_DESTINATION", {"GP4_ZINTERSTORE_SM1", "GP4_ZINTERSTORE_SM2", "GP4_ZINTERSTORE_SM3"}, {1, 2, 3}, blackwidow::SUM, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 3);
   ASSERT_TRUE(size_match(&db, "GP4_ZINTERSTORE_DESTINATION", 3));
@@ -2991,13 +2991,13 @@ TEST_F(ZSetsTest, ZInterstoreTest) {
   //
   // {3002001, MM1}                 {300200100, MM3}
   //
-  std::vector<BlackWidow::ScoreMember> gp5_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp5_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp5_sm3 {{1000000, "MM1"},                    {100000000, "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp5_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp5_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp5_sm3 {{1000000, "MM1"},                    {100000000, "MM3"}};
   s = db.ZAdd("GP5_ZINTERSTORE_SM1", gp5_sm1, &ret);
   s = db.ZAdd("GP5_ZINTERSTORE_SM2", gp5_sm2, &ret);
   s = db.ZAdd("GP5_ZINTERSTORE_SM3", gp5_sm3, &ret);
-  s = db.ZInterstore("GP5_ZINTERSTORE_DESTINATION", {"GP5_ZINTERSTORE_SM1", "GP5_ZINTERSTORE_SM2", "GP5_ZINTERSTORE_SM3"}, {1, 2, 3}, BlackWidow::SUM, &ret);
+  s = db.ZInterstore("GP5_ZINTERSTORE_DESTINATION", {"GP5_ZINTERSTORE_SM1", "GP5_ZINTERSTORE_SM2", "GP5_ZINTERSTORE_SM3"}, {1, 2, 3}, blackwidow::SUM, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 2);
   ASSERT_TRUE(size_match(&db, "GP5_ZINTERSTORE_DESTINATION", 2));
@@ -3011,14 +3011,14 @@ TEST_F(ZSetsTest, ZInterstoreTest) {
   //
   // {3000001, MM1} {      10, MM2} {300000100, MM3}
   //
-  std::vector<BlackWidow::ScoreMember> gp6_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp6_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp6_sm3 {{1000000, "MM1"},                    {100000000, "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp6_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp6_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp6_sm3 {{1000000, "MM1"},                    {100000000, "MM3"}};
   s = db.ZAdd("GP6_ZINTERSTORE_SM1", gp6_sm1, &ret);
   s = db.ZAdd("GP6_ZINTERSTORE_SM2", gp6_sm2, &ret);
   s = db.ZAdd("GP6_ZINTERSTORE_SM3", gp6_sm3, &ret);
   ASSERT_TRUE(make_expired(&db, "GP6_ZINTERSTORE_SM2"));
-  s = db.ZInterstore("GP6_ZINTERSTORE_DESTINATION", {"GP6_ZINTERSTORE_SM1", "GP6_ZINTERSTORE_SM2", "GP6_ZINTERSTORE_SM3"}, {1, 2, 3}, BlackWidow::SUM, &ret);
+  s = db.ZInterstore("GP6_ZINTERSTORE_DESTINATION", {"GP6_ZINTERSTORE_SM1", "GP6_ZINTERSTORE_SM2", "GP6_ZINTERSTORE_SM3"}, {1, 2, 3}, blackwidow::SUM, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 0);
   ASSERT_TRUE(size_match(&db, "GP6_ZINTERSTORE_DESTINATION", 0));
@@ -3032,14 +3032,14 @@ TEST_F(ZSetsTest, ZInterstoreTest) {
   //
   // {   1, MM1} {   10, MM2} {   100, MM3} {3000, MM4}
   //
-  std::vector<BlackWidow::ScoreMember> gp7_sm1 {{1,    "MM1"}, {10,    "MM2"}, {100,    "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp7_sm2 {{1000, "MM1"}, {10000, "MM2"}, {100000, "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp7_sm3 {                                              {1000, "MM4"}};
+  std::vector<blackwidow::ScoreMember> gp7_sm1 {{1,    "MM1"}, {10,    "MM2"}, {100,    "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp7_sm2 {{1000, "MM1"}, {10000, "MM2"}, {100000, "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp7_sm3 {                                              {1000, "MM4"}};
   s = db.ZAdd("GP7_ZINTERSTORE_SM1", gp7_sm1, &ret);
   s = db.ZAdd("GP7_ZINTERSTORE_SM2", gp7_sm2, &ret);
   s = db.ZAdd("GP7_ZINTERSTORE_SM3", gp7_sm3, &ret);
   ASSERT_TRUE(make_expired(&db, "GP7_ZINTERSTORE_SM2"));
-  s = db.ZInterstore("GP7_ZINTERSTORE_DESTINATION", {"GP7_ZINTERSTORE_SM1", "GP7_ZINTERSTORE_SM2", "GP7_ZINTERSTORE_SM3"}, {1, 2, 3}, BlackWidow::SUM, &ret);
+  s = db.ZInterstore("GP7_ZINTERSTORE_DESTINATION", {"GP7_ZINTERSTORE_SM1", "GP7_ZINTERSTORE_SM2", "GP7_ZINTERSTORE_SM3"}, {1, 2, 3}, blackwidow::SUM, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 0);
   ASSERT_TRUE(size_match(&db, "GP7_ZINTERSTORE_DESTINATION", 0));
@@ -3053,13 +3053,13 @@ TEST_F(ZSetsTest, ZInterstoreTest) {
   //
   // {1, MM1}   {1, MM2}   {1, MM3}
   //
-  std::vector<BlackWidow::ScoreMember> gp8_sm1 {{1, "MM1"}};
-  std::vector<BlackWidow::ScoreMember> gp8_sm2 {{1, "MM2"}};
-  std::vector<BlackWidow::ScoreMember> gp8_sm3 {{1, "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp8_sm1 {{1, "MM1"}};
+  std::vector<blackwidow::ScoreMember> gp8_sm2 {{1, "MM2"}};
+  std::vector<blackwidow::ScoreMember> gp8_sm3 {{1, "MM3"}};
   s = db.ZAdd("GP8_ZINTERSTORE_SM1", gp8_sm1, &ret);
   s = db.ZAdd("GP8_ZINTERSTORE_SM2", gp8_sm2, &ret);
   s = db.ZAdd("GP8_ZINTERSTORE_SM3", gp8_sm3, &ret);
-  s = db.ZInterstore("GP8_ZINTERSTORE_DESTINATION", {"GP8_ZINTERSTORE_SM1", "GP8_ZINTERSTORE_SM2", "GP8_ZINTERSTORE_SM3"}, {1, 1, 1}, BlackWidow::MIN, &ret);
+  s = db.ZInterstore("GP8_ZINTERSTORE_DESTINATION", {"GP8_ZINTERSTORE_SM1", "GP8_ZINTERSTORE_SM2", "GP8_ZINTERSTORE_SM3"}, {1, 1, 1}, blackwidow::MIN, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 0);
   ASSERT_TRUE(size_match(&db, "GP8_ZINTERSTORE_DESTINATION", 0));
@@ -3073,10 +3073,10 @@ TEST_F(ZSetsTest, ZInterstoreTest) {
   //
   // {1001001, MM1} {10010010, MM2} {100100100, MM3}
   //
-  std::vector<BlackWidow::ScoreMember> gp9_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp9_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp9_sm3 {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp9_destination {{1, "MM1"}};
+  std::vector<blackwidow::ScoreMember> gp9_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp9_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp9_sm3 {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp9_destination {{1, "MM1"}};
   s = db.ZAdd("GP9_ZINTERSTORE_SM1", gp9_sm1, &ret);
   s = db.ZAdd("GP9_ZINTERSTORE_SM2", gp9_sm2, &ret);
   s = db.ZAdd("GP9_ZINTERSTORE_SM3", gp9_sm3, &ret);
@@ -3086,7 +3086,7 @@ TEST_F(ZSetsTest, ZInterstoreTest) {
   ASSERT_TRUE(size_match(&db, "GP9_ZINTERSTORE_DESTINATION", 1));
   ASSERT_TRUE(score_members_match(&db, "GP9_ZINTERSTORE_DESTINATION", {{1, "MM1"}}));
 
-  s = db.ZInterstore("GP9_ZINTERSTORE_DESTINATION", {"GP9_ZINTERSTORE_SM1", "GP9_ZINTERSTORE_SM2", "GP9_ZINTERSTORE_SM3"}, {1, 1, 1}, BlackWidow::SUM, &ret);
+  s = db.ZInterstore("GP9_ZINTERSTORE_DESTINATION", {"GP9_ZINTERSTORE_SM1", "GP9_ZINTERSTORE_SM2", "GP9_ZINTERSTORE_SM3"}, {1, 1, 1}, blackwidow::SUM, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 3);
   ASSERT_TRUE(size_match(&db, "GP9_ZINTERSTORE_DESTINATION", 3));
@@ -3100,14 +3100,14 @@ TEST_F(ZSetsTest, ZInterstoreTest) {
   //
   // {1001001, MM1} {10010010, MM2} {100100100, MM3}
   //
-  std::vector<BlackWidow::ScoreMember> gp10_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp10_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
-  std::vector<BlackWidow::ScoreMember> gp10_sm3 {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp10_sm1 {{1,       "MM1"}, {10,       "MM2"}, {100,       "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp10_sm2 {{1000,    "MM1"}, {10000,    "MM2"}, {100000,    "MM3"}};
+  std::vector<blackwidow::ScoreMember> gp10_sm3 {{1000000, "MM1"}, {10000000, "MM2"}, {100000000, "MM3"}};
   s = db.ZAdd("GP10_ZINTERSTORE_SM1", gp10_sm1, &ret);
   s = db.ZAdd("GP10_ZINTERSTORE_SM2", gp10_sm2, &ret);
   s = db.ZAdd("GP10_ZINTERSTORE_SM3", gp10_sm3, &ret);
   s = db.ZInterstore("GP10_ZINTERSTORE_DESTINATION",
-      {"GP10_ZINTERSTORE_SM1", "GP10_ZINTERSTORE_SM2", "GP10_ZINTERSTORE_SM3", "GP10_ZINTERSTORE_SM4"}, {1, 1, 1, 1}, BlackWidow::SUM, &ret);
+      {"GP10_ZINTERSTORE_SM1", "GP10_ZINTERSTORE_SM2", "GP10_ZINTERSTORE_SM3", "GP10_ZINTERSTORE_SM4"}, {1, 1, 1, 1}, blackwidow::SUM, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 0);
   ASSERT_TRUE(size_match(&db, "GP10_ZINTERSTORE_DESTINATION", 0));
@@ -3122,7 +3122,7 @@ TEST_F(ZSetsTest, ZRangebylexTest) {
   // ***************** Group 1 Test *****************
   // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
   //
-  std::vector<BlackWidow::ScoreMember> gp1_sm1 {{1, "e"}, {1, "f"}, {1, "g"},
+  std::vector<blackwidow::ScoreMember> gp1_sm1 {{1, "e"}, {1, "f"}, {1, "g"},
                                                 {1, "h"}, {1, "i"}, {1, "j"},
                                                 {1, "k"}, {1, "l"}, {1, "m"}};
   s = db.ZAdd("GP1_ZRANGEBYLEX", gp1_sm1, &ret);
@@ -3229,7 +3229,7 @@ TEST_F(ZSetsTest, ZRangebylexTest) {
   // ***************** Group 2 Test *****************
   // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}   (expire)
   //
-  std::vector<BlackWidow::ScoreMember> gp2_sm1 {{1, "e"}, {1, "f"}, {1, "g"},
+  std::vector<blackwidow::ScoreMember> gp2_sm1 {{1, "e"}, {1, "f"}, {1, "g"},
                                                 {1, "h"}, {1, "i"}, {1, "j"},
                                                 {1, "k"}, {1, "l"}, {1, "m"}};
   s = db.ZAdd("GP2_ZRANGEBYLEX", gp1_sm1, &ret);
@@ -3256,7 +3256,7 @@ TEST_F(ZSetsTest, ZLexcountTest) {
   // ***************** Group 1 Test *****************
   // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
   //
-  std::vector<BlackWidow::ScoreMember> gp1_sm1 {{1, "e"}, {1, "f"}, {1, "g"},
+  std::vector<blackwidow::ScoreMember> gp1_sm1 {{1, "e"}, {1, "f"}, {1, "g"},
                                                 {1, "h"}, {1, "i"}, {1, "j"},
                                                 {1, "k"}, {1, "l"}, {1, "m"}};
   s = db.ZAdd("GP1_ZLEXCOUNT", gp1_sm1, &ret);
@@ -3363,7 +3363,7 @@ TEST_F(ZSetsTest, ZLexcountTest) {
   // ***************** Group 2 Test *****************
   // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}   (expire)
   //
-  std::vector<BlackWidow::ScoreMember> gp2_sm1 {{1, "e"}, {1, "f"}, {1, "g"},
+  std::vector<blackwidow::ScoreMember> gp2_sm1 {{1, "e"}, {1, "f"}, {1, "g"},
                                                 {1, "h"}, {1, "i"}, {1, "j"},
                                                 {1, "k"}, {1, "l"}, {1, "m"}};
   s = db.ZAdd("GP2_ZLEXCOUNT", gp1_sm1, &ret);
@@ -3390,7 +3390,7 @@ TEST_F(ZSetsTest, ZRemrangebylexTest) {
   // ***************** Group 1 Test *****************
   // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
   //
-  std::vector<BlackWidow::ScoreMember> gp1_sm {{1, "e"}, {1, "f"}, {1, "g"},
+  std::vector<blackwidow::ScoreMember> gp1_sm {{1, "e"}, {1, "f"}, {1, "g"},
                                                {1, "h"}, {1, "i"}, {1, "j"},
                                                {1, "k"}, {1, "l"}, {1, "m"}};
   s = db.ZAdd("GP1_ZREMRANGEBYLEX", gp1_sm, &ret);
@@ -3406,7 +3406,7 @@ TEST_F(ZSetsTest, ZRemrangebylexTest) {
   // ***************** Group 2 Test *****************
   // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
   //
-  std::vector<BlackWidow::ScoreMember> gp2_sm {{1, "e"}, {1, "f"}, {1, "g"},
+  std::vector<blackwidow::ScoreMember> gp2_sm {{1, "e"}, {1, "f"}, {1, "g"},
                                                {1, "h"}, {1, "i"}, {1, "j"},
                                                {1, "k"}, {1, "l"}, {1, "m"}};
   s = db.ZAdd("GP2_ZREMRANGEBYLEX", gp2_sm, &ret);
@@ -3423,7 +3423,7 @@ TEST_F(ZSetsTest, ZRemrangebylexTest) {
   // ***************** Group 3 Test *****************
   // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
   //
-  std::vector<BlackWidow::ScoreMember> gp3_sm {{1, "e"}, {1, "f"}, {1, "g"},
+  std::vector<blackwidow::ScoreMember> gp3_sm {{1, "e"}, {1, "f"}, {1, "g"},
                                                {1, "h"}, {1, "i"}, {1, "j"},
                                                {1, "k"}, {1, "l"}, {1, "m"}};
   s = db.ZAdd("GP3_ZREMRANGEBYLEX", gp3_sm, &ret);
@@ -3440,7 +3440,7 @@ TEST_F(ZSetsTest, ZRemrangebylexTest) {
   // ***************** Group 4 Test *****************
   // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
   //
-  std::vector<BlackWidow::ScoreMember> gp4_sm {{1, "e"}, {1, "f"}, {1, "g"},
+  std::vector<blackwidow::ScoreMember> gp4_sm {{1, "e"}, {1, "f"}, {1, "g"},
                                                {1, "h"}, {1, "i"}, {1, "j"},
                                                {1, "k"}, {1, "l"}, {1, "m"}};
   s = db.ZAdd("GP4_ZREMRANGEBYLEX", gp4_sm, &ret);
@@ -3457,7 +3457,7 @@ TEST_F(ZSetsTest, ZRemrangebylexTest) {
   // ***************** Group 5 Test *****************
   // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
   //
-  std::vector<BlackWidow::ScoreMember> gp5_sm {{1, "e"}, {1, "f"}, {1, "g"},
+  std::vector<blackwidow::ScoreMember> gp5_sm {{1, "e"}, {1, "f"}, {1, "g"},
                                                {1, "h"}, {1, "i"}, {1, "j"},
                                                {1, "k"}, {1, "l"}, {1, "m"}};
   s = db.ZAdd("GP5_ZREMRANGEBYLEX", gp5_sm, &ret);
@@ -3474,7 +3474,7 @@ TEST_F(ZSetsTest, ZRemrangebylexTest) {
   // ***************** Group 6 Test *****************
   // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
   //
-  std::vector<BlackWidow::ScoreMember> gp6_sm {{1, "e"}, {1, "f"}, {1, "g"},
+  std::vector<blackwidow::ScoreMember> gp6_sm {{1, "e"}, {1, "f"}, {1, "g"},
                                                {1, "h"}, {1, "i"}, {1, "j"},
                                                {1, "k"}, {1, "l"}, {1, "m"}};
   s = db.ZAdd("GP6_ZREMRANGEBYLEX", gp6_sm, &ret);
@@ -3492,7 +3492,7 @@ TEST_F(ZSetsTest, ZRemrangebylexTest) {
   // ***************** Group 7 Test *****************
   // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
   //
-  std::vector<BlackWidow::ScoreMember> gp7_sm {{1, "e"}, {1, "f"}, {1, "g"},
+  std::vector<blackwidow::ScoreMember> gp7_sm {{1, "e"}, {1, "f"}, {1, "g"},
                                                {1, "h"}, {1, "i"}, {1, "j"},
                                                {1, "k"}, {1, "l"}, {1, "m"}};
   s = db.ZAdd("GP7_ZREMRANGEBYLEX", gp7_sm, &ret);
@@ -3511,7 +3511,7 @@ TEST_F(ZSetsTest, ZRemrangebylexTest) {
   // ***************** Group 8 Test *****************
   // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
   //
-  std::vector<BlackWidow::ScoreMember> gp8_sm {{1, "e"}, {1, "f"}, {1, "g"},
+  std::vector<blackwidow::ScoreMember> gp8_sm {{1, "e"}, {1, "f"}, {1, "g"},
                                                {1, "h"}, {1, "i"}, {1, "j"},
                                                {1, "k"}, {1, "l"}, {1, "m"}};
   s = db.ZAdd("GP8_ZREMRANGEBYLEX", gp8_sm, &ret);
@@ -3530,7 +3530,7 @@ TEST_F(ZSetsTest, ZRemrangebylexTest) {
   // ***************** Group 9 Test *****************
   // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
   //
-  std::vector<BlackWidow::ScoreMember> gp9_sm {{1, "e"}, {1, "f"}, {1, "g"},
+  std::vector<blackwidow::ScoreMember> gp9_sm {{1, "e"}, {1, "f"}, {1, "g"},
                                                {1, "h"}, {1, "i"}, {1, "j"},
                                                {1, "k"}, {1, "l"}, {1, "m"}};
   s = db.ZAdd("GP9_ZREMRANGEBYLEX", gp9_sm, &ret);
@@ -3549,7 +3549,7 @@ TEST_F(ZSetsTest, ZRemrangebylexTest) {
   // ***************** Group 10 Test *****************
   // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
   //
-  std::vector<BlackWidow::ScoreMember> gp10_sm {{1, "e"}, {1, "f"}, {1, "g"},
+  std::vector<blackwidow::ScoreMember> gp10_sm {{1, "e"}, {1, "f"}, {1, "g"},
                                                 {1, "h"}, {1, "i"}, {1, "j"},
                                                 {1, "k"}, {1, "l"}, {1, "m"}};
   s = db.ZAdd("GP10_ZREMRANGEBYLEX", gp10_sm, &ret);
@@ -3568,7 +3568,7 @@ TEST_F(ZSetsTest, ZRemrangebylexTest) {
   // ***************** Group 11 Test *****************
   // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
   //
-  std::vector<BlackWidow::ScoreMember> gp11_sm {{1, "e"}, {1, "f"}, {1, "g"},
+  std::vector<blackwidow::ScoreMember> gp11_sm {{1, "e"}, {1, "f"}, {1, "g"},
                                                 {1, "h"}, {1, "i"}, {1, "j"},
                                                 {1, "k"}, {1, "l"}, {1, "m"}};
   s = db.ZAdd("GP11_ZREMRANGEBYLEX", gp11_sm, &ret);
@@ -3587,7 +3587,7 @@ TEST_F(ZSetsTest, ZRemrangebylexTest) {
   // ***************** Group 12 Test *****************
   // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
   //
-  std::vector<BlackWidow::ScoreMember> gp12_sm {{1, "e"}, {1, "f"}, {1, "g"},
+  std::vector<blackwidow::ScoreMember> gp12_sm {{1, "e"}, {1, "f"}, {1, "g"},
                                                 {1, "h"}, {1, "i"}, {1, "j"},
                                                 {1, "k"}, {1, "l"}, {1, "m"}};
   s = db.ZAdd("GP12_ZREMRANGEBYLEX", gp12_sm, &ret);
@@ -3606,7 +3606,7 @@ TEST_F(ZSetsTest, ZRemrangebylexTest) {
   // ***************** Group 13 Test *****************
   // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
   //
-  std::vector<BlackWidow::ScoreMember> gp13_sm {{1, "e"}, {1, "f"}, {1, "g"},
+  std::vector<blackwidow::ScoreMember> gp13_sm {{1, "e"}, {1, "f"}, {1, "g"},
                                                 {1, "h"}, {1, "i"}, {1, "j"},
                                                 {1, "k"}, {1, "l"}, {1, "m"}};
   s = db.ZAdd("GP13_ZREMRANGEBYLEX", gp13_sm, &ret);
@@ -3623,7 +3623,7 @@ TEST_F(ZSetsTest, ZRemrangebylexTest) {
   // ***************** Group 14 Test *****************
   // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
   //
-  std::vector<BlackWidow::ScoreMember> gp14_sm {{1, "e"}, {1, "f"}, {1, "g"},
+  std::vector<blackwidow::ScoreMember> gp14_sm {{1, "e"}, {1, "f"}, {1, "g"},
                                                 {1, "h"}, {1, "i"}, {1, "j"},
                                                 {1, "k"}, {1, "l"}, {1, "m"}};
   s = db.ZAdd("GP14_ZREMRANGEBYLEX", gp14_sm, &ret);
@@ -3640,7 +3640,7 @@ TEST_F(ZSetsTest, ZRemrangebylexTest) {
   // ***************** Group 15 Test *****************
   // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
   //
-  std::vector<BlackWidow::ScoreMember> gp15_sm {{1, "e"}, {1, "f"}, {1, "g"},
+  std::vector<blackwidow::ScoreMember> gp15_sm {{1, "e"}, {1, "f"}, {1, "g"},
                                                 {1, "h"}, {1, "i"}, {1, "j"},
                                                 {1, "k"}, {1, "l"}, {1, "m"}};
   s = db.ZAdd("GP15_ZREMRANGEBYLEX", gp15_sm, &ret);
@@ -3657,7 +3657,7 @@ TEST_F(ZSetsTest, ZRemrangebylexTest) {
   // ***************** Group 16 Test *****************
   // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
   //
-  std::vector<BlackWidow::ScoreMember> gp16_sm {{1, "e"}, {1, "f"}, {1, "g"},
+  std::vector<blackwidow::ScoreMember> gp16_sm {{1, "e"}, {1, "f"}, {1, "g"},
                                                 {1, "h"}, {1, "i"}, {1, "j"},
                                                 {1, "k"}, {1, "l"}, {1, "m"}};
   s = db.ZAdd("GP16_ZREMRANGEBYLEX", gp16_sm, &ret);
@@ -3674,7 +3674,7 @@ TEST_F(ZSetsTest, ZRemrangebylexTest) {
   // ***************** Group 17 Test *****************
   // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
   //
-  std::vector<BlackWidow::ScoreMember> gp17_sm {{1, "e"}, {1, "f"}, {1, "g"},
+  std::vector<blackwidow::ScoreMember> gp17_sm {{1, "e"}, {1, "f"}, {1, "g"},
                                                 {1, "h"}, {1, "i"}, {1, "j"},
                                                 {1, "k"}, {1, "l"}, {1, "m"}};
   s = db.ZAdd("GP17_ZREMRANGEBYLEX", gp17_sm, &ret);
@@ -3692,7 +3692,7 @@ TEST_F(ZSetsTest, ZRemrangebylexTest) {
   // ***************** Group 18 Test *****************
   // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
   //
-  std::vector<BlackWidow::ScoreMember> gp18_sm {{1, "e"}, {1, "f"}, {1, "g"},
+  std::vector<blackwidow::ScoreMember> gp18_sm {{1, "e"}, {1, "f"}, {1, "g"},
                                                 {1, "h"}, {1, "i"}, {1, "j"},
                                                 {1, "k"}, {1, "l"}, {1, "m"}};
   s = db.ZAdd("GP18_ZREMRANGEBYLEX", gp18_sm, &ret);
@@ -3710,7 +3710,7 @@ TEST_F(ZSetsTest, ZRemrangebylexTest) {
   // ***************** Group 19 Test *****************
   // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
   //
-  std::vector<BlackWidow::ScoreMember> gp19_sm {{1, "e"}, {1, "f"}, {1, "g"},
+  std::vector<blackwidow::ScoreMember> gp19_sm {{1, "e"}, {1, "f"}, {1, "g"},
                                                 {1, "h"}, {1, "i"}, {1, "j"},
                                                 {1, "k"}, {1, "l"}, {1, "m"}};
   s = db.ZAdd("GP19_ZREMRANGEBYLEX", gp19_sm, &ret);
@@ -3728,7 +3728,7 @@ TEST_F(ZSetsTest, ZRemrangebylexTest) {
   // ***************** Group 20 Test *****************
   // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
   //
-  std::vector<BlackWidow::ScoreMember> gp20_sm {{1, "e"}, {1, "f"}, {1, "g"},
+  std::vector<blackwidow::ScoreMember> gp20_sm {{1, "e"}, {1, "f"}, {1, "g"},
                                                 {1, "h"}, {1, "i"}, {1, "j"},
                                                 {1, "k"}, {1, "l"}, {1, "m"}};
   s = db.ZAdd("GP20_ZREMRANGEBYLEX", gp20_sm, &ret);
@@ -3746,7 +3746,7 @@ TEST_F(ZSetsTest, ZRemrangebylexTest) {
   // ***************** Group 21 Test *****************
   // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
   //
-  std::vector<BlackWidow::ScoreMember> gp21_sm {{1, "e"}, {1, "f"}, {1, "g"},
+  std::vector<blackwidow::ScoreMember> gp21_sm {{1, "e"}, {1, "f"}, {1, "g"},
                                                 {1, "h"}, {1, "i"}, {1, "j"},
                                                 {1, "k"}, {1, "l"}, {1, "m"}};
   s = db.ZAdd("GP21_ZREMRANGEBYLEX", gp21_sm, &ret);
@@ -3765,7 +3765,7 @@ TEST_F(ZSetsTest, ZRemrangebylexTest) {
   // ***************** Group 22 Test *****************
   // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
   //
-  std::vector<BlackWidow::ScoreMember> gp22_sm {{1, "e"}, {1, "f"}, {1, "g"},
+  std::vector<blackwidow::ScoreMember> gp22_sm {{1, "e"}, {1, "f"}, {1, "g"},
                                                 {1, "h"}, {1, "i"}, {1, "j"},
                                                 {1, "k"}, {1, "l"}, {1, "m"}};
   s = db.ZAdd("GP22_ZREMRANGEBYLEX", gp22_sm, &ret);
@@ -3784,7 +3784,7 @@ TEST_F(ZSetsTest, ZRemrangebylexTest) {
   // ***************** Group 23 Test *****************
   // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
   //
-  std::vector<BlackWidow::ScoreMember> gp23_sm {{1, "e"}, {1, "f"}, {1, "g"},
+  std::vector<blackwidow::ScoreMember> gp23_sm {{1, "e"}, {1, "f"}, {1, "g"},
                                                 {1, "h"}, {1, "i"}, {1, "j"},
                                                 {1, "k"}, {1, "l"}, {1, "m"}};
   s = db.ZAdd("GP23_ZREMRANGEBYLEX", gp23_sm, &ret);
@@ -3803,7 +3803,7 @@ TEST_F(ZSetsTest, ZRemrangebylexTest) {
   // ***************** Group 24 Test *****************
   // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}
   //
-  std::vector<BlackWidow::ScoreMember> gp24_sm {{1, "e"}, {1, "f"}, {1, "g"},
+  std::vector<blackwidow::ScoreMember> gp24_sm {{1, "e"}, {1, "f"}, {1, "g"},
                                                 {1, "h"}, {1, "i"}, {1, "j"},
                                                 {1, "k"}, {1, "l"}, {1, "m"}};
   s = db.ZAdd("GP24_ZREMRANGEBYLEX", gp24_sm, &ret);
@@ -3822,7 +3822,7 @@ TEST_F(ZSetsTest, ZRemrangebylexTest) {
   // ***************** Group 25 Test *****************
   // {1, e} {1, f} {1, g} {1, h} {1, i} {1, j} {1, k} {1, l} {1, m}   (expire)
   //
-  std::vector<BlackWidow::ScoreMember> gp25_sm {{1, "e"}, {1, "f"}, {1, "g"},
+  std::vector<blackwidow::ScoreMember> gp25_sm {{1, "e"}, {1, "f"}, {1, "g"},
                                                 {1, "h"}, {1, "i"}, {1, "j"},
                                                 {1, "k"}, {1, "l"}, {1, "m"}};
   s = db.ZAdd("GP25_ZREMRANGEBYLEX", gp25_sm, &ret);

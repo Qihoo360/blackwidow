@@ -104,9 +104,9 @@ static bool size_match(blackwidow::BlackWidow *const db,
 
 static bool make_expired(blackwidow::BlackWidow *const db,
                          const Slice& key) {
-  std::map<BlackWidow::DataType, rocksdb::Status> type_status;
+  std::map<blackwidow::DataType, rocksdb::Status> type_status;
   int ret = db->Expire(key, 1, &type_status);
-  if (!ret || !type_status[BlackWidow::DataType::kSets].ok()) {
+  if (!ret || !type_status[blackwidow::DataType::kSets].ok()) {
     return false;
   }
   std::this_thread::sleep_for(std::chrono::milliseconds(2000));
@@ -143,9 +143,9 @@ TEST_F(SetsTest, SAddTest) {
 
   // Delete the key
   std::vector<std::string> del_keys = {"SADD_KEY"};
-  std::map<BlackWidow::DataType, blackwidow::Status> type_status;
+  std::map<blackwidow::DataType, blackwidow::Status> type_status;
   db.Del(del_keys, &type_status);
-  ASSERT_TRUE(type_status[BlackWidow::DataType::kSets].ok());
+  ASSERT_TRUE(type_status[blackwidow::DataType::kSets].ok());
   ASSERT_TRUE(size_match(&db, "SADD_KEY", 0));
   ASSERT_TRUE(members_match(&db, "SADD_KEY", {}));
 
@@ -209,9 +209,9 @@ TEST_F(SetsTest, SDiffTest) {
   // key2 = {c}
   // key3 = {a, c, e}       (expire)
   // SDIFF key1 key2 key3  = {a, b, d}
-  std::map<BlackWidow::DataType, rocksdb::Status> gp1_type_status;
+  std::map<blackwidow::DataType, rocksdb::Status> gp1_type_status;
   db.Expire("GP1_SDIFF_KEY3", 1, &gp1_type_status);
-  ASSERT_TRUE(gp1_type_status[BlackWidow::DataType::kSets].ok());
+  ASSERT_TRUE(gp1_type_status[blackwidow::DataType::kSets].ok());
   std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
   gp1_members_out.clear();
@@ -381,9 +381,9 @@ TEST_F(SetsTest, SDiffstoreTest) {
   // key3 = {a, c, e}       (expire)
   // SDIFFSTORE destination key1 key2 key3
   // destination = {a, b, d}
-  std::map<BlackWidow::DataType, rocksdb::Status> gp1_type_status;
+  std::map<blackwidow::DataType, rocksdb::Status> gp1_type_status;
   db.Expire("GP1_SDIFFSTORE_KEY3", 1, &gp1_type_status);
-  ASSERT_TRUE(gp1_type_status[BlackWidow::DataType::kSets].ok());
+  ASSERT_TRUE(gp1_type_status[blackwidow::DataType::kSets].ok());
   std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
   gp1_members_out.clear();
@@ -1040,9 +1040,9 @@ TEST_F(SetsTest, SIsmemberTest) {
   ASSERT_EQ(ret, 1);
 
   // Expire set key
-  std::map<BlackWidow::DataType, rocksdb::Status> type_status;
+  std::map<blackwidow::DataType, rocksdb::Status> type_status;
   db.Expire("SISMEMBER_KEY", 1, &type_status);
-  ASSERT_TRUE(type_status[BlackWidow::DataType::kSets].ok());
+  ASSERT_TRUE(type_status[blackwidow::DataType::kSets].ok());
   std::this_thread::sleep_for(std::chrono::milliseconds(2000));
   s = db.SIsmember("SISMEMBER_KEY", "MEMBER", &ret);
   ASSERT_TRUE(s.IsNotFound());
@@ -1730,9 +1730,9 @@ TEST_F(SetsTest, SUnionTest) {
   // key2 = {a, c}
   // key3 = {a, c, e}          (expire key);
   // SUNION key1 key2 key3  = {a, b, c, d}
-  std::map<BlackWidow::DataType, rocksdb::Status> gp1_type_status;
+  std::map<blackwidow::DataType, rocksdb::Status> gp1_type_status;
   db.Expire("GP1_SUNION_KEY3", 1, &gp1_type_status);
-  ASSERT_TRUE(gp1_type_status[BlackWidow::DataType::kSets].ok());
+  ASSERT_TRUE(gp1_type_status[blackwidow::DataType::kSets].ok());
   std::this_thread::sleep_for(std::chrono::milliseconds(2000));
   gp1_members_out.clear();
 
