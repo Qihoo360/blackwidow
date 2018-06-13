@@ -121,8 +121,7 @@ Status BlackWidow::GetStartKey(int64_t cursor, std::string* start_key) {
 int64_t BlackWidow::StoreAndGetCursor(int64_t cursor,
                                       const std::string& next_key) {
   cursors_mutex_->Lock();
-  if (cursors_store_.map_.size() >
-      static_cast<size_t>(cursors_store_.max_size_)) {
+  if (cursors_store_.map_.size() > cursors_store_.max_size_) {
     int64_t tail = cursors_store_.list_.back();
     cursors_store_.list_.remove(tail);
     cursors_store_.map_.erase(tail);
@@ -385,6 +384,11 @@ Status BlackWidow::SUnionstore(const Slice& destination,
                                const std::vector<std::string>& keys,
                                int32_t* ret) {
   return sets_db_->SUnionstore(destination, keys, ret);
+}
+
+Status BlackWidow::SScan(const Slice& key, int64_t cursor, const std::string& pattern,
+                         int64_t count, std::vector<std::string>* members, int64_t* next_cursor) {
+  return sets_db_->SScan(key, cursor, pattern, count, members, next_cursor);
 }
 
 Status BlackWidow::LPush(const Slice& key,
@@ -779,7 +783,7 @@ int64_t BlackWidow::Exists(const std::vector<std::string>& keys,
 int64_t BlackWidow::Scan(int64_t cursor, const std::string& pattern,
                          int64_t count, std::vector<std::string>* keys) {
   bool is_finish;
-  int64_t count_origin = count, cursor_ret = 0;
+  int64_t step_length = count, cursor_ret = 0;
   std::string start_key = "";
   std::string next_key;
 
@@ -800,11 +804,10 @@ int64_t BlackWidow::Scan(int64_t cursor, const std::string& pattern,
       is_finish = strings_db_->Scan(start_key, pattern, keys,
                                     &count, &next_key);
       if (count == 0 && is_finish) {
-        cursor_ret = StoreAndGetCursor(cursor + count_origin, std::string("h"));
+        cursor_ret = StoreAndGetCursor(cursor + step_length, std::string("h"));
         break;
       } else if (count == 0 && !is_finish) {
-        cursor_ret = StoreAndGetCursor(cursor + count_origin,
-                                       std::string("k") + next_key);
+        cursor_ret = StoreAndGetCursor(cursor + step_length, std::string("k") + next_key);
         break;
       }
       start_key = "";
@@ -812,11 +815,10 @@ int64_t BlackWidow::Scan(int64_t cursor, const std::string& pattern,
       is_finish = hashes_db_->Scan(start_key, pattern, keys,
                                    &count, &next_key);
       if (count == 0 && is_finish) {
-        cursor_ret = StoreAndGetCursor(cursor + count_origin, std::string("s"));
+        cursor_ret = StoreAndGetCursor(cursor + step_length, std::string("s"));
         break;
       } else if (count == 0 && !is_finish) {
-        cursor_ret = StoreAndGetCursor(cursor + count_origin,
-                                       std::string("h") + next_key);
+        cursor_ret = StoreAndGetCursor(cursor + step_length, std::string("h") + next_key);
         break;
       }
       start_key = "";
@@ -824,11 +826,10 @@ int64_t BlackWidow::Scan(int64_t cursor, const std::string& pattern,
       is_finish = sets_db_->Scan(start_key, pattern, keys,
                                    &count, &next_key);
       if (count == 0 && is_finish) {
-        cursor_ret = StoreAndGetCursor(cursor + count_origin, std::string("l"));
+        cursor_ret = StoreAndGetCursor(cursor + step_length, std::string("l"));
         break;
       } else if (count == 0 && !is_finish) {
-        cursor_ret = StoreAndGetCursor(cursor + count_origin,
-                                       std::string("s") + next_key);
+        cursor_ret = StoreAndGetCursor(cursor + step_length, std::string("s") + next_key);
         break;
       }
       start_key = "";
@@ -836,22 +837,21 @@ int64_t BlackWidow::Scan(int64_t cursor, const std::string& pattern,
       is_finish = lists_db_->Scan(start_key, pattern, keys,
                                     &count, &next_key);
       if (count == 0 && is_finish) {
-        cursor_ret = StoreAndGetCursor(cursor + count_origin, std::string("z"));
+        cursor_ret = StoreAndGetCursor(cursor + step_length, std::string("z"));
         break;
       } else if (count == 0 && !is_finish) {
-        cursor_ret = StoreAndGetCursor(cursor + count_origin,
-                                       std::string("l") + next_key);
+        cursor_ret = StoreAndGetCursor(cursor + step_length, std::string("l") + next_key);
         break;
       }
       start_key = "";
     case 'z':
       is_finish = zsets_db_->Scan(start_key, pattern, keys,
                                   &count, &next_key);
-      if (count == 0 && is_finish) {
+      if (is_finish) {
+        cursor_ret = 0;
         break;
       } else if (count == 0 && !is_finish) {
-        cursor_ret = StoreAndGetCursor(cursor + count_origin,
-                                       std::string("l") + next_key);
+        cursor_ret = StoreAndGetCursor(cursor + step_length, std::string("z") + next_key);
         break;
       }
   }
@@ -987,20 +987,20 @@ std::map<DataType, int64_t> BlackWidow::TTL(const Slice& key,
     (*type_status)[DataType::kHashes] = s;
   }
 
-  s = sets_db_->TTL(key, &timestamp);
-  if (s.ok() || s.IsNotFound()) {
-    ret[DataType::kSets] = timestamp;
-  } else if (!s.IsNotFound()) {
-    ret[DataType::kSets] = -3;
-    (*type_status)[DataType::kSets] = s;
-  }
-
   s = lists_db_->TTL(key, &timestamp);
   if (s.ok() || s.IsNotFound()) {
     ret[DataType::kLists] = timestamp;
   } else if (!s.IsNotFound()) {
     ret[DataType::kLists] = -3;
     (*type_status)[DataType::kLists] = s;
+  }
+
+  s = sets_db_->TTL(key, &timestamp);
+  if (s.ok() || s.IsNotFound()) {
+    ret[DataType::kSets] = timestamp;
+  } else if (!s.IsNotFound()) {
+    ret[DataType::kSets] = -3;
+    (*type_status)[DataType::kSets] = s;
   }
 
   s = zsets_db_->TTL(key, &timestamp);

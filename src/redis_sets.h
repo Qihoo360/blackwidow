@@ -18,7 +18,7 @@ namespace blackwidow {
 
 class RedisSets : public Redis {
   public:
-    RedisSets() = default;
+    RedisSets();
     ~RedisSets();
 
     // Common Commands
@@ -62,6 +62,8 @@ class RedisSets : public Redis {
     Status SUnionstore(const Slice& destination,
                        const std::vector<std::string>& keys,
                        int32_t* ret);
+    Status SScan(const Slice& key, int64_t cursor, const std::string& pattern,
+                 int64_t count, std::vector<std::string>* members, int64_t* next_cursor);
 
     // Keys Commands
     virtual Status Expire(const Slice& key, int32_t ttl) override;
@@ -78,6 +80,12 @@ class RedisSets : public Redis {
 
   private:
     std::vector<rocksdb::ColumnFamilyHandle*> handles_;
+
+    BlackWidow::LRU<std::string, std::string> sscan_cursors_store_;
+    std::shared_ptr<Mutex> sscan_cursors_mutex_;
+
+    Status GetSScanStartMember(const Slice& key, const Slice& pattern, int64_t cursor, std::string* start_member);
+    Status StoreSScanNextMember(const Slice& key, const Slice& pattern, int64_t cursor, const std::string& next_member);
 };
 
 }  //  namespace blackwidow

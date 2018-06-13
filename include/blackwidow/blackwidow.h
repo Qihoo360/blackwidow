@@ -127,7 +127,7 @@ class BlackWidow {
   // Common
   template <typename T1, typename T2>
   struct LRU{
-    int64_t max_size_;
+    size_t max_size_;
     std::list<T1> list_;
     std::map<T1, T2> map_;
   };
@@ -450,6 +450,10 @@ class BlackWidow {
   Status SUnionstore(const Slice& destination,
                      const std::vector<std::string>& keys,
                      int32_t* ret);
+
+  // See SCAN for SSCAN documentation.
+  Status SScan(const Slice& key, int64_t cursor, const std::string& pattern,
+               int64_t count, std::vector<std::string>* members, int64_t* next_cursor);
 
   // Lists Commands
 
