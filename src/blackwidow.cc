@@ -310,6 +310,12 @@ Status BlackWidow::HDel(const Slice& key,
   return hashes_db_->HDel(key, fields, ret);
 }
 
+// See SCAN for HSCAN documentation.
+Status BlackWidow::HScan(const Slice& key, int64_t cursor, const std::string& pattern,
+                         int64_t count, std::vector<FieldValue>* field_values, int64_t* next_cursor) {
+  return hashes_db_->HScan(key, cursor, pattern, count, field_values, next_cursor);
+}
+
 // Sets Commands
 Status BlackWidow::SAdd(const Slice& key,
                         const std::vector<std::string>& members,

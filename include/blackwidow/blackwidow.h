@@ -321,6 +321,10 @@ class BlackWidow {
   Status HDel(const Slice& key, const std::vector<std::string>& fields,
               int32_t* ret);
 
+  // See SCAN for HSCAN documentation.
+  Status HScan(const Slice& key, int64_t cursor, const std::string& pattern,
+               int64_t count, std::vector<FieldValue>* field_values, int64_t* next_cursor);
+
 
   // Sets Commands
 

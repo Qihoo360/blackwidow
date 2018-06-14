@@ -17,7 +17,7 @@ namespace blackwidow {
 
 class RedisHashes : public Redis {
   public:
-    RedisHashes() = default;
+    RedisHashes();
     ~RedisHashes();
 
     // Common Commands
@@ -55,6 +55,8 @@ class RedisHashes : public Redis {
     Status HVals(const Slice& key,
                  std::vector<std::string>* values);
     Status HStrlen(const Slice& key, const Slice& field, int32_t* len);
+    Status HScan(const Slice& key, int64_t cursor, const std::string& pattern,
+                 int64_t count, std::vector<FieldValue>* field_values, int64_t* next_cursor);
 
 
     // Keys Commands
@@ -72,6 +74,12 @@ class RedisHashes : public Redis {
 
   private:
     std::vector<rocksdb::ColumnFamilyHandle*> handles_;
+
+    BlackWidow::LRU<std::string, std::string> hscan_cursors_store_;
+    std::shared_ptr<Mutex> sscan_cursors_mutex_;
+
+    Status GetHScanStartField(const Slice& key, const Slice& pattern, int64_t cursor, std::string* start_field);
+    Status StoreHScanNextField(const Slice& key, const Slice& pattern, int64_t cursor, const std::string& next_field);
 };
 
 }  //  namespace blackwidow
