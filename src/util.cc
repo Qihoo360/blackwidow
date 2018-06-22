@@ -3,11 +3,11 @@
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 
-#include "src/util.h"
-
 #include <ctype.h>
 #include <stdint.h>
 #include <limits.h>
+
+#include "blackwidow/util.h"
 
 namespace blackwidow {
 
@@ -341,6 +341,111 @@ int LongDoubleToStr(long double ldval, std::string* value) {
       value->assign(buf, len);
       return 0;
     }
+}
+
+int do_mkdir(const char *path, mode_t mode) {
+  struct stat st;
+  int status = 0;
+
+  if (stat(path, &st) != 0) {
+    /* Directory does not exist. EEXIST for race
+     * condition */
+    if (mkdir(path, mode) != 0 && errno != EEXIST)
+      status = -1;
+  } else if (!S_ISDIR(st.st_mode)) {
+    errno = ENOTDIR;
+    status = -1;
+  }
+
+  return (status);
+}
+
+/**
+** mkpath - ensure all directories in path exist
+** Algorithm takes the pessimistic view and works top-down to ensure
+** each directory in path exists, rather than optimistically creating
+** the last element and working backwards.
+*/
+int mkpath(const char *path, mode_t mode) {
+  char           *pp;
+  char           *sp;
+  int             status;
+  char           *copypath = strdup(path);
+
+  status = 0;
+  pp = copypath;
+  while (status == 0 && (sp = strchr(pp, '/')) != 0) {
+    if (sp != pp) {
+      /* Neither root nor double slash in path */
+      *sp = '\0';
+      status = do_mkdir(copypath, mode);
+      *sp = '/';
+    }
+    pp = sp + 1;
+  }
+  if (status == 0)
+    status = do_mkdir(path, mode);
+  free(copypath);
+  return (status);
+}
+
+int delete_dir(const char* dirname)
+{
+    char chBuf[256];
+    DIR * dir = NULL;
+    struct dirent *ptr;
+    int ret = 0;
+    dir = opendir(dirname);
+    if (NULL == dir) {
+        return -1;
+    }
+    while((ptr = readdir(dir)) != NULL) {
+        ret = strcmp(ptr->d_name, ".");
+        if (0 == ret) {
+            continue;
+        }
+        ret = strcmp(ptr->d_name, "..");
+        if (0 == ret) {
+            continue;
+        }
+        snprintf(chBuf, 256, "%s/%s", dirname, ptr->d_name);
+        ret = is_dir(chBuf);
+        if (0 == ret) {
+            //is dir
+            ret = delete_dir(chBuf);
+            if (0 != ret) {
+                return -1;
+            }
+        }
+        else if (1 == ret) {
+            //is file
+            ret = remove(chBuf);
+            if(0 != ret) {
+                return -1;
+            }
+        }
+    }
+    (void)closedir(dir);
+    ret = remove(dirname);
+    if (0 != ret) {
+        return -1;
+    }
+    return 0;
+}
+
+int is_dir(const char* filename) {
+    struct stat buf;
+    int ret = stat(filename,&buf);
+    if (0 == ret) {
+        if (buf.st_mode & S_IFDIR) {
+            //folder
+            return 0;
+        } else {
+            //file
+            return 1;
+        }
+    }
+    return -1;
 }
 
 }  //  namespace blackwidow

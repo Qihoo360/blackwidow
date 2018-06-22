@@ -4,6 +4,7 @@
 //  of patent rights can be found in the PATENTS file in the same directory.
 
 #include "blackwidow/blackwidow.h"
+#include "blackwidow/util.h"
 
 #include "src/mutex_impl.h"
 #include "src/redis_strings.h"
@@ -65,6 +66,8 @@ static std::string AppendSubDirectory(const std::string& db_path,
 
 Status BlackWidow::Open(const rocksdb::Options& options,
                         const std::string& db_path) {
+  mkpath(db_path.c_str(), 0755);
+
   strings_db_ = new RedisStrings();
   Status s = strings_db_->Open(options, AppendSubDirectory(db_path, "strings"));
   if (!s.ok()) {
@@ -608,6 +611,10 @@ Status BlackWidow::ZRemrangebylex(const Slice& key,
   return zsets_db_->ZRemrangebylex(key, min, max, left_close, right_close, ret);
 }
 
+Status BlackWidow::ZScan(const Slice& key, int64_t cursor, const std::string& pattern,
+                         int64_t count, std::vector<ScoreMember>* score_members, int64_t* next_cursor) {
+  return zsets_db_->ZScan(key, cursor, pattern, count, score_members, next_cursor);
+}
 
 
 // Keys Commands
@@ -1418,6 +1425,22 @@ Status BlackWidow::StopScanKeyNum() {
   sleep(1);
   scan_keynum_exit_ = true;
   return Status::OK();
+}
+
+rocksdb::DB* BlackWidow::GetDBByType(const std::string& type) {
+  if (type == STRINGS_DB) {
+    return strings_db_->get_db();
+  } else if (type == HASHES_DB) {
+    return hashes_db_->get_db();
+  } else if (type == LISTS_DB) {
+    return lists_db_->get_db();
+  } else if (type == SETS_DB) {
+    return sets_db_->get_db();
+  } else if (type == ZSETS_DB) {
+    return zsets_db_->get_db();
+  } else {
+    return NULL;
+  }
 }
 
 }  //  namespace blackwidow

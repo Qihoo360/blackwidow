@@ -3,11 +3,11 @@
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 
-#include "src/redis_lists.h"
 
 #include <memory>
 
-#include "src/util.h"
+#include "blackwidow/util.h"
+#include "src/redis_lists.h"
 #include "src/lists_filter.h"
 #include "src/scope_record_lock.h"
 #include "src/scope_snapshot.h"

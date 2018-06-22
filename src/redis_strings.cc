@@ -10,10 +10,10 @@
 #include <algorithm>
 #include <limits>
 
+#include "blackwidow/util.h"
 #include "src/strings_filter.h"
 #include "src/scope_record_lock.h"
 #include "src/scope_snapshot.h"
-#include "src/util.h"
 
 namespace blackwidow {
 

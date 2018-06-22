@@ -29,6 +29,10 @@ class Redis {
     default_compact_range_options_.change_level = true;
   }
 
+  rocksdb::DB* get_db() {
+    return db_;
+  }
+
   virtual ~Redis() {
     delete db_;
     delete lock_mgr_;

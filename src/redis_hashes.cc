@@ -7,7 +7,7 @@
 
 #include <memory>
 
-#include "src/util.h"
+#include "blackwidow/util.h"
 #include "src/base_filter.h"
 #include "src/scope_record_lock.h"
 #include "src/scope_snapshot.h"

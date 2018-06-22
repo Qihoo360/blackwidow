@@ -8,7 +8,7 @@
 #include <limits>
 
 #include "iostream"
-#include "src/util.h"
+#include "blackwidow/util.h"
 #include "src/zsets_filter.h"
 #include "src/scope_record_lock.h"
 #include "src/scope_snapshot.h"
@@ -1312,6 +1312,94 @@ Status RedisZSets::Expireat(const Slice& key, int32_t timestamp) {
     }
   }
   return s;
+}
+
+Status RedisZSets::ZScan(const Slice& key, int64_t cursor, const std::string& pattern,
+                         int64_t count, std::vector<ScoreMember>* score_members, int64_t* next_cursor) {
+  score_members->clear();
+  if (cursor < 0) {
+    *next_cursor = 0;
+    return Status::OK();
+  }
+
+  int64_t rest = count;
+  int64_t step_length = count;
+  rocksdb::ReadOptions read_options;
+  const rocksdb::Snapshot* snapshot;
+
+  std::string meta_value;
+  ScopeSnapshot ss(db_, &snapshot);
+  read_options.snapshot = snapshot;
+  Status s = db_->Get(read_options, handles_[0], key, &meta_value);
+  if (s.ok()) {
+    ParsedZSetsMetaValue parsed_zsets_meta_value(&meta_value);
+    if (parsed_zsets_meta_value.IsStale()
+      || parsed_zsets_meta_value.count() == 0) {
+      *next_cursor = 0;
+    } else {
+      std::string start_member;
+      int32_t version = parsed_zsets_meta_value.version();
+      s = GetZScanStartMember(key, pattern, cursor, &start_member);
+      if (s.IsNotFound()) {
+        cursor = 0;
+      }
+
+      ZSetsMemberKey zsets_member_prefix(key, version, Slice());
+      ZSetsMemberKey zsets_member_key(key, version, start_member);
+      std::string prefix = zsets_member_prefix.Encode().ToString();
+      rocksdb::Iterator* iter = db_->NewIterator(read_options, handles_[1]);
+      for (iter->Seek(zsets_member_key.Encode());
+           iter->Valid() && rest > 0 && iter->key().starts_with(prefix);
+           iter->Next()) {
+        ParsedZSetsMemberKey parsed_zsets_member_key(iter->key());
+        std::string member = parsed_zsets_member_key.member().ToString();
+        if (StringMatch(pattern.data(), pattern.size(), member.data(), member.size(), 0)) {
+          uint64_t tmp = DecodeFixed64(iter->value().data());
+          const void* ptr_tmp = reinterpret_cast<const void*>(&tmp);
+          double score = *reinterpret_cast<const double*>(ptr_tmp);
+          score_members->push_back({score, member});
+        }
+        rest--;
+      }
+
+      if (iter->Valid() && iter->key().starts_with(prefix)) {
+        *next_cursor = cursor + step_length;
+        ParsedZSetsMemberKey parsed_zsets_member_key(iter->key());
+        std::string next_member = parsed_zsets_member_key.member().ToString();
+        StoreZScanNextMember(key, pattern, *next_cursor, next_member);
+      } else {
+        *next_cursor = 0;
+      }
+      delete iter;
+    }
+  } else {
+    *next_cursor = 0;
+  }
+  return s;
+}
+
+Status RedisZSets::GetZScanStartMember(const Slice& key, const Slice& pattern, int64_t cursor, std::string* start_member) {
+  std::string index_key = key.ToString() + "_" + pattern.ToString() + "_" + std::to_string(cursor);
+  if (zscan_cursors_store_.map_.find(index_key) == zscan_cursors_store_.map_.end()) {
+    return Status::NotFound();
+  } else {
+    *start_member = zscan_cursors_store_.map_[index_key];
+  }
+  return Status::OK();
+}
+
+Status RedisZSets::StoreZScanNextMember(const Slice& key, const Slice& pattern, int64_t cursor, const std::string& next_member) {
+  std::string index_key = key.ToString() + "_" + pattern.ToString() +  "_" + std::to_string(cursor);
+  if (zscan_cursors_store_.list_.size() > zscan_cursors_store_.max_size_) {
+    std::string tail = zscan_cursors_store_.list_.back();
+    zscan_cursors_store_.map_.erase(tail);
+    zscan_cursors_store_.list_.pop_back();
+  }
+
+  zscan_cursors_store_.map_[index_key] = next_member;
+  zscan_cursors_store_.list_.remove(index_key);
+  zscan_cursors_store_.list_.push_front(index_key);
+  return Status::OK();
 }
 
 Status RedisZSets::Persist(const Slice& key) {

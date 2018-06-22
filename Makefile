@@ -85,7 +85,7 @@ ifndef DISABLE_WARNING_AS_ERROR
   WARNING_FLAGS += -Werror
 endif
 
-CXXFLAGS += $(WARNING_FLAGS) -I. -I./include -I$(ROCKSDB_INCLUDE_DIR) -I$(SLASH_INCLUDE_DIR) $(OPT)
+CXXFLAGS += $(WARNING_FLAGS) -I. -I./include -I$(ROCKSDB_INCLUDE_DIR) -I$(ROCKSDB_PATH) -I$(SLASH_INCLUDE_DIR) $(OPT)
 
 date := $(shell date +%F)
 git_sha := $(shell git rev-parse HEAD 2>/dev/null)

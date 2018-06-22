@@ -112,6 +112,8 @@ class RedisZSets : public Redis {
                           bool left_close,
                           bool right_close,
                           int32_t* ret);
+    Status ZScan(const Slice& key, int64_t cursor, const std::string& pattern,
+                 int64_t count, std::vector<ScoreMember>* score_members, int64_t* next_cursor);
 
     // Keys Commands
     virtual Status Expire(const Slice& key, int32_t ttl) override;
@@ -128,6 +130,12 @@ class RedisZSets : public Redis {
 
   private:
     std::vector<rocksdb::ColumnFamilyHandle*> handles_;
+
+    BlackWidow::LRU<std::string, std::string> zscan_cursors_store_;
+    std::shared_ptr<Mutex> zscan_cursors_mutex_;
+
+    Status GetZScanStartMember(const Slice& key, const Slice& pattern, int64_t cursor, std::string* start_member);
+    Status StoreZScanNextMember(const Slice& key, const Slice& pattern, int64_t cursor, const std::string& next_member);
 };
 
 } // namespace blackwidow
