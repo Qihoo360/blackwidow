@@ -553,16 +553,16 @@ Status RedisHashes::HSet(const Slice& key, const Slice& field,
       *res = 1;
     } else {
       version = parsed.version();
-      HashesDataKey data_key(key, version, field);
       std::string data_value;
-      s = db_->Get(default_read_options_, handles_[1], data_key.Encode(), &data_value);
+      HashesDataKey hashes_data_key(key, version, field);
+      s = db_->Get(default_read_options_, handles_[1], hashes_data_key.Encode(), &data_value);
       if (s.ok()) {
-        batch.Put(handles_[1], data_key.Encode(), value);
+        batch.Put(handles_[1], hashes_data_key.Encode(), value);
         *res = 0;
       } else if (s.IsNotFound()) {
         parsed.ModifyCount(1);
         batch.Put(handles_[0], key, meta_value);
-        batch.Put(handles_[1], data_key.Encode(), value);
+        batch.Put(handles_[1], hashes_data_key.Encode(), value);
         *res = 1;
       } else {
         return s;

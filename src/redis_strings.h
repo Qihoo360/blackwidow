@@ -48,11 +48,11 @@ class RedisStrings : public Redis {
                 std::vector<std::string>* values);
     Status MSet(const std::vector<KeyValue>& kvs);
     Status MSetnx(const std::vector<KeyValue>& kvs, int32_t* ret);
-    Status Set(const Slice& key, const Slice& value);
-    Status Setxx(const Slice& key, const Slice& value, int32_t* ret);
+    Status Set(const Slice& key, const Slice& value, const int32_t ttl = 0);
+    Status Setxx(const Slice& key, const Slice& value, int32_t* ret, const int32_t ttl = 0);
     Status SetBit(const Slice& key, int64_t offset, int32_t value, int32_t* ret);
     Status Setex(const Slice& key, const Slice& value, int32_t ttl);
-    Status Setnx(const Slice& key, const Slice& value, int32_t* ret);
+    Status Setnx(const Slice& key, const Slice& value, int32_t* ret, const int32_t ttl = 0);
     Status Setrange(const Slice& key, int64_t start_offset,
                     const Slice& value, int32_t* ret);
     Status Strlen(const Slice& key, int32_t *len);

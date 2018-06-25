@@ -137,12 +137,12 @@ int64_t BlackWidow::StoreAndGetCursor(int64_t cursor,
 }
 
 // Strings Commands
-Status BlackWidow::Set(const Slice& key, const Slice& value) {
-  return strings_db_->Set(key, value);
+Status BlackWidow::Set(const Slice& key, const Slice& value, const int32_t ttl) {
+  return strings_db_->Set(key, value, ttl);
 }
 
-Status BlackWidow::Setxx(const Slice& key, const Slice& value, int32_t* ret) {
-  return strings_db_->Setxx(key, value, ret);
+Status BlackWidow::Setxx(const Slice& key, const Slice& value, int32_t* ret, const int32_t ttl) {
+  return strings_db_->Setxx(key, value, ret, ttl);
 }
 
 Status BlackWidow::Get(const Slice& key, std::string* value) {
@@ -172,8 +172,8 @@ Status BlackWidow::MGet(const std::vector<std::string>& keys,
   return strings_db_->MGet(keys, values);
 }
 
-Status BlackWidow::Setnx(const Slice& key, const Slice& value, int32_t* ret) {
-  return strings_db_->Setnx(key, value, ret);
+Status BlackWidow::Setnx(const Slice& key, const Slice& value, int32_t* ret, const int32_t ttl) {
+  return strings_db_->Setnx(key, value, ret, ttl);
 }
 
 Status BlackWidow::MSetnx(const std::vector<KeyValue>& kvs,

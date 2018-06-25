@@ -554,13 +554,16 @@ Status RedisStrings::MSetnx(const std::vector<KeyValue>& kvs,
   return s;
 }
 
-Status RedisStrings::Set(const Slice& key, const Slice& value) {
+Status RedisStrings::Set(const Slice& key, const Slice& value, const int32_t ttl) {
   StringsValue strings_value(value);
   ScopeRecordLock l(lock_mgr_, key);
+  if (ttl > 0) {
+    strings_value.SetRelativeTimestamp(ttl);
+  }
   return db_->Put(default_write_options_, key, strings_value.Encode());
 }
 
-Status RedisStrings::Setxx(const Slice& key, const Slice& value, int32_t* ret) {
+Status RedisStrings::Setxx(const Slice& key, const Slice& value, int32_t* ret, const int32_t ttl) {
   bool not_found = true;
   std::string old_value;
   StringsValue strings_value(value);
@@ -580,6 +583,9 @@ Status RedisStrings::Setxx(const Slice& key, const Slice& value, int32_t* ret) {
     return s;
   } else {
     *ret = 1;
+    if (ttl > 0) {
+      strings_value.SetRelativeTimestamp(ttl);
+    }
     return db_->Put(default_write_options_, key, strings_value.Encode());
   }
 }
@@ -640,7 +646,7 @@ Status RedisStrings::Setex(const Slice& key, const Slice& value, int32_t ttl) {
   return db_->Put(default_write_options_, key, strings_value.Encode());
 }
 
-Status RedisStrings::Setnx(const Slice& key, const Slice& value, int32_t* ret) {
+Status RedisStrings::Setnx(const Slice& key, const Slice& value, int32_t* ret, const int32_t ttl) {
   *ret = 0;
   std::string old_value;
   ScopeRecordLock l(lock_mgr_, key);
@@ -649,6 +655,9 @@ Status RedisStrings::Setnx(const Slice& key, const Slice& value, int32_t* ret) {
     ParsedStringsValue parsed_strings_value(&old_value);
     if (parsed_strings_value.IsStale()) {
       StringsValue strings_value(value);
+      if (ttl > 0) {
+        strings_value.SetRelativeTimestamp(ttl);
+      }
       s = db_->Put(default_write_options_, key, strings_value.Encode());
       if (s.ok()) {
         *ret = 1;
@@ -656,6 +665,9 @@ Status RedisStrings::Setnx(const Slice& key, const Slice& value, int32_t* ret) {
     }
   } else if (s.IsNotFound()) {
     StringsValue strings_value(value);
+    if (ttl > 0) {
+      strings_value.SetRelativeTimestamp(ttl);
+    }
     s = db_->Put(default_write_options_, key, strings_value.Encode());
     if (s.ok()) {
       *ret = 1;

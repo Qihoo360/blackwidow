@@ -170,7 +170,7 @@ TEST_F(ZSetsTest, ZAddTest) {
   // [0,       MM1]
   s = db.ZAdd("GP5_ZADD_KEY", {{-0.5333, "MM2"}}, &ret);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(2, ret);
+  ASSERT_EQ(1, ret);
   ASSERT_TRUE(size_match(&db, "GP5_ZADD_KEY", 2));
   ASSERT_TRUE(score_members_match(&db, "GP5_ZADD_KEY", {{-0.5333, "MM2"}, {0, "MM1"}}));
 
@@ -179,7 +179,7 @@ TEST_F(ZSetsTest, ZAddTest) {
   // [1.79769e+308, MM3]
   s = db.ZAdd("GP5_ZADD_KEY", {{1.79769e+308, "MM3"}}, &ret);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(3, ret);
+  ASSERT_EQ(1, ret);
   ASSERT_TRUE(size_match(&db, "GP5_ZADD_KEY", 3));
   ASSERT_TRUE(score_members_match(&db, "GP5_ZADD_KEY",
         {{-0.5333, "MM2"}, {0, "MM1"}, {1.79769e+308, "MM3"}}));
@@ -190,7 +190,7 @@ TEST_F(ZSetsTest, ZAddTest) {
   // [1.79769e+308, MM3]
   s = db.ZAdd("GP5_ZADD_KEY", {{50000, "MM4"}}, &ret);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(4, ret);
+  ASSERT_EQ(1, ret);
   ASSERT_TRUE(size_match(&db, "GP5_ZADD_KEY", 4));
   ASSERT_TRUE(score_members_match(&db, "GP5_ZADD_KEY",
         {{-0.5333, "MM2"}, {0, "MM1"}, {50000, "MM4"}, {1.79769e+308, "MM3"}}));
@@ -202,7 +202,7 @@ TEST_F(ZSetsTest, ZAddTest) {
   // [1.79769e+308,  MM3]
   s = db.ZAdd("GP5_ZADD_KEY", {{-1.79769e+308, "MM5"}}, &ret);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(5, ret);
+  ASSERT_EQ(1, ret);
   ASSERT_TRUE(size_match(&db, "GP5_ZADD_KEY", 5));
   ASSERT_TRUE(score_members_match(&db, "GP5_ZADD_KEY",
         {{-1.79769e+308, "MM5"}, {-0.5333,      "MM2"}, {0, "MM1"},
@@ -216,7 +216,7 @@ TEST_F(ZSetsTest, ZAddTest) {
   // [1.79769e+308,  MM3]
   s = db.ZAdd("GP5_ZADD_KEY", {{0, "MM6"}}, &ret);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(6, ret);
+  ASSERT_EQ(1, ret);
   ASSERT_TRUE(size_match(&db, "GP5_ZADD_KEY", 6));
   ASSERT_TRUE(score_members_match(&db, "GP5_ZADD_KEY",
         {{-1.79769e+308, "MM5"}, {-0.5333, "MM2"}, {0,            "MM1"},
@@ -230,7 +230,7 @@ TEST_F(ZSetsTest, ZAddTest) {
   // [1.79769e+308,  MM3]
   s = db.ZAdd("GP5_ZADD_KEY", {{100000, "MM6"}}, &ret);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(6, ret);
+  ASSERT_EQ(0, ret);
   ASSERT_TRUE(size_match(&db, "GP5_ZADD_KEY", 6));
   ASSERT_TRUE(score_members_match(&db, "GP5_ZADD_KEY",
         {{-1.79769e+308, "MM5"}, {-0.5333, "MM2"}, {0, "MM1"},
@@ -245,7 +245,7 @@ TEST_F(ZSetsTest, ZAddTest) {
   // [1.79769e+308,  MM3]
   s = db.ZAdd("GP5_ZADD_KEY", {{-0.5333, "MM7"}}, &ret);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(7, ret);
+  ASSERT_EQ(1, ret);
   ASSERT_TRUE(size_match(&db, "GP5_ZADD_KEY", 7));
   ASSERT_TRUE(score_members_match(&db, "GP5_ZADD_KEY",
         {{-1.79769e+308, "MM5"}, {-0.5333, "MM2"}, {-0.5333, "MM7"},
@@ -262,7 +262,7 @@ TEST_F(ZSetsTest, ZAddTest) {
   // [1.79769e+308,  MM3]
   s = db.ZAdd("GP5_ZADD_KEY", {{-1/3.0, "MM8"}}, &ret);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(8, ret);
+  ASSERT_EQ(1, ret);
   ASSERT_TRUE(size_match(&db, "GP5_ZADD_KEY", 8));
   ASSERT_TRUE(score_members_match(&db, "GP5_ZADD_KEY",
         {{-1.79769e+308, "MM5"}, {-0.5333,      "MM2"}, {-0.5333, "MM7"},
@@ -280,7 +280,7 @@ TEST_F(ZSetsTest, ZAddTest) {
   // [1.79769e+308,  MM3]
   s = db.ZAdd("GP5_ZADD_KEY", {{1/3.0, "MM9"}}, &ret);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(9, ret);
+  ASSERT_EQ(1, ret);
   ASSERT_TRUE(size_match(&db, "GP5_ZADD_KEY", 9));
   ASSERT_TRUE(score_members_match(&db, "GP5_ZADD_KEY",
         {{-1.79769e+308, "MM5"}, {-0.5333, "MM2"}, {-0.5333,      "MM7"},
@@ -300,7 +300,7 @@ TEST_F(ZSetsTest, ZAddTest) {
                                {0, "MM4"}, {0, "MM5"}, {0, "MM6"},
                                {0, "MM7"}, {0, "MM8"}, {0, "MM9"}}, &ret);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(9, ret);
+  ASSERT_EQ(0, ret);
   ASSERT_TRUE(size_match(&db, "GP5_ZADD_KEY", 9));
   ASSERT_TRUE(score_members_match(&db, "GP5_ZADD_KEY",
         {{0, "MM1"}, {0, "MM2"}, {0, "MM3"},
@@ -347,7 +347,7 @@ TEST_F(ZSetsTest, ZAddTest) {
 
   s = db.ZAdd("GP7_ZADD_KEY", {{1234.56789, "MM1"}}, &ret);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(3, ret);
+  ASSERT_EQ(0, ret);
   ASSERT_TRUE(size_match(&db, "GP7_ZADD_KEY", 3));
   ASSERT_TRUE(score_members_match(&db, "GP7_ZADD_KEY", {{0, "MM2"}, {1234.56789, "MM1"}, {1234.56789, "MM3"}}));
 }

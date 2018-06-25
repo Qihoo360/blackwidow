@@ -143,10 +143,10 @@ class BlackWidow {
 
   // Set key to hold the string value. if key
   // already holds a value, it is overwritten
-  Status Set(const Slice& key, const Slice& value);
+  Status Set(const Slice& key, const Slice& value, const int32_t ttl = 0);
 
   // Set key to hold the string value. if key exist
-  Status Setxx(const Slice& key, const Slice& value, int32_t* ret);
+  Status Setxx(const Slice& key, const Slice& value, int32_t* ret, const int32_t ttl = 0);
 
   // Get the value of key. If the key does not exist
   // the special value nil is returned
@@ -175,7 +175,7 @@ class BlackWidow {
   // Set key to hold string value if key does not exist
   // return 1 if the key was set
   // return 0 if the key was not set
-  Status Setnx(const Slice& key, const Slice& value, int32_t* ret);
+  Status Setnx(const Slice& key, const Slice& value, int32_t* ret, const int32_t ttl = 0);
 
   // Sets the given keys to their respective values.
   // MSETNX will not perform any operation at all even

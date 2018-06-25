@@ -171,8 +171,7 @@ Status RedisZSets::ZAdd(const Slice& key,
       version = parsed_zsets_meta_value.version();
     }
 
-    int32_t new_add = 0;
-    int32_t old_size = parsed_zsets_meta_value.count();
+    int32_t cnt = 0;
     std::string data_value;
     for (const auto& sm : filtered_score_members) {
       bool not_found = true;
@@ -202,12 +201,12 @@ Status RedisZSets::ZAdd(const Slice& key,
       ZSetsScoreKey zsets_score_key(key, version, sm.score, sm.member);
       batch.Put(handles_[2], zsets_score_key.Encode(), Slice());
       if (not_found) {
-        new_add++;
+        cnt++;
       }
     }
-    parsed_zsets_meta_value.set_count(old_size + new_add);
+    parsed_zsets_meta_value.ModifyCount(cnt);
     batch.Put(handles_[0], key, meta_value);
-    *ret = old_size + new_add;
+    *ret = cnt;
   } else if (s.IsNotFound()) {
     char buf[4];
     EncodeFixed32(buf, filtered_score_members.size());
