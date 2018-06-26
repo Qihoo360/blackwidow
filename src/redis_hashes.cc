@@ -790,10 +790,10 @@ Status RedisHashes::Del(const Slice& key) {
     ParsedHashesMetaValue parsed_hashes_meta_value(&meta_value);
     if (parsed_hashes_meta_value.IsStale()) {
       return Status::NotFound("Stale");
+    } else if (parsed_hashes_meta_value.count() == 0) {
+      return Status::NotFound();
     } else {
-      parsed_hashes_meta_value.set_count(0);
-      parsed_hashes_meta_value.UpdateVersion();
-      parsed_hashes_meta_value.set_timestamp(0);
+      parsed_hashes_meta_value.InitialMetaValue();
       s = db_->Put(default_write_options_, handles_[0], key, meta_value);
     }
   }
@@ -911,6 +911,7 @@ void RedisHashes::ScanDatabase() {
   ScopeSnapshot ss(db_, &snapshot);
   iterator_options.snapshot = snapshot;
   iterator_options.fill_cache = false;
+  int32_t current_time = time(NULL);
 
   printf("\n***************Hashes Meta Data***************\n");
   auto meta_iter = db_->NewIterator(iterator_options, handles_[0]);
@@ -918,11 +919,18 @@ void RedisHashes::ScanDatabase() {
        meta_iter->Valid();
        meta_iter->Next()) {
     ParsedHashesMetaValue parsed_hashes_meta_value(meta_iter->value());
-    printf("[key : %-30s] [count : %-10d] [timestamp : %-10d] [version : %d]\n",
+    int32_t survival_time = 0;
+    if (parsed_hashes_meta_value.timestamp() != 0) {
+      survival_time = parsed_hashes_meta_value.timestamp() - current_time > 0 ?
+        parsed_hashes_meta_value.timestamp() - current_time : -1;
+    }
+
+    printf("[key : %-30s] [count : %-10d] [timestamp : %-10d] [version : %d] [survival_time : %d]\n",
            meta_iter->key().ToString().c_str(),
            parsed_hashes_meta_value.count(),
            parsed_hashes_meta_value.timestamp(),
-           parsed_hashes_meta_value.version());
+           parsed_hashes_meta_value.version(),
+           survival_time);
   }
   delete meta_iter;
 

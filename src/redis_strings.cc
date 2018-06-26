@@ -1070,6 +1070,7 @@ void RedisStrings::ScanDatabase() {
   ScopeSnapshot ss(db_, &snapshot);
   iterator_options.snapshot = snapshot;
   iterator_options.fill_cache = false;
+  int32_t current_time = time(NULL);
 
   printf("\n***************String Data***************\n");
   auto iter = db_->NewIterator(iterator_options);
@@ -1077,11 +1078,18 @@ void RedisStrings::ScanDatabase() {
        iter->Valid();
        iter->Next()) {
     ParsedStringsValue parsed_strings_value(iter->value());
-    printf("[key : %-30s] [value : %-30s] [timestamp : %-10d] [version : %d]\n",
+    int32_t survival_time = 0;
+    if (parsed_strings_value.timestamp() != 0) {
+      survival_time = parsed_strings_value.timestamp() - current_time > 0 ?
+        parsed_strings_value.timestamp() - current_time : -1;
+    }
+
+    printf("[key : %-30s] [value : %-30s] [timestamp : %-10d] [version : %d] [survival_time : %d]\n",
            iter->key().ToString().c_str(),
            parsed_strings_value.value().ToString().c_str(),
            parsed_strings_value.timestamp(),
-           parsed_strings_value.version());
+           parsed_strings_value.version(),
+           survival_time);
   }
   delete iter;
 }

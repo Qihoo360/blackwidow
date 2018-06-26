@@ -883,6 +883,8 @@ Status RedisLists::Del(const Slice& key) {
     ParsedListsMetaValue parsed_lists_meta_value(&meta_value);
     if (parsed_lists_meta_value.IsStale()) {
       return Status::NotFound("Stale");
+    } else if (parsed_lists_meta_value.count() == 0) {
+      return Status::NotFound();
     } else {
       parsed_lists_meta_value.InitialMetaValue();
       s = db_->Put(default_write_options_, handles_[0], key, meta_value);
@@ -1001,6 +1003,7 @@ void RedisLists::ScanDatabase() {
   ScopeSnapshot ss(db_, &snapshot);
   iterator_options.snapshot = snapshot;
   iterator_options.fill_cache = false;
+  int32_t current_time = time(NULL);
 
   printf("\n***************List Meta Data***************\n");
   auto meta_iter = db_->NewIterator(iterator_options, handles_[0]);
@@ -1008,13 +1011,20 @@ void RedisLists::ScanDatabase() {
        meta_iter->Valid();
        meta_iter->Next()) {
     ParsedListsMetaValue parsed_lists_meta_value(meta_iter->value());
-    printf("[key : %-30s] [count : %-10lu] [left index : %-10lu] [right index : %-10lu] [timestamp : %-10d] [version : %d]\n",
+    int32_t survival_time = 0;
+    if (parsed_lists_meta_value.timestamp() != 0) {
+      survival_time = parsed_lists_meta_value.timestamp() - current_time > 0 ?
+        parsed_lists_meta_value.timestamp() - current_time : -1;
+    }
+
+    printf("[key : %-30s] [count : %-10lu] [left index : %-10lu] [right index : %-10lu] [timestamp : %-10d] [version : %d] [survival_time : %d]\n",
            meta_iter->key().ToString().c_str(),
            parsed_lists_meta_value.count(),
            parsed_lists_meta_value.left_index(),
            parsed_lists_meta_value.right_index(),
            parsed_lists_meta_value.timestamp(),
-           parsed_lists_meta_value.version());
+           parsed_lists_meta_value.version(),
+           survival_time);
   }
   delete meta_iter;
 

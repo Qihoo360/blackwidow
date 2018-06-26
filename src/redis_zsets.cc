@@ -1245,6 +1245,8 @@ Status RedisZSets::Del(const Slice& key) {
   if (s.ok()) {
     ParsedZSetsMetaValue parsed_zsets_meta_value(&meta_value);
     if (parsed_zsets_meta_value.IsStale()) {
+      return Status::NotFound("Stale");
+    } else if (parsed_zsets_meta_value.count() == 0) {
       return Status::NotFound();
     } else {
       parsed_zsets_meta_value.InitialMetaValue();
@@ -1453,6 +1455,7 @@ void RedisZSets::ScanDatabase() {
   ScopeSnapshot ss(db_, &snapshot);
   iterator_options.snapshot = snapshot;
   iterator_options.fill_cache = false;
+  int32_t current_time = time(NULL);
 
   printf("\n***************ZSets Meta Data***************\n");
   auto meta_iter = db_->NewIterator(iterator_options, handles_[0]);
@@ -1460,11 +1463,18 @@ void RedisZSets::ScanDatabase() {
        meta_iter->Valid();
        meta_iter->Next()) {
     ParsedZSetsMetaValue parsed_zsets_meta_value(meta_iter->value());
-    printf("[key : %-30s] [count : %-10d] [timestamp : %-10d] [version : %d]\n",
+    int32_t survival_time = 0;
+    if (parsed_zsets_meta_value.timestamp() != 0) {
+      survival_time = parsed_zsets_meta_value.timestamp() - current_time > 0 ?
+        parsed_zsets_meta_value.timestamp() - current_time : -1;
+    }
+
+    printf("[key : %-30s] [count : %-10d] [timestamp : %-10d] [version : %d] [survival_time : %d]\n",
            meta_iter->key().ToString().c_str(),
            parsed_zsets_meta_value.count(),
            parsed_zsets_meta_value.timestamp(),
-           parsed_zsets_meta_value.version());
+           parsed_zsets_meta_value.version(),
+           survival_time);
   }
   delete meta_iter;
 
