@@ -542,25 +542,28 @@ Status RedisHashes::HSet(const Slice& key, const Slice& field,
   std::string meta_value;
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
-    ParsedHashesMetaValue parsed(&meta_value);
-    if (parsed.IsStale()) {
-      version = parsed.UpdateVersion();
-      parsed.set_count(1);
-      parsed.set_timestamp(0);
+    ParsedHashesMetaValue parsed_hashes_meta_value(&meta_value);
+    if (parsed_hashes_meta_value.IsStale()) {
+      version = parsed_hashes_meta_value.InitialMetaValue();
+      parsed_hashes_meta_value.ModifyCount(1);
       batch.Put(handles_[0], key, meta_value);
       HashesDataKey data_key(key, version, field);
       batch.Put(handles_[1], data_key.Encode(), value);
       *res = 1;
     } else {
-      version = parsed.version();
+      version = parsed_hashes_meta_value.version();
       std::string data_value;
       HashesDataKey hashes_data_key(key, version, field);
       s = db_->Get(default_read_options_, handles_[1], hashes_data_key.Encode(), &data_value);
       if (s.ok()) {
-        batch.Put(handles_[1], hashes_data_key.Encode(), value);
         *res = 0;
+        if (data_value == value.ToString()) {
+          return Status::OK();
+        } else {
+          batch.Put(handles_[1], hashes_data_key.Encode(), value);
+        }
       } else if (s.IsNotFound()) {
-        parsed.ModifyCount(1);
+        parsed_hashes_meta_value.ModifyCount(1);
         batch.Put(handles_[0], key, meta_value);
         batch.Put(handles_[1], hashes_data_key.Encode(), value);
         *res = 1;

@@ -133,10 +133,10 @@ Status RedisSets::SAdd(const Slice& key,
                        const std::vector<std::string>& members, int32_t* ret) {
   std::unordered_set<std::string> unique;
   std::vector<std::string> filtered_members;
-  for (auto iter = members.begin(); iter != members.end(); ++iter) {
-    if (unique.find(*iter) == unique.end()) {
-      unique.insert(*iter);
-      filtered_members.push_back(*iter);
+  for (const auto& member : members) {
+    if (unique.find(member) == unique.end()) {
+      unique.insert(member);
+      filtered_members.push_back(member);
     }
   }
 

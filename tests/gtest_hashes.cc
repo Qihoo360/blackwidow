@@ -31,6 +31,17 @@ class HashesTest : public ::testing::Test {
   blackwidow::Status s;
 };
 
+static bool make_expired(blackwidow::BlackWidow *const db,
+                         const Slice& key) {
+  std::map<blackwidow::DataType, rocksdb::Status> type_status;
+  int ret = db->Expire(key, 1, &type_status);
+  if (!ret || !type_status[blackwidow::DataType::kHashes].ok()) {
+    return false;
+  }
+  std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+  return true;
+}
+
 // HDel
 TEST_F(HashesTest, HDel) {
   int32_t ret = 0;
@@ -604,19 +615,86 @@ TEST_F(HashesTest, HMSetTest) {
 TEST_F(HashesTest, HSetTest) {
   int32_t ret = 0;
   std::string value;
+
+  // ***************** Group 1 Test *****************
   // If field is a new field in the hash and value was set.
-  s = db.HSet("HSET_KEY", "HSET_TEST_FIELD", "HSET_TEST_VALUE", &ret);
+  s = db.HSet("GP1_HSET_KEY", "HSET_TEST_FIELD", "HSET_TEST_VALUE", &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 1);
-  s = db.HGet("HSET_KEY", "HSET_TEST_FIELD", &value);
+  s = db.HLen("GP1_HSET_KEY", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+  s = db.HGet("GP1_HSET_KEY", "HSET_TEST_FIELD", &value);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(value, "HSET_TEST_VALUE");
 
   // If field already exists in the hash and the value was updated.
-  s = db.HSet("HSET_KEY", "HSET_TEST_FIELD", "HSET_TEST_NEW_VALUE", &ret);
+  s = db.HSet("GP1_HSET_KEY", "HSET_TEST_FIELD", "HSET_TEST_NEW_VALUE", &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 0);
-  s = db.HGet("HSET_KEY", "HSET_TEST_FIELD", &value);
+  s = db.HLen("GP1_HSET_KEY", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+  s = db.HGet("GP1_HSET_KEY", "HSET_TEST_FIELD", &value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(value, "HSET_TEST_NEW_VALUE");
+
+  // If field already exists in the hash and the value was equal.
+  s = db.HSet("GP1_HSET_KEY", "HSET_TEST_FIELD", "HSET_TEST_NEW_VALUE", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 0);
+  s = db.HLen("GP1_HSET_KEY", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+  s = db.HGet("GP1_HSET_KEY", "HSET_TEST_FIELD", &value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(value, "HSET_TEST_NEW_VALUE");
+
+
+  // ***************** Group 2 Test *****************
+  s = db.HSet("GP2_HSET_KEY", "HSET_TEST_FIELD", "HSET_TEST_VALUE", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+  s = db.HLen("GP2_HSET_KEY", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+  s = db.HGet("GP2_HSET_KEY", "HSET_TEST_FIELD", &value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(value, "HSET_TEST_VALUE");
+
+  ASSERT_TRUE(make_expired(&db, "GP2_HSET_KEY"));
+
+  s = db.HSet("GP2_HSET_KEY", "HSET_TEST_FIELD", "HSET_TEST_VALUE", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+  s = db.HLen("GP2_HSET_KEY", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+  s = db.HGet("GP2_HSET_KEY", "HSET_TEST_FIELD", &value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(value, "HSET_TEST_VALUE");
+
+
+  // ***************** Group 3 Test *****************
+  s = db.HSet("GP3_HSET_KEY", "HSET_TEST_FIELD", "HSET_TEST_NEW_VALUE", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+  s = db.HLen("GP3_HSET_KEY", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+  s = db.HGet("GP3_HSET_KEY", "HSET_TEST_FIELD", &value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(value, "HSET_TEST_NEW_VALUE");
+
+  ASSERT_TRUE(make_expired(&db, "GP3_HSET_KEY"));
+
+  s = db.HSet("GP3_HSET_KEY", "HSET_TEST_NEW_FIELD", "HSET_TEST_NEW_VALUE", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+  s = db.HLen("GP3_HSET_KEY", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+  s = db.HGet("GP3_HSET_KEY", "HSET_TEST_NEW_FIELD", &value);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(value, "HSET_TEST_NEW_VALUE");
 }
