@@ -29,6 +29,11 @@ class ListsDataKey {
       dst = space_;
     } else {
       dst = new char[needed];
+
+      // Need to allocate space, delete previous space
+      if (start_ != space_) {
+        delete[] start_;
+      }
     }
     start_ = dst;
     EncodeFixed32(dst, key_.size());
