@@ -145,13 +145,18 @@ Status RedisLists::LIndex(const Slice& key, int64_t index, std::string* element)
       return Status::NotFound();
     } else {
       std::string tmp_element;
-      uint64_t positive_direction_index = index >= 0 ?
+      uint64_t target_index = index >= 0 ?
             parsed_lists_meta_value.left_index() + index + 1 :
             parsed_lists_meta_value.right_index() + index;
-      ListsDataKey lists_data_key(key, version, positive_direction_index);
-      s = db_->Get(read_options, handles_[1], lists_data_key.Encode(), &tmp_element);
-      if (s.ok()) {
-        *element = tmp_element;
+      if (parsed_lists_meta_value.left_index() < target_index
+        && target_index < parsed_lists_meta_value.right_index()) {
+        ListsDataKey lists_data_key(key, version, target_index);
+        s = db_->Get(read_options, handles_[1], lists_data_key.Encode(), &tmp_element);
+        if (s.ok()) {
+          *element = tmp_element;
+        }
+      } else {
+        return Status::NotFound();
       }
     }
   }
@@ -404,31 +409,38 @@ Status RedisLists::LRange(const Slice& key, int64_t start, int64_t stop,
       return Status::NotFound();
     } else {
       int32_t version = parsed_lists_meta_value.version();
-      uint64_t start_index = start >= 0 ?
-                             parsed_lists_meta_value.left_index() + start + 1 :
-                             parsed_lists_meta_value.right_index() + start;
-      uint64_t stop_index = stop >= 0 ?
-                            parsed_lists_meta_value.left_index() + stop + 1 :
-                            parsed_lists_meta_value.right_index() + stop;
-      if (start_index > stop_index) {
-        return s;
+      uint64_t origin_left_index = parsed_lists_meta_value.left_index() + 1;
+      uint64_t origin_right_index = parsed_lists_meta_value.right_index() - 1;
+      uint64_t sublist_left_index  = start >= 0 ?
+                                     origin_left_index + start :
+                                     origin_right_index + start + 1;
+      uint64_t sublist_right_index = stop >= 0 ?
+                                     origin_left_index + stop :
+                                     origin_right_index + stop + 1;
+
+      if (sublist_left_index > sublist_right_index
+        || sublist_left_index > origin_right_index
+        || sublist_right_index < origin_left_index) {
+        return Status::OK();
+      } else {
+        if (sublist_left_index < origin_left_index) {
+          sublist_left_index = origin_left_index;
+        }
+        if (sublist_right_index > origin_right_index) {
+          sublist_right_index = origin_right_index;
+        }
+        rocksdb::Iterator* iter = db_->NewIterator(read_options,
+                handles_[1]);
+        uint64_t current_index = sublist_left_index;
+        ListsDataKey start_data_key(key, version, current_index);
+        for (iter->Seek(start_data_key.Encode());
+             iter->Valid() && current_index <= sublist_right_index;
+             iter->Next(), current_index++) {
+          ret->push_back(iter->value().ToString());
+        }
+        delete iter;
+        return Status::OK();
       }
-      if (start_index <= parsed_lists_meta_value.left_index()) {
-        start_index = parsed_lists_meta_value.left_index() + 1;
-      }
-      if (stop_index >= parsed_lists_meta_value.right_index()) {
-        stop_index = parsed_lists_meta_value.right_index() - 1;
-      }
-      rocksdb::Iterator* iter = db_->NewIterator(read_options,
-              handles_[1]);
-      ListsDataKey start_data_key(key, version, start_index);
-      for (iter->Seek(start_data_key.Encode());
-           iter->Valid() && start_index <= stop_index;
-           iter->Next(), start_index++) {
-        ret->push_back(iter->value().ToString());
-      }
-      delete iter;
-      return s;
     }
   } else {
     return s;
@@ -602,20 +614,20 @@ Status RedisLists::LTrim(const Slice& key, int64_t start, int64_t stop) {
                                      origin_left_index + stop :
                                      origin_right_index + stop + 1;
 
-      if (sublist_left_index > sublist_right_index) {
+      if (sublist_left_index > sublist_right_index
+        || sublist_left_index > origin_right_index
+        || sublist_right_index < origin_left_index) {
+        for (uint64_t idx = origin_left_index; idx <= origin_right_index; idx++) {
+          ListsDataKey lists_data_key(key, version, idx);
+          batch.Delete(handles_[1], lists_data_key.Encode());
+        }
         parsed_lists_meta_value.InitialMetaValue();
         batch.Put(handles_[0], key, meta_value);
       } else {
         if (sublist_left_index < origin_left_index) {
           sublist_left_index = origin_left_index;
         }
-        if (sublist_left_index > origin_right_index) {
-          sublist_left_index = origin_right_index;
-        }
 
-        if (sublist_right_index < origin_left_index) {
-          sublist_right_index = origin_left_index;
-        }
         if (sublist_right_index > origin_right_index) {
           sublist_right_index = origin_right_index;
         }

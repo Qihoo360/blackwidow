@@ -96,7 +96,7 @@ class ListsTest : public ::testing::Test {
 };
 
 // LIndex
-TEST_F(ListsTest, RIndexTest) {
+TEST_F(ListsTest, LIndexTest) {
   uint64_t num;
   std::string element;
 
@@ -187,6 +187,80 @@ TEST_F(ListsTest, RIndexTest) {
   // ***************** Group 4 Test *****************
   //  LIndex not exist key
   s = db.LIndex("GP4_LINDEX_KEY", 0, &element);
+  ASSERT_TRUE(s.IsNotFound());
+
+
+  // ***************** Group 5 Test *****************
+  //  "m" -> "i" -> "s" -> "t" -> "y"
+  //   0      1      2      3      4
+  //  -5     -4     -3     -2     -1
+  //
+  //  After LPop
+  //  "i" -> "s" -> "t" -> "y"
+  //   0      1      2      3
+  //  -4     -3     -2     -1
+  std::vector<std::string> gp5_nodes {"m", "i", "s", "t", "y"};
+  s = db.RPush("GP5_LINDEX_KEY", gp5_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp5_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP5_LINDEX_KEY", gp5_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP5_LINDEX_KEY", {"m", "i", "s", "t", "y"}));
+
+  s = db.LPop("GP5_LINDEX_KEY", &element);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(element, "m");
+
+  s = db.LIndex("GP5_LINDEX_KEY", -5, &element);
+  ASSERT_TRUE(s.IsNotFound());
+
+
+  // ***************** Group 6 Test *****************
+  //  "m" -> "i" -> "s" -> "t" -> "y"
+  //   0      1      2      3      4
+  //  -5     -4     -3     -2     -1
+  //
+  //  After RPop
+  //  "m" -> "i" -> "s" -> "t"
+  //   0      1      2      3
+  //  -4     -3     -2     -1
+  std::vector<std::string> gp6_nodes {"m", "i", "s", "t", "y"};
+  s = db.RPush("GP6_LINDEX_KEY", gp6_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp6_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP6_LINDEX_KEY", gp6_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP6_LINDEX_KEY", {"m", "i", "s", "t", "y"}));
+
+  s = db.RPop("GP6_LINDEX_KEY", &element);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(element, "y");
+
+  s = db.LIndex("GP6_LINDEX_KEY", 4, &element);
+  ASSERT_TRUE(s.IsNotFound());
+
+
+  // ***************** Group 7 Test *****************
+  //  "m" -> "i" -> "s" -> "t" -> "y"
+  //   0      1      2      3      4
+  //  -5     -4     -3     -2     -1
+  //
+  //  After LTrim 1 3
+  //  "i" -> "s" -> "t"
+  //   0      1      2
+  //  -3     -2     -1
+  std::vector<std::string> gp7_nodes {"m", "i", "s", "t", "y"};
+  s = db.RPush("GP7_LINDEX_KEY", gp7_nodes, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp6_nodes.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP7_LINDEX_KEY", gp7_nodes.size()));
+  ASSERT_TRUE(elements_match(&db, "GP7_LINDEX_KEY", {"m", "i", "s", "t", "y"}));
+
+  s = db.LTrim("GP7_LINDEX_KEY", 1, 3);
+  ASSERT_TRUE(s.ok());
+
+  s = db.LIndex("GP7_LINDEX_KEY", 3, &element);
+  ASSERT_TRUE(s.IsNotFound());
+
+  s = db.LIndex("GP7_LINDEX_KEY", -4, &element);
   ASSERT_TRUE(s.IsNotFound());
 }
 

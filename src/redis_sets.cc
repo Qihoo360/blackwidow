@@ -172,9 +172,13 @@ Status RedisSets::SAdd(const Slice& key,
           return s;
         }
       }
-      parsed_sets_meta_value.ModifyCount(cnt);
-      batch.Put(handles_[0], key, meta_value);
       *ret = cnt;
+      if (cnt == 0) {
+        return Status::OK();
+      } else {
+        parsed_sets_meta_value.ModifyCount(cnt);
+        batch.Put(handles_[0], key, meta_value);
+      }
     }
   } else if (s.IsNotFound()) {
     char str[4];
