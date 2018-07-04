@@ -20,7 +20,6 @@ const rocksdb::Comparator* ListsDataKeyComparator() {
 }
 
 RedisLists::~RedisLists() {
-  Status s = db_->DropColumnFamily(handles_[1]);
   for (auto handle : handles_) {
     delete handle;
   }
