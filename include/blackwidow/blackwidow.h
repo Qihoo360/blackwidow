@@ -410,10 +410,8 @@ class BlackWidow {
   Status SRem(const Slice& key, const std::vector<std::string>& members,
               int32_t* ret);
 
-  // Removes and returns one or more random elements from the set value store at
-  // key.
-  Status SPop(const Slice& key, int32_t count,
-              std::vector<std::string>* members);
+  // Removes and returns one random elements from the set value store at key.
+  Status SPop(const Slice& key, std::string* member);
 
   // When called with just the key argument, return a random element from the
   // set value stored at key.

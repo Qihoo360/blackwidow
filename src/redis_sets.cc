@@ -22,6 +22,7 @@ RedisSets::RedisSets() {
 }
 
 RedisSets::~RedisSets() {
+  Status s = db_->DropColumnFamily(handles_[1]);
   for (auto handle : handles_) {
     delete handle;
   }
@@ -718,21 +719,13 @@ Status RedisSets::SMove(const Slice& source, const Slice& destination,
   return db_->Write(default_write_options_, &batch);
 }
 
-Status RedisSets::SPop(const Slice& key, int32_t count,
-                       std::vector<std::string>* members) {
-  if (count <= 0) {
-    return Status::InvalidArgument("invalid count");
-  }
+Status RedisSets::SPop(const Slice& key, std::string* member) {
 
-  members->clear();
-  int32_t last_seed = time(NULL);
   std::default_random_engine engine;
 
   std::string meta_value;
   rocksdb::WriteBatch batch;
   ScopeRecordLock l(lock_mgr_, key);
-  std::vector<int32_t> targets;
-  std::unordered_set<int32_t> unique;
 
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
@@ -742,41 +735,29 @@ Status RedisSets::SPop(const Slice& key, int32_t count,
     } else if (parsed_sets_meta_value.count() == 0) {
       return Status::NotFound();
     } else {
+      engine.seed(time(NULL));
+      int32_t cur_index = 0;
       int32_t size = parsed_sets_meta_value.count();
+      int32_t target_index = engine() % (size < 50 ? size : 50);
       int32_t version = parsed_sets_meta_value.version();
-      count = count <= size ? count : size;
-      while (targets.size() < static_cast<size_t>(count)) {
-        engine.seed(last_seed);
-        last_seed = engine();
-        int32_t pos = last_seed % size;
-        if (unique.find(pos) == unique.end()) {
-          unique.insert(pos);
-          targets.push_back(pos);
-        }
-      }
-      std::sort(targets.begin(), targets.end());
 
-      int32_t del_cnt = 0;
-      int32_t cur_index = 0, idx = 0;
       SetsMemberKey sets_member_key(key, version, Slice());
       auto iter = db_->NewIterator(default_read_options_, handles_[1]);
       for (iter->Seek(sets_member_key.Encode());
            iter->Valid() && cur_index < size;
            iter->Next(), cur_index++) {
-        if (static_cast<size_t>(idx) >= targets.size()) {
-          break;
-        }
-        if (cur_index == targets[idx]) {
-          idx++, del_cnt++;
+
+        if (cur_index == target_index) {
           batch.Delete(handles_[1], iter->key());
           ParsedSetsMemberKey parsed_sets_member_key(iter->key());
-          members->push_back(parsed_sets_member_key.member().ToString());
+          *member = parsed_sets_member_key.member().ToString();
+
+          parsed_sets_meta_value.ModifyCount(-1);
+          batch.Put(handles_[0], key, meta_value);
+          break;
         }
       }
-      random_shuffle(members->begin(), members->end());
       delete iter;
-      parsed_sets_meta_value.ModifyCount(-del_cnt);
-      batch.Put(handles_[0], key, meta_value);
     }
   } else {
     return s;

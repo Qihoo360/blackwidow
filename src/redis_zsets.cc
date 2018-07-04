@@ -21,6 +21,8 @@ rocksdb::Comparator* ZSetsScoreKeyComparator() {
 }
 
 RedisZSets::~RedisZSets() {
+  Status s = db_->DropColumnFamily(handles_[1]);
+  s = db_->DropColumnFamily(handles_[2]);
   for (auto handle : handles_) {
     delete handle;
   }
