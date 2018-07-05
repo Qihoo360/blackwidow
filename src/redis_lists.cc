@@ -23,6 +23,7 @@ RedisLists::~RedisLists() {
   for (auto handle : handles_) {
     delete handle;
   }
+  handles_.clear();
 }
 
 Status RedisLists::Open(const rocksdb::Options& options,

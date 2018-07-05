@@ -22,6 +22,7 @@ RedisHashes::~RedisHashes() {
   for (auto handle : handles_) {
     delete handle;
   }
+  handles_.clear();
 }
 
 Status RedisHashes::Open(const rocksdb::Options& options,

@@ -24,6 +24,7 @@ RedisZSets::~RedisZSets() {
   for (auto handle : handles_) {
     delete handle;
   }
+  handles_.clear();
 }
 
 Status RedisZSets::Open(const rocksdb::Options& options,
