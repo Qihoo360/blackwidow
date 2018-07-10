@@ -768,7 +768,7 @@ Status RedisSets::SPop(const Slice& key, std::string* member) {
 Status RedisSets::SRandmember(const Slice& key, int32_t count,
                               std::vector<std::string>* members) {
   if (count == 0) {
-    return Status::InvalidArgument("invalid count");
+    return Status::OK();
   }
 
   members->clear();

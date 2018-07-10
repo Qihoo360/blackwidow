@@ -298,6 +298,10 @@ int StringMatch(const char *pattern, int pattern_len, const char* str,
 
 int StrToLongDouble(const char* s, size_t slen, long double* ldval) {
     char *pEnd;
+    std::string t(s, slen);
+    if (t.find(" ") != std::string::npos) {
+      return -1;
+    }
     long double d = strtold(s, &pEnd);
     if (pEnd != s + slen)
         return -1;

@@ -200,6 +200,35 @@ TEST_F(HashesTest, HIncrby) {
   int64_t value;
   std::string str_value;
 
+  // ***************** Group 1 Test *****************
+  s = db.HSet("GP1_HINCRBY_KEY", "GP1_HINCRBY_FIELD" , "1", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+
+  s = db.HIncrby("GP1_HINCRBY_KEY", "GP1_HINCRBY_FIELD", 1, &value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(value, 2);
+
+
+  // ***************** Group 2 Test *****************
+  s = db.HSet("GP2_HINCRBY_KEY", "GP2_HINCRBY_FIELD" , " 1", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+
+  s = db.HIncrby("GP2_HINCRBY_KEY", "GP2_HINCRBY_FIELD", 1, &value);
+  ASSERT_TRUE(s.IsCorruption());
+  ASSERT_EQ(value, 0);
+
+
+  // ***************** Group 3 Test *****************
+  s = db.HSet("GP3_HINCRBY_KEY", "GP3_HINCRBY_FIELD" , "1 ", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+
+  s = db.HIncrby("GP3_HINCRBY_KEY", "GP3_HINCRBY_FIELD", 1, &value);
+  ASSERT_TRUE(s.IsCorruption());
+  ASSERT_EQ(value, 0);
+
   // If key does not exist the value is set to 0 before the
   // operation is performed
   s = db.HIncrby("HINCRBY_NEW_KEY", "HINCRBY_EXIST_FIELD", 1000, &value);
@@ -264,6 +293,35 @@ TEST_F(HashesTest, HIncrby) {
 TEST_F(HashesTest, HIncrbyfloat) {
   int32_t ret;
   std::string new_value;
+
+  // ***************** Group 1 Test *****************
+  s = db.HSet("GP1_HINCRBYFLOAT_KEY", "GP1_HINCRBYFLOAT_FIELD" , "1.234", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+
+  s = db.HIncrbyfloat("GP1_HINCRBYFLOAT_KEY", "GP1_HINCRBYFLOAT_FIELD", "1.234", &new_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(new_value, "2.468");
+
+
+  // ***************** Group 2 Test *****************
+  s = db.HSet("GP2_HINCRBYFLOAT_KEY", "GP2_HINCRBYFLOAT_FIELD" , " 1.234", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+
+  s = db.HIncrbyfloat("GP2_HINCRBYFLOAT_KEY", "GP2_HINCRBYFLOAT_FIELD", "1.234", &new_value);
+  ASSERT_TRUE(s.IsCorruption());
+  ASSERT_EQ(new_value, "");
+
+
+  // ***************** Group 3 Test *****************
+  s = db.HSet("GP3_HINCRBYFLOAT_KEY", "GP3_HINCRBYFLOAT_FIELD" , "1.234 ", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+
+  s = db.HIncrbyfloat("GP3_HINCRBYFLOAT_KEY", "GP3_HINCRBYFLOAT_FIELD", "1.234", &new_value);
+  ASSERT_TRUE(s.IsCorruption());
+  ASSERT_EQ(new_value, "");
 
   // If the specified increment are not parsable as a double precision
   // floating point number
@@ -503,16 +561,42 @@ TEST_F(HashesTest, HKeys) {
 // HLen
 TEST_F(HashesTest, HLenTest) {
   int32_t ret = 0;
-  std::vector<blackwidow::FieldValue> fvs;
-  fvs.push_back({"TEST_FIELD1", "TEST_VALUE1"});
-  fvs.push_back({"TEST_FIELD2", "TEST_VALUE2"});
-  fvs.push_back({"TEST_FIELD3", "TEST_VALUE3"});
-  s = db.HMSet("HLEN_KEY", fvs);
+
+  // ***************** Group 1 Test *****************
+  std::vector<blackwidow::FieldValue> fvs1;
+  fvs1.push_back({"GP1_TEST_FIELD1", "GP1_TEST_VALUE1"});
+  fvs1.push_back({"GP1_TEST_FIELD2", "GP1_TEST_VALUE2"});
+  fvs1.push_back({"GP1_TEST_FIELD3", "GP1_TEST_VALUE3"});
+  s = db.HMSet("GP1_HLEN_KEY", fvs1);
   ASSERT_TRUE(s.ok());
 
-  s = db.HLen("HLEN_KEY", &ret);
+  s = db.HLen("GP1_HLEN_KEY", &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 3);
+
+  // ***************** Group 2 Test *****************
+  std::vector<blackwidow::FieldValue> fvs2;
+  fvs2.push_back({"GP2_TEST_FIELD1", "GP2_TEST_VALUE1"});
+  fvs2.push_back({"GP2_TEST_FIELD2", "GP2_TEST_VALUE2"});
+  fvs2.push_back({"GP2_TEST_FIELD3", "GP2_TEST_VALUE3"});
+  s = db.HMSet("GP2_HLEN_KEY", fvs2);
+  ASSERT_TRUE(s.ok());
+
+  s = db.HDel("GP2_HLEN_KEY", {"GP2_TEST_FIELD1", "GP2_TEST_FIELD2"}, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 2);
+
+  s = db.HLen("GP2_HLEN_KEY", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+
+  s = db.HDel("GP2_HLEN_KEY", {"GP2_TEST_FIELD3"}, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+
+  s = db.HLen("GP2_HLEN_KEY", &ret);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(ret, 0);
 }
 
 // HMGet

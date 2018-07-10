@@ -248,6 +248,7 @@ Status RedisHashes::HGetall(const Slice& key,
 
 Status RedisHashes::HIncrby(const Slice& key, const Slice& field, int64_t value,
                             int64_t* ret) {
+  *ret = 0;
   rocksdb::WriteBatch batch;
   ScopeRecordLock l(lock_mgr_, key);
 
@@ -274,9 +275,8 @@ Status RedisHashes::HIncrby(const Slice& key, const Slice& field, int64_t value,
       s = db_->Get(default_read_options_, handles_[1],
               hashes_data_key.Encode(), &old_value);
       if (s.ok()) {
-        char* end = nullptr;
-        int64_t ival = strtoll(old_value.c_str(), &end, 10);
-        if (*end != 0) {
+        int64_t ival = 0;
+        if (!StrToInt64(old_value.data(), old_value.size(), &ival)) {
           return Status::Corruption("hash value is not an integer");
         }
         if ((value >= 0 && LLONG_MAX - value < ival) ||
@@ -318,6 +318,7 @@ Status RedisHashes::HIncrby(const Slice& key, const Slice& field, int64_t value,
 
 Status RedisHashes::HIncrbyfloat(const Slice& key, const Slice& field,
                                  const Slice& by, std::string* new_value) {
+  new_value->clear();
   rocksdb::WriteBatch batch;
   ScopeRecordLock l(lock_mgr_, key);
 
@@ -417,12 +418,16 @@ Status RedisHashes::HKeys(const Slice& key,
 }
 
 Status RedisHashes::HLen(const Slice& key, int32_t* ret) {
+  *ret = 0;
   std::string meta_value;
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
     ParsedHashesMetaValue parsed_hashes_meta_value(&meta_value);
     if (parsed_hashes_meta_value.IsStale()) {
       *ret = 0;
+      return Status::NotFound("Stale");
+    } else if (parsed_hashes_meta_value.count() == 0) {
+      return Status::NotFound();
     } else {
       *ret = parsed_hashes_meta_value.count();
     }

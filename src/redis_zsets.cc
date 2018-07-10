@@ -893,6 +893,7 @@ Status RedisZSets::ZUnionstore(const Slice& destination,
         && parsed_zsets_meta_value.count() != 0) {
         int32_t cur_index = 0;
         int32_t stop_index = parsed_zsets_meta_value.count() - 1;
+        double score = 0;
         double weight = idx < weights.size() ? weights[idx] : 1;
         version = parsed_zsets_meta_value.version();
         ZSetsScoreKey zsets_score_key(keys[idx], version, std::numeric_limits<double>::lowest(), Slice());
@@ -904,15 +905,16 @@ Status RedisZSets::ZUnionstore(const Slice& destination,
           sm.score = parsed_zsets_score_key.score();
           sm.member = parsed_zsets_score_key.member().ToString();
           if (member_score_map.find(sm.member) == member_score_map.end()) {
-            member_score_map[sm.member] = weight * sm.score;
+            score = weight * sm.score;
+            member_score_map[sm.member] = (score == -0.0) ? 0 : score;
           } else {
-            double score = member_score_map[sm.member];
+            score = member_score_map[sm.member];
             switch (agg) {
               case SUM: score += weight * sm.score; break;
               case MIN: score  = std::min(score, weight * sm.score); break;
               case MAX: score  = std::max(score, weight * sm.score); break;
             }
-            member_score_map[sm.member] = score;
+            member_score_map[sm.member] = (score == -0.0) ? 0 : score;
           }
         }
         delete iter;

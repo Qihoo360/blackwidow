@@ -2898,6 +2898,20 @@ TEST_F(ZSetsTest, ZUnionstoreTest) {
   ASSERT_EQ(ret, 3);
   ASSERT_TRUE(size_match(&db, "GP10_ZUNIONSTORE_DESTINATION", 3));
   ASSERT_TRUE(score_members_match(&db, "GP10_ZUNIONSTORE_DESTINATION", {{1001001, "MM1"}, {10010010, "MM2"}, {100100100, "MM3"}}));
+
+
+  // ***************** Group 11 Test *****************
+  // {-999999999, MM1}  weight 0
+  //
+  // {         0, MM1}
+  //
+  std::vector<blackwidow::ScoreMember> gp11_sm1 {{-999999999, "MM1"}};
+  s = db.ZAdd("GP11_ZUNIONSTORE_SM1", gp11_sm1, &ret);
+  s = db.ZUnionstore("GP11_ZUNIONSTORE_DESTINATION", {"GP11_ZUNIONSTORE_SM1"}, {0}, blackwidow::SUM, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+  ASSERT_TRUE(size_match(&db, "GP11_ZUNIONSTORE_DESTINATION", 1));
+  ASSERT_TRUE(score_members_match(&db, "GP11_ZUNIONSTORE_DESTINATION", {{0, "MM1"}}));
 }
 
 // ZINTERSTORE
