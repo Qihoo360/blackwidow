@@ -53,6 +53,7 @@ BlackWidow::~BlackWidow() {
   delete sets_db_;
   delete lists_db_;
   delete zsets_db_;
+  delete mutex_factory_;
 }
 
 static std::string AppendSubDirectory(const std::string& db_path,
