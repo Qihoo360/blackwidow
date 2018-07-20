@@ -21,10 +21,11 @@ rocksdb::Comparator* ZSetsScoreKeyComparator() {
 }
 
 RedisZSets::~RedisZSets() {
-  for (auto handle : handles_) {
+  std::vector<rocksdb::ColumnFamilyHandle*> tmp_handles = handles_;
+  handles_.clear();
+  for (auto handle : tmp_handles) {
     delete handle;
   }
-  handles_.clear();
 }
 
 Status RedisZSets::Open(const rocksdb::Options& options,
@@ -608,6 +609,7 @@ Status RedisZSets::ZRemrangebyrank(const Slice& key,
           del_cnt++;
         }
       }
+      delete iter;
       *ret = del_cnt;
       parsed_zsets_meta_value.ModifyCount(-del_cnt);
       batch.Put(handles_[0], key, meta_value);
@@ -667,6 +669,7 @@ Status RedisZSets::ZRemrangebyscore(const Slice& key,
           break;
         }
       }
+      delete iter;
       *ret = del_cnt;
       parsed_zsets_meta_value.ModifyCount(-del_cnt);
       batch.Put(handles_[0], key, meta_value);

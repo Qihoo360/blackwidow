@@ -225,7 +225,9 @@ std::string BitOpOperate(BitOpType op,
     }
     dest_value[j] = output;
   }
-  return std::string(dest_value, max_len);
+  std::string dest_str(dest_value, max_len);
+  delete[] dest_value;
+  return dest_str;
 }
 
 Status RedisStrings::BitOp(BitOpType op,

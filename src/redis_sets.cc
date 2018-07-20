@@ -22,10 +22,11 @@ RedisSets::RedisSets() {
 }
 
 RedisSets::~RedisSets() {
-  for (auto handle : handles_) {
+  std::vector<rocksdb::ColumnFamilyHandle*> tmp_handles = handles_;
+  handles_.clear();
+  for (auto handle : tmp_handles) {
     delete handle;
   }
-  handles_.clear();
 }
 
 Status RedisSets::Open(const rocksdb::Options& options,

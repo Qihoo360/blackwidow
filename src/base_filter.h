@@ -69,7 +69,12 @@ class BaseDataFilter : public rocksdb::CompactionFilter {
   public:
     BaseDataFilter(rocksdb::DB* db,
                    std::vector<rocksdb::ColumnFamilyHandle*>* cf_handles_ptr) :
-      db_(db), cf_handles_ptr_(cf_handles_ptr), meta_not_found_(false) {}
+      db_(db),
+      cf_handles_ptr_(cf_handles_ptr),
+      cur_key_(""),
+      meta_not_found_(false),
+      cur_meta_version_(0),
+      cur_meta_timestamp_(0) {}
 
     virtual bool Filter(int level, const Slice& key,
                         const rocksdb::Slice& value,
