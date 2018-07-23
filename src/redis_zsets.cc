@@ -61,6 +61,13 @@ Status RedisZSets::Open(const rocksdb::Options& options,
     std::make_shared<ZSetsScoreFilterFactory>(&db_, &handles_);
   score_cf_ops.comparator = ZSetsScoreKeyComparator();
 
+  //use the bloom filter policy to reduce disk reads
+  rocksdb::BlockBasedTableOptions table_options;
+  table_options.filter_policy.reset(rocksdb::NewBloomFilterPolicy(10, true));
+  meta_cf_ops.table_factory.reset(rocksdb::NewBlockBasedTableFactory(table_options));
+  data_cf_ops.table_factory.reset(rocksdb::NewBlockBasedTableFactory(table_options));
+  score_cf_ops.table_factory.reset(rocksdb::NewBlockBasedTableFactory(table_options));
+
   std::vector<rocksdb::ColumnFamilyDescriptor> column_families;
   column_families.push_back(rocksdb::ColumnFamilyDescriptor(
         rocksdb::kDefaultColumnFamilyName, meta_cf_ops));

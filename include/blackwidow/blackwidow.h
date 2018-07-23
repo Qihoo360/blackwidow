@@ -16,6 +16,8 @@
 #include "rocksdb/status.h"
 #include "rocksdb/options.h"
 #include "rocksdb/slice.h"
+#include "rocksdb/table.h"
+#include "rocksdb/filter_policy.h"
 
 #include "slash/include/slash_mutex.h"
 
