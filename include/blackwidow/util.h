@@ -26,6 +26,7 @@ namespace blackwidow {
   int mkpath(const char *path, mode_t mode);
   int delete_dir(const char* dirname);
   int is_dir(const char* filename);
+  int CalculateStartAndEndKey(const std::string& key, std::string* start_key, std::string* end_key);
 }
 
 #endif  //  SRC_UTIL_H_

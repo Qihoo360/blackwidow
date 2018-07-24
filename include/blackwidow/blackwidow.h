@@ -113,13 +113,17 @@ enum Operation {
   kCleanZSets,
   kCleanSets,
   kCleanLists,
+  kCompactKey
 };
 
 struct BGTask {
   DataType type;
+  Operation operation;
+  std::string argv;
 
-  BGTask() : type(DataType::kAll) {}
-  BGTask(const DataType _type) : type(_type) {}
+  BGTask(const DataType& _type = DataType::kAll,
+         const Operation& _opeation = Operation::kNone,
+         const std::string& _argv = "") : type(_type), operation(_opeation), argv(_argv) {}
 };
 
 class BlackWidow {
@@ -971,8 +975,9 @@ class BlackWidow {
   Status RunBGTask();
   Status AddBGTask(const BGTask& bg_task);
 
-  Status Compact(DataType type, bool sync = false);
-  Status DoCompact(DataType type);
+  Status Compact(const DataType& type, bool sync = false);
+  Status DoCompact(const DataType& type);
+  Status CompactKey(const DataType& type, const std::string& key);
 
   std::string GetCurrentTaskType();
   Status GetUsage(const std::string& type, uint64_t *result);

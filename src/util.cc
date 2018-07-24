@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <limits.h>
 
+#include "src/coding.h"
 #include "blackwidow/util.h"
 
 namespace blackwidow {
@@ -450,6 +451,21 @@ int is_dir(const char* filename) {
         }
     }
     return -1;
+}
+
+int CalculateStartAndEndKey(const std::string& key, std::string* start_key, std::string* end_key) {
+  size_t needed = sizeof(int32_t) + key.size() + 1;
+  char* dst = new char[needed];
+  const char* start = dst;
+  EncodeFixed32(dst, key.size());
+  dst += sizeof(int32_t);
+  memcpy(dst, key.data(), key.size());
+  dst += key.size();
+  start_key->assign(start, sizeof(int32_t) + key.size());
+  *dst = static_cast<uint8_t>(0xff);
+  end_key->assign(start, sizeof(int32_t) + key.size() + 1);
+  delete[] start;
+  return 0;
 }
 
 }  //  namespace blackwidow

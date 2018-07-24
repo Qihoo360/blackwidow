@@ -10,9 +10,14 @@
 #include <vector>
 #include <unordered_set>
 
+#include "slash/include/env.h"
+
 #include "src/redis.h"
 #include "src/custom_comparator.h"
 #include "blackwidow/blackwidow.h"
+
+#define SPOP_COMPACT_THRESHOLD_COUNT     500
+#define SPOP_COMPACT_THRESHOLD_DURATION  1000         // 1000us
 
 namespace blackwidow {
 
@@ -51,7 +56,7 @@ class RedisSets : public Redis {
                     std::vector<std::string>* members);
     Status SMove(const Slice& source, const Slice& destination,
                  const Slice& member, int32_t* ret);
-    Status SPop(const Slice& key, std::string* member);
+    Status SPop(const Slice& key, std::string* member, bool* need_compact);
     Status SRandmember(const Slice& key, int32_t count,
                        std::vector<std::string>* members);
     Status SRem(const Slice& key, const std::vector<std::string>& members,
@@ -80,11 +85,19 @@ class RedisSets : public Redis {
   private:
     std::vector<rocksdb::ColumnFamilyHandle*> handles_;
 
+    // For compact in time after multiple spop
+    slash::Mutex spop_counts_mutex_;
+    BlackWidow::LRU<std::string, uint64_t> spop_counts_store_;
+    Status ResetSpopCount(const std::string& key);
+    Status AddAndGetSpopCount(const std::string& key, uint64_t* count);
+
+    // For SScan
+    slash::Mutex sscan_cursors_mutex_;
     BlackWidow::LRU<std::string, std::string> sscan_cursors_store_;
-    std::shared_ptr<Mutex> sscan_cursors_mutex_;
 
     Status GetSScanStartMember(const Slice& key, const Slice& pattern, int64_t cursor, std::string* start_member);
     Status StoreSScanNextMember(const Slice& key, const Slice& pattern, int64_t cursor, const std::string& next_member);
+
 };
 
 }  //  namespace blackwidow

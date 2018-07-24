@@ -1393,6 +1393,7 @@ Status RedisZSets::ZScan(const Slice& key, int64_t cursor, const std::string& pa
 }
 
 Status RedisZSets::GetZScanStartMember(const Slice& key, const Slice& pattern, int64_t cursor, std::string* start_member) {
+  slash::MutexLock l(&zscan_cursors_mutex_);
   std::string index_key = key.ToString() + "_" + pattern.ToString() + "_" + std::to_string(cursor);
   if (zscan_cursors_store_.map_.find(index_key) == zscan_cursors_store_.map_.end()) {
     return Status::NotFound();
@@ -1403,6 +1404,7 @@ Status RedisZSets::GetZScanStartMember(const Slice& key, const Slice& pattern, i
 }
 
 Status RedisZSets::StoreZScanNextMember(const Slice& key, const Slice& pattern, int64_t cursor, const std::string& next_member) {
+  slash::MutexLock l(&zscan_cursors_mutex_);
   std::string index_key = key.ToString() + "_" + pattern.ToString() +  "_" + std::to_string(cursor);
   if (zscan_cursors_store_.list_.size() > zscan_cursors_store_.max_size_) {
     std::string tail = zscan_cursors_store_.list_.back();

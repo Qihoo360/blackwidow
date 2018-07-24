@@ -18,6 +18,7 @@
 namespace blackwidow {
 
 RedisSets::RedisSets() {
+  spop_counts_store_.max_size_ = 1000;
   sscan_cursors_store_.max_size_ = 5000;
 }
 
@@ -727,7 +728,7 @@ Status RedisSets::SMove(const Slice& source, const Slice& destination,
   return db_->Write(default_write_options_, &batch);
 }
 
-Status RedisSets::SPop(const Slice& key, std::string* member) {
+Status RedisSets::SPop(const Slice& key, std::string* member, bool* need_compact) {
 
   std::default_random_engine engine;
 
@@ -735,6 +736,7 @@ Status RedisSets::SPop(const Slice& key, std::string* member) {
   rocksdb::WriteBatch batch;
   ScopeRecordLock l(lock_mgr_, key);
 
+  uint64_t start_us = slash::NowMicros();
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
     ParsedSetsMetaValue parsed_sets_meta_value(&meta_value);
@@ -770,7 +772,45 @@ Status RedisSets::SPop(const Slice& key, std::string* member) {
   } else {
     return s;
   }
+
+  uint64_t count = 0;
+  uint64_t duration = slash::NowMicros() - start_us;
+  AddAndGetSpopCount(key.ToString(), &count);
+  if (duration >= SPOP_COMPACT_THRESHOLD_DURATION
+    || count >= SPOP_COMPACT_THRESHOLD_COUNT) {
+    *need_compact = true;
+    ResetSpopCount(key.ToString());
+  }
   return db_->Write(default_write_options_, &batch);
+}
+
+Status RedisSets::ResetSpopCount(const std::string& key) {
+  slash::MutexLock l(&spop_counts_mutex_);
+  if (spop_counts_store_.map_.find(key) == spop_counts_store_.map_.end()) {
+    return Status::NotFound();
+  }
+  spop_counts_store_.map_.erase(key);
+  spop_counts_store_.list_.remove(key);
+  return Status::OK();
+}
+
+Status RedisSets::AddAndGetSpopCount(const std::string& key, uint64_t* count) {
+  slash::MutexLock l(&spop_counts_mutex_);
+  if (spop_counts_store_.map_.find(key) == spop_counts_store_.map_.end()) {
+    *count = ++spop_counts_store_.map_[key];
+    spop_counts_store_.list_.push_front(key);
+  } else {
+    *count = ++spop_counts_store_.map_[key];
+    spop_counts_store_.list_.remove(key);
+    spop_counts_store_.list_.push_front(key);
+  }
+
+  if (spop_counts_store_.list_.size() > spop_counts_store_.max_size_) {
+    std::string tail = sscan_cursors_store_.list_.back();
+    spop_counts_store_.map_.erase(tail);
+    spop_counts_store_.list_.pop_back();
+  }
+  return Status::OK();
 }
 
 Status RedisSets::SRandmember(const Slice& key, int32_t count,
@@ -1072,6 +1112,7 @@ Status RedisSets::SScan(const Slice& key, int64_t cursor, const std::string& pat
 }
 
 Status RedisSets::GetSScanStartMember(const Slice& key, const Slice& pattern, int64_t cursor, std::string* start_member) {
+  slash::MutexLock l(&sscan_cursors_mutex_);
   std::string index_key = key.ToString() + "_" + pattern.ToString() + "_" + std::to_string(cursor);
   if (sscan_cursors_store_.map_.find(index_key) == sscan_cursors_store_.map_.end()) {
     return Status::NotFound();
@@ -1082,6 +1123,7 @@ Status RedisSets::GetSScanStartMember(const Slice& key, const Slice& pattern, in
 }
 
 Status RedisSets::StoreSScanNextMember(const Slice& key, const Slice& pattern, int64_t cursor, const std::string& next_member) {
+  slash::MutexLock l(&sscan_cursors_mutex_);
   std::string index_key = key.ToString() + "_" + pattern.ToString() +  "_" + std::to_string(cursor);
   if (sscan_cursors_store_.list_.size() > sscan_cursors_store_.max_size_) {
     std::string tail = sscan_cursors_store_.list_.back();

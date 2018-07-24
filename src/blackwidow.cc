@@ -370,7 +370,12 @@ Status BlackWidow::SMove(const Slice& source, const Slice& destination,
 }
 
 Status BlackWidow::SPop(const Slice& key, std::string* member) {
-  return sets_db_->SPop(key, member);
+  bool need_compact = false;
+  Status status = sets_db_->SPop(key, member, &need_compact);
+  if (need_compact) {
+    AddBGTask({kSets, kCompactKey, key.ToString()});
+  }
+  return status;
 }
 
 Status BlackWidow::SRandmember(const Slice& key, int32_t count,
@@ -1280,21 +1285,26 @@ Status BlackWidow::RunBGTask() {
     if (bg_tasks_should_exit_) {
       return Status::Incomplete("bgtask return with bg_tasks_should_exit_ true");
     }
-    DoCompact(task.type);
+
+    if (task.operation == kCleanAll) {
+      DoCompact(task.type);
+    } else if (task.operation == kCompactKey) {
+      CompactKey(task.type, task.argv);
+    }
   }
   return Status::OK();
 }
 
-Status BlackWidow::Compact(DataType type, bool sync) {
+Status BlackWidow::Compact(const DataType& type, bool sync) {
   if (sync) {
     return DoCompact(type);
   } else {
-    AddBGTask({type});
+    AddBGTask({type, kCleanAll});
   }
   return Status::OK();
 }
 
-Status BlackWidow::DoCompact(DataType type) {
+Status BlackWidow::DoCompact(const DataType& type) {
   if (type != kAll
     && type != kStrings
     && type != kHashes
@@ -1329,6 +1339,19 @@ Status BlackWidow::DoCompact(DataType type) {
     s = lists_db_->CompactRange(NULL, NULL);
   }
   current_task_type_ = Operation::kNone;
+  return s;
+}
+
+Status BlackWidow::CompactKey(const DataType& type, const std::string& key) {
+
+  Status s;
+  std::string start_key, end_key;
+  CalculateStartAndEndKey(key, &start_key, &end_key);
+  if (type == kSets) {
+    Slice slice_begin(start_key);
+    Slice slice_end(end_key);
+    s = sets_db_->CompactRange(&slice_begin, &slice_end);
+  }
   return s;
 }
 

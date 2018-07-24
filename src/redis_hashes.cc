@@ -754,6 +754,7 @@ Status RedisHashes::HScan(const Slice& key, int64_t cursor, const std::string& p
 }
 
 Status RedisHashes::GetHScanStartField(const Slice& key, const Slice& pattern, int64_t cursor, std::string* start_field) {
+  slash::MutexLock l(&hscan_cursors_mutex_);
   std::string index_key = key.ToString() + "_" + pattern.ToString() + "_" + std::to_string(cursor);
   if (hscan_cursors_store_.map_.find(index_key) == hscan_cursors_store_.map_.end()) {
     return Status::NotFound();
@@ -764,6 +765,7 @@ Status RedisHashes::GetHScanStartField(const Slice& key, const Slice& pattern, i
 }
 
 Status RedisHashes::StoreHScanNextField(const Slice& key, const Slice& pattern, int64_t cursor, const std::string& next_field) {
+  slash::MutexLock l(&hscan_cursors_mutex_);
   std::string index_key = key.ToString() + "_" + pattern.ToString() + "_" + std::to_string(cursor);
   if (hscan_cursors_store_.list_.size() > hscan_cursors_store_.max_size_) {
     std::string tail = hscan_cursors_store_.list_.back();
