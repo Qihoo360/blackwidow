@@ -67,24 +67,22 @@ struct LockMap {
   size_t GetStripe(const std::string& key) const;
 };
 
-LockMgr::LockMgr(size_t default_num_stripes,
-    int64_t max_num_locks,
-    std::shared_ptr<MutexFactory> mutex_factory)
-    : default_num_stripes_(default_num_stripes),
-      max_num_locks_(max_num_locks),
-      mutex_factory_(mutex_factory),
-      lock_map_(std::shared_ptr<LockMap>(
-                    new LockMap(default_num_stripes,
-                        mutex_factory))) {}
-
-LockMgr::~LockMgr() {}
-
 size_t LockMap::GetStripe(const std::string& key) const {
   assert(num_stripes_ > 0);
   static murmur_hash hash;
   size_t stripe = hash(key) % num_stripes_;
   return stripe;
 }
+
+LockMgr::LockMgr(size_t default_num_stripes,
+                 int64_t max_num_locks,
+                 std::shared_ptr<MutexFactory> mutex_factory)
+    : default_num_stripes_(default_num_stripes),
+      max_num_locks_(max_num_locks),
+      mutex_factory_(mutex_factory),
+      lock_map_(std::shared_ptr<LockMap>(new LockMap(default_num_stripes, mutex_factory))) {}
+
+LockMgr::~LockMgr() {}
 
 Status LockMgr::TryLock(const std::string& key) {
 #ifdef LOCKLESS
@@ -99,8 +97,8 @@ Status LockMgr::TryLock(const std::string& key) {
 }
 
 // Helper function for TryLock().
-Status LockMgr::Acquire(
-    LockMapStripe* stripe, const std::string& key) {
+Status LockMgr::Acquire(LockMapStripe* stripe,
+                        const std::string& key) {
   Status result;
 
   // we wait indefinitely to acquire the lock
