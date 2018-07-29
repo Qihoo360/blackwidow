@@ -740,6 +740,84 @@ int64_t BlackWidow::Del(const std::vector<std::string>& keys,
   }
 }
 
+int64_t BlackWidow::DelByType(const std::vector<std::string>& keys,
+                              DataType type) {
+  Status s;
+  int64_t count = 0;
+  bool is_corruption = false;
+
+  for (const auto& key : keys) {
+    switch (type) {
+      // Strings
+      case DataType::kStrings:
+      {
+        s = strings_db_->Del(key);
+        if (s.ok()) {
+          count++;
+        } else if (!s.IsNotFound()) {
+          is_corruption = true;
+        }
+        break;
+      }
+      // Hashes
+      case DataType::kHashes:
+      {
+        s = hashes_db_->Del(key);
+        if (s.ok()) {
+          count++;
+        } else if (!s.IsNotFound()) {
+          is_corruption = true;
+        }
+        break;
+      }
+      // Sets
+      case DataType::kSets:
+      {
+        s = sets_db_->Del(key);
+        if (s.ok()) {
+          count++;
+        } else if (!s.IsNotFound()) {
+          is_corruption = true;
+        }
+        break;
+      }
+      // Lists
+      case DataType::kLists:
+      {
+        s = lists_db_->Del(key);
+        if (s.ok()) {
+          count++;
+        } else if (!s.IsNotFound()) {
+          is_corruption = true;
+        }
+        break;
+      }
+      // ZSets
+      case DataType::kZSets:
+      {
+        s = zsets_db_->Del(key);
+        if (s.ok()) {
+          count++;
+        } else if (!s.IsNotFound()) {
+          is_corruption = true;
+        }
+        break;
+      }
+      case DataType::kAll:
+      {
+        return -1;
+      }
+    }
+  }
+
+  if (is_corruption) {
+    return -1;
+  } else {
+    return count;
+  }
+}
+
+
 int64_t BlackWidow::Exists(const std::vector<std::string>& keys,
                        std::map<DataType, Status>* type_status) {
   int64_t count = 0;

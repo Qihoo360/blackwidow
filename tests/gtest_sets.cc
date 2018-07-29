@@ -1896,6 +1896,353 @@ TEST_F(SetsTest, SUnionstoreTest) {
               {"a", "x", "l"}));
 }
 
+// SScan
+TEST_F(SetsTest, SScanTest) {
+
+  int32_t ret = 0;
+  int64_t cursor = 0, next_cursor = 0;
+  std::vector<std::string> member_out;
+  // ***************** Group 1 Test *****************
+  // a b c d e f g h
+  // 0 1 2 3 4 5 6 7
+  std::vector<std::string> gp1_members {"a", "b", "c", "d", "e", "f", "g", "h"};
+  s = db.SAdd("GP1_SSCAN_KEY", gp1_members, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 8);
+
+  s = db.SScan("GP1_SSCAN_KEY", cursor, "*", 3, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 3);
+  ASSERT_EQ(next_cursor, 3);
+  ASSERT_TRUE(members_match(member_out, {"a", "b", "c"}));
+
+  member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.SScan("GP1_SSCAN_KEY", cursor, "*", 3, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 3);
+  ASSERT_EQ(next_cursor, 6);
+  ASSERT_TRUE(members_match(member_out, {"d", "e", "f"}));
+
+  member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.SScan("GP1_SSCAN_KEY", cursor, "*", 3, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 2);
+  ASSERT_EQ(next_cursor, 0);
+  ASSERT_TRUE(members_match(member_out, {"g", "h"}));
+
+
+  // ***************** Group 2 Test *****************
+  // a b c d e f g h
+  // 0 1 2 3 4 5 6 7
+  std::vector<std::string> gp2_members {"a", "b", "c", "d", "e", "f", "g", "h"};
+  s = db.SAdd("GP2_SSCAN_KEY", gp2_members, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 8);
+
+  member_out.clear();
+  cursor = 0, next_cursor = 0;
+  s = db.SScan("GP2_SSCAN_KEY", cursor, "*", 1, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 1);
+  ASSERT_TRUE(members_match(member_out, {"a"}));
+
+  member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.SScan("GP2_SSCAN_KEY", cursor, "*", 1, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 2);
+  ASSERT_TRUE(members_match(member_out, {"b"}));
+
+  member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.SScan("GP2_SSCAN_KEY", cursor, "*", 1, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 3);
+  ASSERT_TRUE(members_match(member_out, {"c"}));
+
+  member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.SScan("GP2_SSCAN_KEY", cursor, "*", 1, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 4);
+  ASSERT_TRUE(members_match(member_out, {"d"}));
+
+  member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.SScan("GP2_SSCAN_KEY", cursor, "*", 1, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 5);
+  ASSERT_TRUE(members_match(member_out, {"e"}));
+
+  member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.SScan("GP2_SSCAN_KEY", cursor, "*", 1, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 6);
+  ASSERT_TRUE(members_match(member_out, {"f"}));
+
+  member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.SScan("GP2_SSCAN_KEY", cursor, "*", 1, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 7);
+  ASSERT_TRUE(members_match(member_out, {"g"}));
+
+  member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.SScan("GP2_SSCAN_KEY", cursor, "*", 1, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 0);
+  ASSERT_TRUE(members_match(member_out, {"h"}));
+
+
+  // ***************** Group 3 Test *****************
+  // a b c d e f g h
+  // 0 1 2 3 4 5 6 7
+  std::vector<std::string> gp3_members {"a", "b", "c", "d", "e", "f", "g", "h"};
+  s = db.SAdd("GP3_SSCAN_KEY", gp3_members, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 8);
+
+  member_out.clear();
+  cursor = 0, next_cursor = 0;
+  s = db.SScan("GP3_SSCAN_KEY", cursor, "*", 5, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 5);
+  ASSERT_EQ(next_cursor, 5);
+  ASSERT_TRUE(members_match(member_out, {"a", "b", "c", "d", "e"}));
+
+  member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.SScan("GP3_SSCAN_KEY", cursor, "*", 5, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 3);
+  ASSERT_EQ(next_cursor, 0);
+  ASSERT_TRUE(members_match(member_out, {"f", "g", "h"}));
+
+
+  // ***************** Group 4 Test *****************
+  // a b c d e f g h
+  // 0 1 2 3 4 5 6 7
+  std::vector<std::string> gp4_members {"a", "b", "c", "d", "e", "f", "g", "h"};
+  s = db.SAdd("GP4_SSCAN_KEY", gp4_members, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 8);
+
+  member_out.clear();
+  cursor = 0, next_cursor = 0;
+  s = db.SScan("GP4_SSCAN_KEY", cursor, "*", 10, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 8);
+  ASSERT_EQ(next_cursor, 0);
+  ASSERT_TRUE(members_match(member_out, {"a", "b", "c", "d", "e", "f", "g", "h"}));
+
+
+  // ***************** Group 5 Test *****************
+  // a_1_ a_2_ a_3_ b_1_ b_2_ b_3_ c_1_ c_2_ c_3
+  //  0    1    2    3    4    5    6    7    8 
+  std::vector<std::string> gp5_members {"a_1_", "a_2_", "a_3_", "b_1_", "b_2_", "b_3_", "c_1_", "c_2_", "c_3_"};
+  s = db.SAdd("GP5_SSCAN_KEY", gp5_members, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  member_out.clear();
+  cursor = 0, next_cursor = 0;
+  s = db.SScan("GP5_SSCAN_KEY", cursor, "*1*", 3, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 3);
+  ASSERT_TRUE(members_match(member_out, {"a_1_"}));
+
+  member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.SScan("GP5_SSCAN_KEY", cursor, "*1*", 3, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 6);
+  ASSERT_TRUE(members_match(member_out, {"b_1_"}));
+
+  member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.SScan("GP5_SSCAN_KEY", cursor, "*1*", 3, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 0);
+  ASSERT_TRUE(members_match(member_out, {"c_1_"}));
+
+
+  // ***************** Group 6 Test *****************
+  // a_1_ a_2_ a_3_ b_1_ b_2_ b_3_ c_1_ c_2_ c_3_
+  //  0    1    2    3    4    5    6    7    8
+  std::vector<std::string> gp6_members {"a_1_", "a_2_", "a_3_", "b_1_", "b_2_", "b_3_", "c_1_", "c_2_", "c_3_"};
+  s = db.SAdd("GP6_SSCAN_KEY", gp6_members, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  member_out.clear();
+  cursor = 0, next_cursor = 0;
+  s = db.SScan("GP6_SSCAN_KEY", cursor, "a*", 3, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 3);
+  ASSERT_EQ(next_cursor, 3);
+  ASSERT_TRUE(members_match(member_out, {"a_1_", "a_2_", "a_3_"}));
+
+  member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.SScan("GP6_SSCAN_KEY", cursor, "a*", 3, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 0);
+  ASSERT_EQ(next_cursor, 6);
+  ASSERT_TRUE(members_match(member_out, {}));
+
+  member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.SScan("GP6_SSCAN_KEY", cursor, "a*", 3, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 0);
+  ASSERT_EQ(next_cursor, 0);
+  ASSERT_TRUE(members_match(member_out, {}));
+
+
+  // ***************** Group 7 Test *****************
+  // a_1_ a_2_ a_3_ b_1_ b_2_ b_3_ c_1_ c_2_ c_3
+  //  0    1    2    3    4    5    6    7    8
+  std::vector<std::string> gp7_members {"a_1_", "a_2_", "a_3_", "b_1_", "b_2_", "b_3_", "c_1_", "c_2_", "c_3_"};
+  s = db.SAdd("GP7_SSCAN_KEY", gp7_members, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  member_out.clear();
+  cursor = 0, next_cursor = 0;
+  s = db.SScan("GP7_SSCAN_KEY", cursor, "b*", 3, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 0);
+  ASSERT_EQ(next_cursor, 3);
+  ASSERT_TRUE(members_match(member_out, {}));
+
+  member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.SScan("GP7_SSCAN_KEY", cursor, "b*", 3, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 3);
+  ASSERT_EQ(next_cursor, 6);
+  ASSERT_TRUE(members_match(member_out, {"b_1_", "b_2_", "b_3_"}));
+
+  member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.SScan("GP7_SSCAN_KEY", cursor, "b*", 3, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 0);
+  ASSERT_EQ(next_cursor, 0);
+  ASSERT_TRUE(members_match(member_out, {}));
+
+
+  // ***************** Group 8 Test *****************
+  // a_1_ a_2_ a_3_ b_1_ b_2_ b_3_ c_1_ c_2_ c_3
+  //  0    1    2    3    4    5    6    7    8
+  std::vector<std::string> gp8_members {"a_1_", "a_2_", "a_3_", "b_1_", "b_2_", "b_3_", "c_1_", "c_2_", "c_3_"};
+  s = db.SAdd("GP8_SSCAN_KEY", gp8_members, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  member_out.clear();
+  cursor = 0, next_cursor = 0;
+  s = db.SScan("GP8_SSCAN_KEY", cursor, "c*", 3, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 0);
+  ASSERT_EQ(next_cursor, 3);
+  ASSERT_TRUE(members_match(member_out, {}));
+
+  member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.SScan("GP8_SSCAN_KEY", cursor, "c*", 3, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 0);
+  ASSERT_EQ(next_cursor, 6);
+  ASSERT_TRUE(members_match(member_out, {}));
+
+  member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.SScan("GP8_SSCAN_KEY", cursor, "c*", 3, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 3);
+  ASSERT_EQ(next_cursor, 0);
+  ASSERT_TRUE(members_match(member_out, {"c_1_", "c_2_", "c_3_"}));
+
+
+  // ***************** Group 9 Test *****************
+  // a_1_ a_2_ a_3_ b_1_ b_2_ b_3_ c_1_ c_2_ c_3
+  //  0    1    2    3    4    5    6    7    8
+  std::vector<std::string> gp9_members {"a_1_", "a_2_", "a_3_", "b_1_", "b_2_", "b_3_", "c_1_", "c_2_", "c_3_"};
+  s = db.SAdd("GP9_SSCAN_KEY", gp9_members, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  member_out.clear();
+  cursor = 0, next_cursor = 0;
+  s = db.SScan("GP9_SSCAN_KEY", cursor, "d*", 3, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 0);
+  ASSERT_EQ(next_cursor, 3);
+  ASSERT_TRUE(members_match(member_out, {}));
+
+  member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.SScan("GP9_SSCAN_KEY", cursor, "d*", 3, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 0);
+  ASSERT_EQ(next_cursor, 6);
+  ASSERT_TRUE(members_match(member_out, {}));
+
+  member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.SScan("GP9_SSCAN_KEY", cursor, "d*", 3, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 0);
+  ASSERT_EQ(next_cursor, 0);
+  ASSERT_TRUE(members_match(member_out, {}));
+
+
+  // ***************** Group 10 Test *****************
+  // a_1_ a_2_ a_3_ b_1_ b_2_ b_3_ c_1_ c_2_ c_3
+  //  0    1    2    3    4    5    6    7    8
+  // SScan Expired Key
+  std::vector<std::string> gp10_members {"a_1_", "a_2_", "a_3_", "b_1_", "b_2_", "b_3_", "c_1_", "c_2_", "c_3_"};
+  s = db.SAdd("GP10_SSCAN_KEY", gp10_members, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  ASSERT_TRUE(make_expired(&db, "GP10_SSCAN_KEY"));
+  member_out.clear();
+  cursor = 0, next_cursor = 0;
+  s = db.SScan("GP10_SSCAN_KEY", cursor, "*", 10, &member_out, &next_cursor);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(member_out.size(), 0);
+  ASSERT_EQ(next_cursor, 0);
+  ASSERT_TRUE(members_match(member_out, {}));
+
+
+  // ***************** Group 11 Test *****************
+  // SScan Not Exist Key
+  member_out.clear();
+  cursor = 0, next_cursor = 0;
+  s = db.SScan("GP11_SSCAN_KEY", cursor, "*", 10, &member_out, &next_cursor);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(member_out.size(), 0);
+  ASSERT_EQ(next_cursor, 0);
+  ASSERT_TRUE(members_match(member_out, {}));
+}
+
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

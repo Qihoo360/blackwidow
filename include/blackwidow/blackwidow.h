@@ -900,6 +900,12 @@ class BlackWidow {
   int64_t Del(const std::vector<std::string>& keys,
               std::map<DataType, Status>* type_status);
 
+  // Removes the specified keys of the specified type
+  // return -1 operation exception errors happen in database
+  // return >=0 the number of keys that were removed
+  int64_t DelByType(const std::vector<std::string>& keys,
+                    DataType type);
+
   // Iterate over a collection of elements
   // return an updated cursor that the user need to use as the cursor argument
   // in the next call

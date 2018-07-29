@@ -1052,6 +1052,7 @@ Status RedisSets::SUnionstore(const Slice& destination,
 
 Status RedisSets::SScan(const Slice& key, int64_t cursor, const std::string& pattern,
                         int64_t count, std::vector<std::string>* members, int64_t* next_cursor) {
+  *next_cursor = 0;
   members->clear();
   if (cursor < 0) {
     *next_cursor = 0;
@@ -1072,6 +1073,7 @@ Status RedisSets::SScan(const Slice& key, int64_t cursor, const std::string& pat
     if (parsed_sets_meta_value.IsStale()
       || parsed_sets_meta_value.count() == 0) {
       *next_cursor = 0;
+      return Status::NotFound();
     } else {
       std::string start_member;
       int32_t version = parsed_sets_meta_value.version();
@@ -1107,8 +1109,9 @@ Status RedisSets::SScan(const Slice& key, int64_t cursor, const std::string& pat
     }
   } else {
     *next_cursor = 0;
+    return s;
   }
-  return s;
+  return Status::OK();
 }
 
 Status RedisSets::GetSScanStartMember(const Slice& key, const Slice& pattern, int64_t cursor, std::string* start_member) {

@@ -1330,6 +1330,7 @@ Status RedisZSets::Expireat(const Slice& key, int32_t timestamp) {
 
 Status RedisZSets::ZScan(const Slice& key, int64_t cursor, const std::string& pattern,
                          int64_t count, std::vector<ScoreMember>* score_members, int64_t* next_cursor) {
+  *next_cursor = 0;
   score_members->clear();
   if (cursor < 0) {
     *next_cursor = 0;
@@ -1356,6 +1357,7 @@ Status RedisZSets::ZScan(const Slice& key, int64_t cursor, const std::string& pa
       s = GetZScanStartMember(key, pattern, cursor, &start_member);
       if (s.IsNotFound()) {
         cursor = 0;
+        return Status::OK();
       }
 
       ZSetsMemberKey zsets_member_prefix(key, version, Slice());
@@ -1388,8 +1390,9 @@ Status RedisZSets::ZScan(const Slice& key, int64_t cursor, const std::string& pa
     }
   } else {
     *next_cursor = 0;
+    return s;
   }
-  return s;
+  return Status::OK();
 }
 
 Status RedisZSets::GetZScanStartMember(const Slice& key, const Slice& pattern, int64_t cursor, std::string* start_member) {
