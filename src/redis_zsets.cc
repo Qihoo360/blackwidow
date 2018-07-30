@@ -1351,13 +1351,13 @@ Status RedisZSets::ZScan(const Slice& key, int64_t cursor, const std::string& pa
     if (parsed_zsets_meta_value.IsStale()
       || parsed_zsets_meta_value.count() == 0) {
       *next_cursor = 0;
+      return Status::NotFound();
     } else {
       std::string start_member;
       int32_t version = parsed_zsets_meta_value.version();
       s = GetZScanStartMember(key, pattern, cursor, &start_member);
       if (s.IsNotFound()) {
         cursor = 0;
-        return Status::OK();
       }
 
       ZSetsMemberKey zsets_member_prefix(key, version, Slice());
