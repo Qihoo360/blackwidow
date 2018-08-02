@@ -314,9 +314,9 @@ int StrToLongDouble(const char* s, size_t slen, long double* ldval) {
 int LongDoubleToStr(long double ldval, std::string* value) {
     char buf[256];
     int len;
-    if (isnan(ldval)) {
+    if (std::isnan(ldval)) {
       return -1;
-    } else if (isinf(ldval)) {
+    } else if (std::isinf(ldval)) {
       /* Libc in odd systems (Hi Solaris!) will format infinite in a
       * different way, so better to handle it in an explicit way. */
       if (ldval > 0) {
