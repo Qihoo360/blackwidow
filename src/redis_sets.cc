@@ -806,7 +806,7 @@ Status RedisSets::AddAndGetSpopCount(const std::string& key, uint64_t* count) {
   }
 
   if (spop_counts_store_.list_.size() > spop_counts_store_.max_size_) {
-    std::string tail = sscan_cursors_store_.list_.back();
+    std::string tail = spop_counts_store_.list_.back();
     spop_counts_store_.map_.erase(tail);
     spop_counts_store_.list_.pop_back();
   }
