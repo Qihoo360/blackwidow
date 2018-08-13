@@ -3855,6 +3855,379 @@ TEST_F(ZSetsTest, ZRemrangebylexTest) {
   ASSERT_EQ(ret, 0);
 }
 
+// ZScan
+TEST_F(ZSetsTest, ZScanTest) {
+  int32_t ret = 0;
+  int64_t cursor = 0, next_cursor = 0;
+  std::vector<ScoreMember> score_member_out;
+
+  // ***************** Group 1 Test *****************
+  // {0,a} {0,b} {0,c} {0,d} {0,e} {0,f} {0,g} {0,h}
+  // 0     1     2     3     4     5     6     7
+  std::vector<ScoreMember> gp1_score_member {{0, "a"}, {0, "b"}, {0, "c"},
+                                             {0, "d"}, {0, "e"}, {0, "f"},
+                                             {0, "g"}, {0, "h"}};
+  s = db.ZAdd("GP1_ZSCAN_KEY", gp1_score_member, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP1_ZSCAN_KEY", 8));
+
+  s = db.ZScan("GP1_ZSCAN_KEY", 0, "*", 3, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 3);
+  ASSERT_EQ(next_cursor, 3);
+  ASSERT_TRUE(score_members_match(score_member_out, {{0,"a"}, {0,"b"}, {0, "c"}}));
+
+  score_member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.ZScan("GP1_ZSCAN_KEY", cursor, "*", 3, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 3);
+  ASSERT_EQ(next_cursor, 6);
+  ASSERT_TRUE(score_members_match(score_member_out, {{0,"d"}, {0,"e"}, {0, "f"}}));
+
+  score_member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.ZScan("GP1_ZSCAN_KEY", cursor, "*", 3, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 2);
+  ASSERT_EQ(next_cursor, 0);
+  ASSERT_TRUE(score_members_match(score_member_out, {{0,"g"}, {0,"h"}}));
+
+
+  // ***************** Group 2 Test *****************
+  // {0,a} {0,b} {0,c} {0,d} {0,e} {0,f} {0,g} {0,h}
+  // 0     1     2     3     4     5     6     7
+  std::vector<ScoreMember> gp2_score_member {{0, "a"}, {0, "b"}, {0, "c"},
+                                             {0, "d"}, {0, "e"}, {0, "f"},
+                                             {0, "g"}, {0, "h"}};
+  s = db.ZAdd("GP2_ZSCAN_KEY", gp2_score_member, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP2_ZSCAN_KEY", 8));
+
+  s = db.ZScan("GP2_ZSCAN_KEY", 0, "*", 1, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 1);
+  ASSERT_TRUE(score_members_match(score_member_out, {{0,"a"}}));
+
+  score_member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.ZScan("GP2_ZSCAN_KEY", cursor, "*", 1, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 2);
+  ASSERT_TRUE(score_members_match(score_member_out, {{0,"b"}}));
+
+  score_member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.ZScan("GP2_ZSCAN_KEY", cursor, "*", 1, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 3);
+  ASSERT_TRUE(score_members_match(score_member_out, {{0,"c"}}));
+
+  score_member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.ZScan("GP2_ZSCAN_KEY", cursor, "*", 1, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 4);
+  ASSERT_TRUE(score_members_match(score_member_out, {{0,"d"}}));
+
+  score_member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.ZScan("GP2_ZSCAN_KEY", cursor, "*", 1, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 5);
+  ASSERT_TRUE(score_members_match(score_member_out, {{0,"e"}}));
+
+  score_member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.ZScan("GP2_ZSCAN_KEY", cursor, "*", 1, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 6);
+  ASSERT_TRUE(score_members_match(score_member_out, {{0,"f"}}));
+
+  score_member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.ZScan("GP2_ZSCAN_KEY", cursor, "*", 1, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 7);
+  ASSERT_TRUE(score_members_match(score_member_out, {{0,"g"}}));
+
+  score_member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.ZScan("GP2_ZSCAN_KEY", cursor, "*", 1, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 0);
+  ASSERT_TRUE(score_members_match(score_member_out, {{0,"h"}}));
+
+
+  // ***************** Group 3 Test *****************
+  // {0,a} {0,b} {0,c} {0,d} {0,e} {0,f} {0,g} {0,h}
+  // 0     1     2     3     4     5     6     7
+  std::vector<ScoreMember> gp3_score_member {{0, "a"}, {0, "b"}, {0, "c"},
+                                             {0, "d"}, {0, "e"}, {0, "f"},
+                                             {0, "g"}, {0, "h"}};
+  s = db.ZAdd("GP3_ZSCAN_KEY", gp3_score_member, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP3_ZSCAN_KEY", 8));
+
+  score_member_out.clear();
+  cursor = 0, next_cursor = 0;
+  s = db.ZScan("GP3_ZSCAN_KEY", cursor, "*", 5, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 5);
+  ASSERT_EQ(next_cursor, 5);
+  ASSERT_TRUE(score_members_match(score_member_out, {{0, "a"}, {0, "b"}, {0, "c"},
+                                                     {0, "d"}, {0, "e"}}));
+
+  score_member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.ZScan("GP3_ZSCAN_KEY", cursor, "*", 5, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 3);
+  ASSERT_EQ(next_cursor, 0);
+  ASSERT_TRUE(score_members_match(score_member_out, {{0, "f"}, {0, "g"}, {0, "h"}}));
+
+
+  // ***************** Group 4 Test *****************
+  // {0,a} {0,b} {0,c} {0,d} {0,e} {0,f} {0,g} {0,h}
+  // 0     1     2     3     4     5     6     7
+  std::vector<ScoreMember> gp4_score_member {{0, "a"}, {0, "b"}, {0, "c"},
+                                             {0, "d"}, {0, "e"}, {0, "f"},
+                                             {0, "g"}, {0, "h"}};
+  s = db.ZAdd("GP4_ZSCAN_KEY", gp4_score_member, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP4_ZSCAN_KEY", 8));
+
+  score_member_out.clear();
+  cursor = 0, next_cursor = 0;
+  s = db.ZScan("GP4_ZSCAN_KEY", cursor, "*", 10, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 8);
+  ASSERT_EQ(next_cursor, 0);
+  ASSERT_TRUE(score_members_match(score_member_out, {{0, "a"}, {0, "b"}, {0, "c"},
+                                                     {0, "d"}, {0, "e"}, {0, "f"},
+                                                     {0, "g"}, {0, "h"}}));
+
+
+  // ***************** Group 5 Test *****************
+  // {0,a_1_} {0,a_2_} {0,a_3_} {0,b_1_} {0,b_2_} {0,b_3_} {0,c_1_} {0,c_2_} {0,c_3_}
+  // 0        1        2        3        4        5        6        7        8
+  std::vector<ScoreMember> gp5_score_member {{0, "a_1_"}, {0, "a_2_"}, {0, "a_3_"},
+                                            {0, "b_1_"}, {0, "b_2_"}, {0, "b_3_"},
+                                            {0, "c_1_"}, {0, "c_2_"}, {0, "c_3_"}};
+  s = db.ZAdd("GP5_ZSCAN_KEY", gp5_score_member, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+  ASSERT_TRUE(size_match(&db, "GP5_ZSCAN_KEY", 9));
+
+  score_member_out.clear();
+  cursor = 0, next_cursor = 0;
+  s = db.ZScan("GP5_ZSCAN_KEY", cursor, "*1*", 3, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 3);
+  ASSERT_TRUE(score_members_match(score_member_out, {{0, "a_1_"}}));
+
+  score_member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.ZScan("GP5_ZSCAN_KEY", cursor, "*1*", 3, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 6);
+  ASSERT_TRUE(score_members_match(score_member_out, {{0, "b_1_"}}));
+
+  score_member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.ZScan("GP5_ZSCAN_KEY", cursor, "*1*", 3, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 0);
+  ASSERT_TRUE(score_members_match(score_member_out, {{0, "c_1_"}}));
+
+
+  // ***************** Group 6 Test *****************
+  // {0,a_1_} {0,a_2_} {0,a_3_} {0,b_1_} {0,b_2_} {0,b_3_} {0,c_1_} {0,c_2_} {0,c_3_}
+  // 0        1        2        3        4        5        6        7        8
+  std::vector<ScoreMember> gp6_score_member {{0, "a_1_"}, {0, "a_2_"}, {0, "a_3_"},
+                                            {0, "b_1_"}, {0, "b_2_"}, {0, "b_3_"},
+                                            {0, "c_1_"}, {0, "c_2_"}, {0, "c_3_"}};
+  s = db.ZAdd("GP6_ZSCAN_KEY", gp6_score_member, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+  ASSERT_TRUE(size_match(&db, "GP6_ZSCAN_KEY", 9));
+
+  score_member_out.clear();
+  cursor = 0, next_cursor = 0;
+  s = db.ZScan("GP6_ZSCAN_KEY", cursor, "a*", 3, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 3);
+  ASSERT_EQ(next_cursor, 3);
+  ASSERT_TRUE(score_members_match(score_member_out, {{0, "a_1_"}, {0, "a_2_"}, {0, "a_3_"}}));
+
+  score_member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.ZScan("GP6_ZSCAN_KEY", cursor, "a*", 3, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 0);
+  ASSERT_EQ(next_cursor, 6);
+  ASSERT_TRUE(score_members_match(score_member_out, {}));
+
+  score_member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.ZScan("GP6_ZSCAN_KEY", cursor, "a*", 3, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 0);
+  ASSERT_EQ(next_cursor, 0);
+  ASSERT_TRUE(score_members_match(score_member_out, {}));
+
+
+  // ***************** Group 7 Test *****************
+  // {0,a_1_} {0,a_2_} {0,a_3_} {0,b_1_} {0,b_2_} {0,b_3_} {0,c_1_} {0,c_2_} {0,c_3_}
+  // 0        1        2        3        4        5        6        7        8
+  std::vector<ScoreMember> gp7_score_member {{0, "a_1_"}, {0, "a_2_"}, {0, "a_3_"},
+                                             {0, "b_1_"}, {0, "b_2_"}, {0, "b_3_"},
+                                             {0, "c_1_"}, {0, "c_2_"}, {0, "c_3_"}};
+  s = db.ZAdd("GP7_ZSCAN_KEY", gp7_score_member, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+  ASSERT_TRUE(size_match(&db, "GP7_ZSCAN_KEY", 9));
+
+  score_member_out.clear();
+  cursor = 0, next_cursor = 0;
+  s = db.ZScan("GP7_ZSCAN_KEY", cursor, "b*", 3, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 0);
+  ASSERT_EQ(next_cursor, 3);
+  ASSERT_TRUE(score_members_match(score_member_out, {}));
+
+  score_member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.ZScan("GP7_ZSCAN_KEY", cursor, "b*", 3, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 3);
+  ASSERT_EQ(next_cursor, 6);
+  ASSERT_TRUE(score_members_match(score_member_out, {{0, "b_1_"}, {0, "b_2_"}, {0, "b_3_"}}));
+
+  score_member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.ZScan("GP7_ZSCAN_KEY", cursor, "b*", 3, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 0);
+  ASSERT_EQ(next_cursor, 0);
+  ASSERT_TRUE(score_members_match(score_member_out, {}));
+
+
+  // ***************** Group 8 Test *****************
+  // {0,a_1_} {0,a_2_} {0,a_3_} {0,b_1_} {0,b_2_} {0,b_3_} {0,c_1_} {0,c_2_} {0,c_3_}
+  // 0        1        2        3        4        5        6        7        8
+  std::vector<ScoreMember> gp8_score_member {{0, "a_1_"}, {0, "a_2_"}, {0, "a_3_"},
+                                             {0, "b_1_"}, {0, "b_2_"}, {0, "b_3_"},
+                                             {0, "c_1_"}, {0, "c_2_"}, {0, "c_3_"}};
+  s = db.ZAdd("GP8_ZSCAN_KEY", gp8_score_member, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+  ASSERT_TRUE(size_match(&db, "GP8_ZSCAN_KEY", 9));
+
+  score_member_out.clear();
+  cursor = 0, next_cursor = 0;
+  s = db.ZScan("GP8_ZSCAN_KEY", cursor, "c*", 3, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 0);
+  ASSERT_EQ(next_cursor, 3);
+  ASSERT_TRUE(score_members_match(score_member_out, {}));
+
+  score_member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.ZScan("GP8_ZSCAN_KEY", cursor, "c*", 3, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 0);
+  ASSERT_EQ(next_cursor, 6);
+  ASSERT_TRUE(score_members_match(score_member_out, {}));
+
+  score_member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.ZScan("GP8_ZSCAN_KEY", cursor, "c*", 3, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 3);
+  ASSERT_EQ(next_cursor, 0);
+  ASSERT_TRUE(score_members_match(score_member_out, {{0, "c_1_"}, {0, "c_2_"}, {0, "c_3_"}}));
+
+
+  // ***************** Group 9 Test *****************
+  // {0,a_1_} {0,a_2_} {0,a_3_} {0,b_1_} {0,b_2_} {0,b_3_} {0,c_1_} {0,c_2_} {0,c_3_}
+  // 0        1        2        3        4        5        6        7        8
+  std::vector<ScoreMember> gp9_score_member {{0, "a_1_"}, {0, "a_2_"}, {0, "a_3_"},
+                                             {0, "b_1_"}, {0, "b_2_"}, {0, "b_3_"},
+                                             {0, "c_1_"}, {0, "c_2_"}, {0, "c_3_"}};
+  s = db.ZAdd("GP9_ZSCAN_KEY", gp9_score_member, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+  ASSERT_TRUE(size_match(&db, "GP9_ZSCAN_KEY", 9));
+
+  score_member_out.clear();
+  cursor = 0, next_cursor = 0;
+  s = db.ZScan("GP9_ZSCAN_KEY", cursor, "d*", 3, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 0);
+  ASSERT_EQ(next_cursor, 3);
+  ASSERT_TRUE(score_members_match(score_member_out, {}));
+
+  score_member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.ZScan("GP9_ZSCAN_KEY", cursor, "d*", 3, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 0);
+  ASSERT_EQ(next_cursor, 6);
+  ASSERT_TRUE(score_members_match(score_member_out, {}));
+
+  score_member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.ZScan("GP9_ZSCAN_KEY", cursor, "d*", 3, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 0);
+  ASSERT_EQ(next_cursor, 0);
+  ASSERT_TRUE(score_members_match(score_member_out, {}));
+
+
+  // ***************** Group 10 Test *****************
+  // {0,a_1_} {0,a_2_} {0,a_3_} {0,b_1_} {0,b_2_} {0,b_3_} {0,c_1_} {0,c_2_} {0,c_3_}
+  // 0        1        2        3        4        5        6        7        8
+  std::vector<ScoreMember> gp10_score_member {{0, "a_1_"}, {0, "a_2_"}, {0, "a_3_"},
+                                              {0, "b_1_"}, {0, "b_2_"}, {0, "b_3_"},
+                                              {0, "c_1_"}, {0, "c_2_"}, {0, "c_3_"}};
+  s = db.ZAdd("GP10_ZSCAN_KEY", gp10_score_member, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+  ASSERT_TRUE(size_match(&db, "GP10_ZSCAN_KEY", 9));
+
+  ASSERT_TRUE(make_expired(&db, "GP10_ZSCAN_KEY"));
+  score_member_out.clear();
+  cursor = 0, next_cursor = 0;
+  s = db.ZScan("GP10_ZSCAN_KEY", cursor, "*", 10, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(score_member_out.size(), 0);
+  ASSERT_EQ(next_cursor, 0);
+  ASSERT_TRUE(score_members_match(score_member_out, {}));
+
+
+  // ***************** Group 11 Test *****************
+  // ZScan Not Exist Key
+  score_member_out.clear();
+  cursor = 0, next_cursor = 0;
+  s = db.ZScan("GP11_ZSCAN_KEY", cursor, "*", 10, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(score_member_out.size(), 0);
+  ASSERT_EQ(next_cursor, 0);
+  ASSERT_TRUE(score_members_match(score_member_out, {}));
+}
+
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

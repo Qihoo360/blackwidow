@@ -35,6 +35,10 @@ class ZSetsScoreFilter : public rocksdb::CompactionFilter {
     if (parsed_zsets_score_key.key().ToString() != cur_key_) {
       cur_key_ = parsed_zsets_score_key.key().ToString();
       std::string meta_value;
+      // destroyed when close the database, Reserve Current key value
+      if (cf_handles_ptr_->size() == 0) {
+        return false;
+      }
       Status s = db_->Get(default_read_options_, (*cf_handles_ptr_)[0], cur_key_, &meta_value);
       if (s.ok()) {
         meta_not_found_ = false;

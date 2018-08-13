@@ -56,6 +56,9 @@ class Mutex;
 struct KeyValue {
   std::string key;
   std::string value;
+  bool operator == (const KeyValue& kv) const {
+    return (kv.key == key && kv.value == value);
+  }
   bool operator < (const KeyValue& kv) const {
     return key < kv.key;
   }
@@ -64,22 +67,30 @@ struct KeyValue {
 struct FieldValue {
   std::string field;
   std::string value;
+  bool operator == (const FieldValue& fv) const {
+    return (fv.field == field && fv.value == value);
+  }
 };
-
 
 struct KeyVersion {
   std::string key;
   int32_t version;
-};
-
-enum BeforeOrAfter {
-  Before,
-  After
+  bool operator == (const KeyVersion& kv) const {
+    return (kv.key == key && kv.version == version);
+  }
 };
 
 struct ScoreMember {
   double score;
   std::string member;
+  bool operator == (const ScoreMember& sm) const {
+    return (sm.score == score && sm.member == member);
+  }
+};
+
+enum BeforeOrAfter {
+  Before,
+  After
 };
 
 enum DataType {
