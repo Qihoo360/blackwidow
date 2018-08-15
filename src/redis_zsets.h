@@ -10,7 +10,6 @@
 
 #include "src/redis.h"
 #include "src/custom_comparator.h"
-#include "blackwidow/blackwidow.h"
 
 namespace blackwidow {
 
@@ -130,13 +129,6 @@ class RedisZSets : public Redis {
 
   private:
     std::vector<rocksdb::ColumnFamilyHandle*> handles_;
-
-    // For ZScan
-    slash::Mutex zscan_cursors_mutex_;
-    BlackWidow::LRU<std::string, std::string> zscan_cursors_store_;
-
-    Status GetZScanStartMember(const Slice& key, const Slice& pattern, int64_t cursor, std::string* start_member);
-    Status StoreZScanNextMember(const Slice& key, const Slice& pattern, int64_t cursor, const std::string& next_member);
 };
 
 } // namespace blackwidow

@@ -1353,15 +1353,22 @@ Status RedisZSets::ZScan(const Slice& key, int64_t cursor, const std::string& pa
       *next_cursor = 0;
       return Status::NotFound();
     } else {
-      std::string start_member;
+      std::string sub_member;
+      std::string start_point;
       int32_t version = parsed_zsets_meta_value.version();
-      s = GetZScanStartMember(key, pattern, cursor, &start_member);
+      s = GetScanStartPoint(key, pattern, cursor, &start_point);
       if (s.IsNotFound()) {
         cursor = 0;
+        if (isTailWildcard(pattern)) {
+          start_point = pattern.substr(0, pattern.size() - 1);
+        }
+      }
+      if (isTailWildcard(pattern)) {
+        sub_member = pattern.substr(0, pattern.size() - 1);
       }
 
-      ZSetsMemberKey zsets_member_prefix(key, version, Slice());
-      ZSetsMemberKey zsets_member_key(key, version, start_member);
+      ZSetsMemberKey zsets_member_prefix(key, version, sub_member);
+      ZSetsMemberKey zsets_member_key(key, version, start_point);
       std::string prefix = zsets_member_prefix.Encode().ToString();
       rocksdb::Iterator* iter = db_->NewIterator(read_options, handles_[1]);
       for (iter->Seek(zsets_member_key.Encode());
@@ -1382,7 +1389,7 @@ Status RedisZSets::ZScan(const Slice& key, int64_t cursor, const std::string& pa
         *next_cursor = cursor + step_length;
         ParsedZSetsMemberKey parsed_zsets_member_key(iter->key());
         std::string next_member = parsed_zsets_member_key.member().ToString();
-        StoreZScanNextMember(key, pattern, *next_cursor, next_member);
+        StoreScanNextPoint(key, pattern, *next_cursor, next_member);
       } else {
         *next_cursor = 0;
       }
@@ -1392,32 +1399,6 @@ Status RedisZSets::ZScan(const Slice& key, int64_t cursor, const std::string& pa
     *next_cursor = 0;
     return s;
   }
-  return Status::OK();
-}
-
-Status RedisZSets::GetZScanStartMember(const Slice& key, const Slice& pattern, int64_t cursor, std::string* start_member) {
-  slash::MutexLock l(&zscan_cursors_mutex_);
-  std::string index_key = key.ToString() + "_" + pattern.ToString() + "_" + std::to_string(cursor);
-  if (zscan_cursors_store_.map_.find(index_key) == zscan_cursors_store_.map_.end()) {
-    return Status::NotFound();
-  } else {
-    *start_member = zscan_cursors_store_.map_[index_key];
-  }
-  return Status::OK();
-}
-
-Status RedisZSets::StoreZScanNextMember(const Slice& key, const Slice& pattern, int64_t cursor, const std::string& next_member) {
-  slash::MutexLock l(&zscan_cursors_mutex_);
-  std::string index_key = key.ToString() + "_" + pattern.ToString() +  "_" + std::to_string(cursor);
-  if (zscan_cursors_store_.list_.size() > zscan_cursors_store_.max_size_) {
-    std::string tail = zscan_cursors_store_.list_.back();
-    zscan_cursors_store_.map_.erase(tail);
-    zscan_cursors_store_.list_.pop_back();
-  }
-
-  zscan_cursors_store_.map_[index_key] = next_member;
-  zscan_cursors_store_.list_.remove(index_key);
-  zscan_cursors_store_.list_.push_front(index_key);
   return Status::OK();
 }
 

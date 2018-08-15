@@ -2094,24 +2094,48 @@ TEST_F(SetsTest, SScanTest) {
   s = db.SScan("GP6_SSCAN_KEY", cursor, "a*", 3, &member_out, &next_cursor);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(member_out.size(), 3);
-  ASSERT_EQ(next_cursor, 3);
+  ASSERT_EQ(next_cursor, 0);
   ASSERT_TRUE(members_match(member_out, {"a_1_", "a_2_", "a_3_"}));
 
   member_out.clear();
-  cursor = next_cursor, next_cursor = 0;
-  s = db.SScan("GP6_SSCAN_KEY", cursor, "a*", 3, &member_out, &next_cursor);
+  cursor = 0, next_cursor = 0;
+  s = db.SScan("GP6_SSCAN_KEY", cursor, "a*", 2, &member_out, &next_cursor);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(member_out.size(), 0);
-  ASSERT_EQ(next_cursor, 6);
-  ASSERT_TRUE(members_match(member_out, {}));
+  ASSERT_EQ(member_out.size(), 2);
+  ASSERT_EQ(next_cursor, 2);
+  ASSERT_TRUE(members_match(member_out, {"a_1_", "a_2_"}));
 
   member_out.clear();
   cursor = next_cursor, next_cursor = 0;
-  s = db.SScan("GP6_SSCAN_KEY", cursor, "a*", 3, &member_out, &next_cursor);
+  s = db.SScan("GP6_SSCAN_KEY", cursor, "a*", 2, &member_out, &next_cursor);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(member_out.size(), 0);
+  ASSERT_EQ(member_out.size(), 1);
   ASSERT_EQ(next_cursor, 0);
-  ASSERT_TRUE(members_match(member_out, {}));
+  ASSERT_TRUE(members_match(member_out, {"a_3_"}));
+
+  member_out.clear();
+  cursor = 0, next_cursor = 0;
+  s = db.SScan("GP6_SSCAN_KEY", cursor, "a*", 1, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 1);
+  ASSERT_TRUE(members_match(member_out, {"a_1_"}));
+
+  member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.SScan("GP6_SSCAN_KEY", cursor, "a*", 1, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 2);
+  ASSERT_TRUE(members_match(member_out, {"a_2_"}));
+
+  member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.SScan("GP6_SSCAN_KEY", cursor, "a*", 1, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 0);
+  ASSERT_TRUE(members_match(member_out, {"a_3_"}));
 
 
   // ***************** Group 7 Test *****************
@@ -2126,25 +2150,49 @@ TEST_F(SetsTest, SScanTest) {
   cursor = 0, next_cursor = 0;
   s = db.SScan("GP7_SSCAN_KEY", cursor, "b*", 3, &member_out, &next_cursor);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(member_out.size(), 0);
-  ASSERT_EQ(next_cursor, 3);
-  ASSERT_TRUE(members_match(member_out, {}));
-
-  member_out.clear();
-  cursor = next_cursor, next_cursor = 0;
-  s = db.SScan("GP7_SSCAN_KEY", cursor, "b*", 3, &member_out, &next_cursor);
-  ASSERT_TRUE(s.ok());
   ASSERT_EQ(member_out.size(), 3);
-  ASSERT_EQ(next_cursor, 6);
+  ASSERT_EQ(next_cursor, 0);
   ASSERT_TRUE(members_match(member_out, {"b_1_", "b_2_", "b_3_"}));
 
   member_out.clear();
-  cursor = next_cursor, next_cursor = 0;
-  s = db.SScan("GP7_SSCAN_KEY", cursor, "b*", 3, &member_out, &next_cursor);
+  cursor = 0, next_cursor = 0;
+  s = db.SScan("GP7_SSCAN_KEY", cursor, "b*", 2, &member_out, &next_cursor);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(member_out.size(), 0);
+  ASSERT_EQ(member_out.size(), 2);
+  ASSERT_EQ(next_cursor, 2);
+  ASSERT_TRUE(members_match(member_out, {"b_1_", "b_2_"}));
+
+  member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.SScan("GP7_SSCAN_KEY", cursor, "b*", 2, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 1);
   ASSERT_EQ(next_cursor, 0);
-  ASSERT_TRUE(members_match(member_out, {}));
+  ASSERT_TRUE(members_match(member_out, {"b_3_"}));
+
+  member_out.clear();
+  cursor = 0, next_cursor = 0;
+  s = db.SScan("GP7_SSCAN_KEY", cursor, "b*", 1, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 1);
+  ASSERT_TRUE(members_match(member_out, {"b_1_"}));
+
+  member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.SScan("GP7_SSCAN_KEY", cursor, "b*", 1, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 2);
+  ASSERT_TRUE(members_match(member_out, {"b_2_"}));
+
+  member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.SScan("GP7_SSCAN_KEY", cursor, "b*", 1, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 0);
+  ASSERT_TRUE(members_match(member_out, {"b_3_"}));
 
 
   // ***************** Group 8 Test *****************
@@ -2159,25 +2207,49 @@ TEST_F(SetsTest, SScanTest) {
   cursor = 0, next_cursor = 0;
   s = db.SScan("GP8_SSCAN_KEY", cursor, "c*", 3, &member_out, &next_cursor);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(member_out.size(), 0);
-  ASSERT_EQ(next_cursor, 3);
-  ASSERT_TRUE(members_match(member_out, {}));
-
-  member_out.clear();
-  cursor = next_cursor, next_cursor = 0;
-  s = db.SScan("GP8_SSCAN_KEY", cursor, "c*", 3, &member_out, &next_cursor);
-  ASSERT_TRUE(s.ok());
-  ASSERT_EQ(member_out.size(), 0);
-  ASSERT_EQ(next_cursor, 6);
-  ASSERT_TRUE(members_match(member_out, {}));
-
-  member_out.clear();
-  cursor = next_cursor, next_cursor = 0;
-  s = db.SScan("GP8_SSCAN_KEY", cursor, "c*", 3, &member_out, &next_cursor);
-  ASSERT_TRUE(s.ok());
   ASSERT_EQ(member_out.size(), 3);
   ASSERT_EQ(next_cursor, 0);
   ASSERT_TRUE(members_match(member_out, {"c_1_", "c_2_", "c_3_"}));
+
+  member_out.clear();
+  cursor = 0, next_cursor = 0;
+  s = db.SScan("GP8_SSCAN_KEY", cursor, "c*", 2, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 2);
+  ASSERT_EQ(next_cursor, 2);
+  ASSERT_TRUE(members_match(member_out, {"c_1_", "c_2_"}));
+
+  member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.SScan("GP8_SSCAN_KEY", cursor, "c*", 2, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 0);
+  ASSERT_TRUE(members_match(member_out, {"c_3_"}));
+
+  member_out.clear();
+  cursor = 0, next_cursor = 0;
+  s = db.SScan("GP8_SSCAN_KEY", cursor, "c*", 1, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 1);
+  ASSERT_TRUE(members_match(member_out, {"c_1_"}));
+
+  member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.SScan("GP8_SSCAN_KEY", cursor, "c*", 1, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 2);
+  ASSERT_TRUE(members_match(member_out, {"c_2_"}));
+
+  member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.SScan("GP8_SSCAN_KEY", cursor, "c*", 1, &member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 0);
+  ASSERT_TRUE(members_match(member_out, {"c_3_"}));
 
 
   // ***************** Group 9 Test *****************
@@ -2190,22 +2262,6 @@ TEST_F(SetsTest, SScanTest) {
 
   member_out.clear();
   cursor = 0, next_cursor = 0;
-  s = db.SScan("GP9_SSCAN_KEY", cursor, "d*", 3, &member_out, &next_cursor);
-  ASSERT_TRUE(s.ok());
-  ASSERT_EQ(member_out.size(), 0);
-  ASSERT_EQ(next_cursor, 3);
-  ASSERT_TRUE(members_match(member_out, {}));
-
-  member_out.clear();
-  cursor = next_cursor, next_cursor = 0;
-  s = db.SScan("GP9_SSCAN_KEY", cursor, "d*", 3, &member_out, &next_cursor);
-  ASSERT_TRUE(s.ok());
-  ASSERT_EQ(member_out.size(), 0);
-  ASSERT_EQ(next_cursor, 6);
-  ASSERT_TRUE(members_match(member_out, {}));
-
-  member_out.clear();
-  cursor = next_cursor, next_cursor = 0;
   s = db.SScan("GP9_SSCAN_KEY", cursor, "d*", 3, &member_out, &next_cursor);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(member_out.size(), 0);

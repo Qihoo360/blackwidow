@@ -468,4 +468,23 @@ int CalculateStartAndEndKey(const std::string& key, std::string* start_key, std:
   return 0;
 }
 
+bool isTailWildcard(const std::string& pattern) {
+  if (pattern.size() < 2) {
+    return false;
+  } else {
+    if (pattern.back() != '*') {
+      return false;
+    } else {
+      for (uint32_t idx = 0; idx < pattern.size() - 1; ++idx) {
+        if (pattern[idx] == '*' || pattern[idx] == '?'
+          || pattern[idx] == '[' || pattern[idx] == '^'
+          || pattern[idx] == ']') {
+          return false;
+        }
+      }
+    }
+  }
+  return true;
+}
+
 }  //  namespace blackwidow

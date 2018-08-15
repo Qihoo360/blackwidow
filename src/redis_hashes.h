@@ -11,13 +11,12 @@
 #include <unordered_set>
 
 #include "src/redis.h"
-#include "blackwidow/blackwidow.h"
 
 namespace blackwidow {
 
 class RedisHashes : public Redis {
   public:
-    RedisHashes();
+    RedisHashes() = default;
     ~RedisHashes();
 
     // Common Commands
@@ -74,13 +73,6 @@ class RedisHashes : public Redis {
 
   private:
     std::vector<rocksdb::ColumnFamilyHandle*> handles_;
-
-    // For HScan
-    slash::Mutex hscan_cursors_mutex_;
-    BlackWidow::LRU<std::string, std::string> hscan_cursors_store_;
-
-    Status GetHScanStartField(const Slice& key, const Slice& pattern, int64_t cursor, std::string* start_field);
-    Status StoreHScanNextField(const Slice& key, const Slice& pattern, int64_t cursor, const std::string& next_field);
 };
 
 }  //  namespace blackwidow

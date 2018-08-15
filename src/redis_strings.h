@@ -11,7 +11,6 @@
 #include <algorithm>
 
 #include "src/redis.h"
-#include "blackwidow/blackwidow.h"
 
 namespace blackwidow {
 

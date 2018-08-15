@@ -13,8 +13,10 @@
 #include "rocksdb/db.h"
 #include "rocksdb/status.h"
 #include "rocksdb/slice.h"
+
 #include "src/lock_mgr.h"
 #include "src/mutex_impl.h"
+#include "blackwidow/blackwidow.h"
 
 namespace blackwidow {
 using Status = rocksdb::Status;
@@ -22,27 +24,18 @@ using Slice = rocksdb::Slice;
 
 class Redis {
  public:
-  Redis()
-    : lock_mgr_(new LockMgr(1000, 10000, std::make_shared<MutexFactoryImpl>())),
-      db_(nullptr) {
-    default_compact_range_options_.exclusive_manual_compaction = false;
-    default_compact_range_options_.change_level = true;
-  }
+  Redis();
+  virtual ~Redis();
 
   rocksdb::DB* get_db() {
     return db_;
   }
 
-  virtual ~Redis() {
-    delete db_;
-    delete lock_mgr_;
-  }
-
   // Common Commands
   virtual Status Open(const rocksdb::Options& options,
-      const std::string& db_path) = 0;
+                      const std::string& db_path) = 0;
   virtual Status CompactRange(const rocksdb::Slice* begin,
-      const rocksdb::Slice* end) = 0;
+                              const rocksdb::Slice* end) = 0;
   virtual Status GetProperty(const std::string& property, std::string* out) = 0;
   virtual Status ScanKeyNum(uint64_t* num) = 0;
   virtual Status ScanKeys(const std::string& pattern,
@@ -67,6 +60,13 @@ class Redis {
   rocksdb::WriteOptions default_write_options_;
   rocksdb::ReadOptions default_read_options_;
   rocksdb::CompactRangeOptions default_compact_range_options_;
+
+  // For Scan
+  slash::Mutex scan_cursors_mutex_;
+  BlackWidow::LRU<std::string, std::string> scan_cursors_store_;
+
+  Status GetScanStartPoint(const Slice& key, const Slice& pattern, int64_t cursor, std::string* start_point);
+  Status StoreScanNextPoint(const Slice& key, const Slice& pattern, int64_t cursor, const std::string& next_point);
 };
 
 }  //  namespace blackwidow

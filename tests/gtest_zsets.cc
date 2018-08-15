@@ -4056,8 +4056,8 @@ TEST_F(ZSetsTest, ZScanTest) {
   // {0,a_1_} {0,a_2_} {0,a_3_} {0,b_1_} {0,b_2_} {0,b_3_} {0,c_1_} {0,c_2_} {0,c_3_}
   // 0        1        2        3        4        5        6        7        8
   std::vector<ScoreMember> gp6_score_member {{0, "a_1_"}, {0, "a_2_"}, {0, "a_3_"},
-                                            {0, "b_1_"}, {0, "b_2_"}, {0, "b_3_"},
-                                            {0, "c_1_"}, {0, "c_2_"}, {0, "c_3_"}};
+                                             {0, "b_1_"}, {0, "b_2_"}, {0, "b_3_"},
+                                             {0, "c_1_"}, {0, "c_2_"}, {0, "c_3_"}};
   s = db.ZAdd("GP6_ZSCAN_KEY", gp6_score_member, &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 9);
@@ -4068,24 +4068,49 @@ TEST_F(ZSetsTest, ZScanTest) {
   s = db.ZScan("GP6_ZSCAN_KEY", cursor, "a*", 3, &score_member_out, &next_cursor);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(score_member_out.size(), 3);
-  ASSERT_EQ(next_cursor, 3);
+  ASSERT_EQ(next_cursor, 0);
   ASSERT_TRUE(score_members_match(score_member_out, {{0, "a_1_"}, {0, "a_2_"}, {0, "a_3_"}}));
 
   score_member_out.clear();
-  cursor = next_cursor, next_cursor = 0;
-  s = db.ZScan("GP6_ZSCAN_KEY", cursor, "a*", 3, &score_member_out, &next_cursor);
+  cursor = 0, next_cursor = 0;
+  s = db.ZScan("GP6_ZSCAN_KEY", cursor, "a*", 2, &score_member_out, &next_cursor);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(score_member_out.size(), 0);
-  ASSERT_EQ(next_cursor, 6);
-  ASSERT_TRUE(score_members_match(score_member_out, {}));
+  ASSERT_EQ(score_member_out.size(), 2);
+  ASSERT_EQ(next_cursor, 2);
+  ASSERT_TRUE(score_members_match(score_member_out, {{0, "a_1_"}, {0, "a_2_"}}));
 
   score_member_out.clear();
   cursor = next_cursor, next_cursor = 0;
-  s = db.ZScan("GP6_ZSCAN_KEY", cursor, "a*", 3, &score_member_out, &next_cursor);
+  s = db.ZScan("GP6_ZSCAN_KEY", cursor, "a*", 2, &score_member_out, &next_cursor);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(score_member_out.size(), 0);
+  ASSERT_EQ(score_member_out.size(), 1);
   ASSERT_EQ(next_cursor, 0);
-  ASSERT_TRUE(score_members_match(score_member_out, {}));
+  ASSERT_TRUE(score_members_match(score_member_out, {{0, "a_3_"}}));
+
+  score_member_out.clear();
+  cursor = 0, next_cursor = 0;
+  s = db.ZScan("GP6_ZSCAN_KEY", cursor, "a*", 1, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 1);
+  ASSERT_TRUE(score_members_match(score_member_out, {{0, "a_1_"}}));
+
+  score_member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.ZScan("GP6_ZSCAN_KEY", cursor, "a*", 1, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 2);
+  ASSERT_TRUE(score_members_match(score_member_out, {{0, "a_2_"}}));
+
+  score_member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.ZScan("GP6_ZSCAN_KEY", cursor, "a*", 1, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 0);
+  ASSERT_TRUE(score_members_match(score_member_out, {{0, "a_3_"}}));
+
 
 
   // ***************** Group 7 Test *****************
@@ -4103,25 +4128,50 @@ TEST_F(ZSetsTest, ZScanTest) {
   cursor = 0, next_cursor = 0;
   s = db.ZScan("GP7_ZSCAN_KEY", cursor, "b*", 3, &score_member_out, &next_cursor);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(score_member_out.size(), 0);
-  ASSERT_EQ(next_cursor, 3);
-  ASSERT_TRUE(score_members_match(score_member_out, {}));
-
-  score_member_out.clear();
-  cursor = next_cursor, next_cursor = 0;
-  s = db.ZScan("GP7_ZSCAN_KEY", cursor, "b*", 3, &score_member_out, &next_cursor);
-  ASSERT_TRUE(s.ok());
   ASSERT_EQ(score_member_out.size(), 3);
-  ASSERT_EQ(next_cursor, 6);
+  ASSERT_EQ(next_cursor, 0);
   ASSERT_TRUE(score_members_match(score_member_out, {{0, "b_1_"}, {0, "b_2_"}, {0, "b_3_"}}));
 
   score_member_out.clear();
-  cursor = next_cursor, next_cursor = 0;
-  s = db.ZScan("GP7_ZSCAN_KEY", cursor, "b*", 3, &score_member_out, &next_cursor);
+  cursor = 0, next_cursor = 0;
+  s = db.ZScan("GP7_ZSCAN_KEY", cursor, "b*", 2, &score_member_out, &next_cursor);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(score_member_out.size(), 0);
+  ASSERT_EQ(score_member_out.size(), 2);
+  ASSERT_EQ(next_cursor, 2);
+  ASSERT_TRUE(score_members_match(score_member_out, {{0, "b_1_"}, {0, "b_2_"}}));
+
+  score_member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.ZScan("GP7_ZSCAN_KEY", cursor, "b*", 2, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 1);
   ASSERT_EQ(next_cursor, 0);
-  ASSERT_TRUE(score_members_match(score_member_out, {}));
+  ASSERT_TRUE(score_members_match(score_member_out, {{0, "b_3_"}}));
+
+  score_member_out.clear();
+  cursor = 0, next_cursor = 0;
+  s = db.ZScan("GP7_ZSCAN_KEY", cursor, "b*", 1, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 1);
+  ASSERT_TRUE(score_members_match(score_member_out, {{0, "b_1_"}}));
+
+  score_member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.ZScan("GP7_ZSCAN_KEY", cursor, "b*", 1, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 2);
+  ASSERT_TRUE(score_members_match(score_member_out, {{0, "b_2_"}}));
+
+  score_member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.ZScan("GP7_ZSCAN_KEY", cursor, "b*", 1, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 0);
+  ASSERT_TRUE(score_members_match(score_member_out, {{0, "b_3_"}}));
+
 
 
   // ***************** Group 8 Test *****************
@@ -4139,25 +4189,49 @@ TEST_F(ZSetsTest, ZScanTest) {
   cursor = 0, next_cursor = 0;
   s = db.ZScan("GP8_ZSCAN_KEY", cursor, "c*", 3, &score_member_out, &next_cursor);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(score_member_out.size(), 0);
-  ASSERT_EQ(next_cursor, 3);
-  ASSERT_TRUE(score_members_match(score_member_out, {}));
-
-  score_member_out.clear();
-  cursor = next_cursor, next_cursor = 0;
-  s = db.ZScan("GP8_ZSCAN_KEY", cursor, "c*", 3, &score_member_out, &next_cursor);
-  ASSERT_TRUE(s.ok());
-  ASSERT_EQ(score_member_out.size(), 0);
-  ASSERT_EQ(next_cursor, 6);
-  ASSERT_TRUE(score_members_match(score_member_out, {}));
-
-  score_member_out.clear();
-  cursor = next_cursor, next_cursor = 0;
-  s = db.ZScan("GP8_ZSCAN_KEY", cursor, "c*", 3, &score_member_out, &next_cursor);
-  ASSERT_TRUE(s.ok());
   ASSERT_EQ(score_member_out.size(), 3);
   ASSERT_EQ(next_cursor, 0);
   ASSERT_TRUE(score_members_match(score_member_out, {{0, "c_1_"}, {0, "c_2_"}, {0, "c_3_"}}));
+
+  score_member_out.clear();
+  cursor = 0, next_cursor = 0;
+  s = db.ZScan("GP8_ZSCAN_KEY", cursor, "c*", 2, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 2);
+  ASSERT_EQ(next_cursor, 2);
+  ASSERT_TRUE(score_members_match(score_member_out, {{0, "c_1_"}, {0, "c_2_"}}));
+
+  score_member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.ZScan("GP8_ZSCAN_KEY", cursor, "c*", 2, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 0);
+  ASSERT_TRUE(score_members_match(score_member_out, {{0, "c_3_"}}));
+
+  score_member_out.clear();
+  cursor = 0, next_cursor = 0;
+  s = db.ZScan("GP8_ZSCAN_KEY", cursor, "c*", 1, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 1);
+  ASSERT_TRUE(score_members_match(score_member_out, {{0, "c_1_"}}));
+
+  score_member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.ZScan("GP8_ZSCAN_KEY", cursor, "c*", 1, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 2);
+  ASSERT_TRUE(score_members_match(score_member_out, {{0, "c_2_"}}));
+
+  score_member_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.ZScan("GP8_ZSCAN_KEY", cursor, "c*", 1, &score_member_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_member_out.size(), 1);
+  ASSERT_EQ(next_cursor, 0);
+  ASSERT_TRUE(score_members_match(score_member_out, {{0, "c_3_"}}));
 
 
   // ***************** Group 9 Test *****************
@@ -4173,22 +4247,6 @@ TEST_F(ZSetsTest, ZScanTest) {
 
   score_member_out.clear();
   cursor = 0, next_cursor = 0;
-  s = db.ZScan("GP9_ZSCAN_KEY", cursor, "d*", 3, &score_member_out, &next_cursor);
-  ASSERT_TRUE(s.ok());
-  ASSERT_EQ(score_member_out.size(), 0);
-  ASSERT_EQ(next_cursor, 3);
-  ASSERT_TRUE(score_members_match(score_member_out, {}));
-
-  score_member_out.clear();
-  cursor = next_cursor, next_cursor = 0;
-  s = db.ZScan("GP9_ZSCAN_KEY", cursor, "d*", 3, &score_member_out, &next_cursor);
-  ASSERT_TRUE(s.ok());
-  ASSERT_EQ(score_member_out.size(), 0);
-  ASSERT_EQ(next_cursor, 6);
-  ASSERT_TRUE(score_members_match(score_member_out, {}));
-
-  score_member_out.clear();
-  cursor = next_cursor, next_cursor = 0;
   s = db.ZScan("GP9_ZSCAN_KEY", cursor, "d*", 3, &score_member_out, &next_cursor);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(score_member_out.size(), 0);

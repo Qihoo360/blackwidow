@@ -1149,24 +1149,48 @@ TEST_F(HashesTest, HScanTest) {
   s = db.HScan("GP6_HSCAN_KEY", cursor, "a*", 3, &field_value_out, &next_cursor);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(field_value_out.size(), 3);
-  ASSERT_EQ(next_cursor, 3);
+  ASSERT_EQ(next_cursor, 0);
   ASSERT_TRUE(field_value_match(field_value_out, {{"a_1_", "v"}, {"a_2_", "v"}, {"a_3_", "v"}}));
 
   field_value_out.clear();
-  cursor = next_cursor, next_cursor = 0;
-  s = db.HScan("GP6_HSCAN_KEY", cursor, "a*", 3, &field_value_out, &next_cursor);
+  cursor = 0, next_cursor = 0;
+  s = db.HScan("GP6_HSCAN_KEY", cursor, "a*", 2, &field_value_out, &next_cursor);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(field_value_out.size(), 0);
-  ASSERT_EQ(next_cursor, 6);
-  ASSERT_TRUE(field_value_match(field_value_out, {}));
+  ASSERT_EQ(field_value_out.size(), 2);
+  ASSERT_EQ(next_cursor, 2);
+  ASSERT_TRUE(field_value_match(field_value_out, {{"a_1_", "v"}, {"a_2_", "v"}}));
 
   field_value_out.clear();
   cursor = next_cursor, next_cursor = 0;
-  s = db.HScan("GP6_HSCAN_KEY", cursor, "a*", 3, &field_value_out, &next_cursor);
+  s = db.HScan("GP6_HSCAN_KEY", cursor, "a*", 2, &field_value_out, &next_cursor);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(field_value_out.size(), 0);
+  ASSERT_EQ(field_value_out.size(), 1);
   ASSERT_EQ(next_cursor, 0);
-  ASSERT_TRUE(field_value_match(field_value_out, {}));
+  ASSERT_TRUE(field_value_match(field_value_out, {{"a_3_", "v"}}));
+
+  field_value_out.clear();
+  cursor = 0, next_cursor = 0;
+  s = db.HScan("GP6_HSCAN_KEY", cursor, "a*", 1, &field_value_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 1);
+  ASSERT_EQ(next_cursor, 1);
+  ASSERT_TRUE(field_value_match(field_value_out, {{"a_1_", "v"}}));
+
+  field_value_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.HScan("GP6_HSCAN_KEY", cursor, "a*", 1, &field_value_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 1);
+  ASSERT_EQ(next_cursor, 2);
+  ASSERT_TRUE(field_value_match(field_value_out, {{"a_2_", "v"}}));
+
+  field_value_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.HScan("GP6_HSCAN_KEY", cursor, "a*", 1, &field_value_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 1);
+  ASSERT_EQ(next_cursor, 0);
+  ASSERT_TRUE(field_value_match(field_value_out, {{"a_3_", "v"}}));
 
 
   // ***************** Group 7 Test *****************
@@ -1183,25 +1207,49 @@ TEST_F(HashesTest, HScanTest) {
   cursor = 0, next_cursor = 0;
   s = db.HScan("GP7_HSCAN_KEY", cursor, "b*", 3, &field_value_out, &next_cursor);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(field_value_out.size(), 0);
-  ASSERT_EQ(next_cursor, 3);
-  ASSERT_TRUE(field_value_match(field_value_out, {}));
-
-  field_value_out.clear();
-  cursor = next_cursor, next_cursor = 0;
-  s = db.HScan("GP7_HSCAN_KEY", cursor, "b*", 3, &field_value_out, &next_cursor);
-  ASSERT_TRUE(s.ok());
   ASSERT_EQ(field_value_out.size(), 3);
-  ASSERT_EQ(next_cursor, 6);
+  ASSERT_EQ(next_cursor, 0);
   ASSERT_TRUE(field_value_match(field_value_out, {{"b_1_", "v"}, {"b_2_", "v"}, {"b_3_", "v"}}));
 
   field_value_out.clear();
-  cursor = next_cursor, next_cursor = 0;
-  s = db.HScan("GP7_HSCAN_KEY", cursor, "b*", 3, &field_value_out, &next_cursor);
+  cursor = 0, next_cursor = 0;
+  s = db.HScan("GP7_HSCAN_KEY", cursor, "b*", 2, &field_value_out, &next_cursor);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(field_value_out.size(), 0);
+  ASSERT_EQ(field_value_out.size(), 2);
+  ASSERT_EQ(next_cursor, 2);
+  ASSERT_TRUE(field_value_match(field_value_out, {{"b_1_", "v"}, {"b_2_", "v"}}));
+
+  field_value_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.HScan("GP7_HSCAN_KEY", cursor, "b*", 2, &field_value_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 1);
   ASSERT_EQ(next_cursor, 0);
-  ASSERT_TRUE(field_value_match(field_value_out, {}));
+  ASSERT_TRUE(field_value_match(field_value_out, {{"b_3_", "v"}}));
+
+  field_value_out.clear();
+  cursor = 0, next_cursor = 0;
+  s = db.HScan("GP7_HSCAN_KEY", cursor, "b*", 1, &field_value_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 1);
+  ASSERT_EQ(next_cursor, 1);
+  ASSERT_TRUE(field_value_match(field_value_out, {{"b_1_", "v"}}));
+
+  field_value_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.HScan("GP7_HSCAN_KEY", cursor, "b*", 1, &field_value_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 1);
+  ASSERT_EQ(next_cursor, 2);
+  ASSERT_TRUE(field_value_match(field_value_out, {{"b_2_", "v"}}));
+
+  field_value_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.HScan("GP7_HSCAN_KEY", cursor, "b*", 1, &field_value_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 1);
+  ASSERT_EQ(next_cursor, 0);
+  ASSERT_TRUE(field_value_match(field_value_out, {{"b_3_", "v"}}));
 
 
   // ***************** Group 8 Test *****************
@@ -1218,25 +1266,49 @@ TEST_F(HashesTest, HScanTest) {
   cursor = 0, next_cursor = 0;
   s = db.HScan("GP8_HSCAN_KEY", cursor, "c*", 3, &field_value_out, &next_cursor);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(field_value_out.size(), 0);
-  ASSERT_EQ(next_cursor, 3);
-  ASSERT_TRUE(field_value_match(field_value_out, {}));
-
-  field_value_out.clear();
-  cursor = next_cursor, next_cursor = 0;
-  s = db.HScan("GP8_HSCAN_KEY", cursor, "c*", 3, &field_value_out, &next_cursor);
-  ASSERT_TRUE(s.ok());
-  ASSERT_EQ(field_value_out.size(), 0);
-  ASSERT_EQ(next_cursor, 6);
-  ASSERT_TRUE(field_value_match(field_value_out, {}));
-
-  field_value_out.clear();
-  cursor = next_cursor, next_cursor = 0;
-  s = db.HScan("GP8_HSCAN_KEY", cursor, "c*", 3, &field_value_out, &next_cursor);
-  ASSERT_TRUE(s.ok());
   ASSERT_EQ(field_value_out.size(), 3);
   ASSERT_EQ(next_cursor, 0);
   ASSERT_TRUE(field_value_match(field_value_out, {{"c_1_", "v"}, {"c_2_", "v"}, {"c_3_", "v"}}));
+
+  field_value_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.HScan("GP8_HSCAN_KEY", cursor, "c*", 2, &field_value_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 2);
+  ASSERT_EQ(next_cursor, 2);
+  ASSERT_TRUE(field_value_match(field_value_out, {{"c_1_", "v"}, {"c_2_", "v"}}));
+
+  field_value_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.HScan("GP8_HSCAN_KEY", cursor, "c*", 2, &field_value_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 1);
+  ASSERT_EQ(next_cursor, 0);
+  ASSERT_TRUE(field_value_match(field_value_out, {{"c_3_", "v"}}));
+
+  field_value_out.clear();
+  cursor = 0, next_cursor = 0;
+  s = db.HScan("GP8_HSCAN_KEY", cursor, "c*", 1, &field_value_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 1);
+  ASSERT_EQ(next_cursor, 1);
+  ASSERT_TRUE(field_value_match(field_value_out, {{"c_1_", "v"}}));
+
+  field_value_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.HScan("GP8_HSCAN_KEY", cursor, "c*", 1, &field_value_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 1);
+  ASSERT_EQ(next_cursor, 2);
+  ASSERT_TRUE(field_value_match(field_value_out, {{"c_2_", "v"}}));
+
+  field_value_out.clear();
+  cursor = next_cursor, next_cursor = 0;
+  s = db.HScan("GP8_HSCAN_KEY", cursor, "c*", 1, &field_value_out, &next_cursor);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 1);
+  ASSERT_EQ(next_cursor, 0);
+  ASSERT_TRUE(field_value_match(field_value_out, {{"c_3_", "v"}}));
 
 
   // ***************** Group 9 Test *****************
@@ -1251,22 +1323,6 @@ TEST_F(HashesTest, HScanTest) {
 
   field_value_out.clear();
   cursor = 0, next_cursor = 0;
-  s = db.HScan("GP9_HSCAN_KEY", cursor, "d*", 3, &field_value_out, &next_cursor);
-  ASSERT_TRUE(s.ok());
-  ASSERT_EQ(field_value_out.size(), 0);
-  ASSERT_EQ(next_cursor, 3);
-  ASSERT_TRUE(field_value_match(field_value_out, {}));
-
-  field_value_out.clear();
-  cursor = next_cursor, next_cursor = 0;
-  s = db.HScan("GP9_HSCAN_KEY", cursor, "d*", 3, &field_value_out, &next_cursor);
-  ASSERT_TRUE(s.ok());
-  ASSERT_EQ(field_value_out.size(), 0);
-  ASSERT_EQ(next_cursor, 6);
-  ASSERT_TRUE(field_value_match(field_value_out, {}));
-
-  field_value_out.clear();
-  cursor = next_cursor, next_cursor = 0;
   s = db.HScan("GP9_HSCAN_KEY", cursor, "d*", 3, &field_value_out, &next_cursor);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(field_value_out.size(), 0);

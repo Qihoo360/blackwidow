@@ -19,7 +19,6 @@ namespace blackwidow {
 
 RedisSets::RedisSets() {
   spop_counts_store_.max_size_ = 1000;
-  sscan_cursors_store_.max_size_ = 5000;
 }
 
 RedisSets::~RedisSets() {
@@ -1075,15 +1074,22 @@ Status RedisSets::SScan(const Slice& key, int64_t cursor, const std::string& pat
       *next_cursor = 0;
       return Status::NotFound();
     } else {
-      std::string start_member;
+      std::string sub_member;
+      std::string start_point;
       int32_t version = parsed_sets_meta_value.version();
-      s = GetSScanStartMember(key, pattern, cursor, &start_member);
+      s = GetScanStartPoint(key, pattern, cursor, &start_point);
       if (s.IsNotFound()) {
         cursor = 0;
+        if (isTailWildcard(pattern)) {
+          start_point = pattern.substr(0, pattern.size() - 1);
+        }
+      }
+      if (isTailWildcard(pattern)) {
+        sub_member = pattern.substr(0, pattern.size() - 1);
       }
 
-      SetsMemberKey sets_member_prefix(key, version, Slice());
-      SetsMemberKey sets_member_key(key, version, start_member);
+      SetsMemberKey sets_member_prefix(key, version, sub_member);
+      SetsMemberKey sets_member_key(key, version, start_point);
       std::string prefix = sets_member_prefix.Encode().ToString();
       rocksdb::Iterator* iter = db_->NewIterator(read_options, handles_[1]);
       for (iter->Seek(sets_member_key.Encode());
@@ -1101,7 +1107,7 @@ Status RedisSets::SScan(const Slice& key, int64_t cursor, const std::string& pat
         *next_cursor = cursor + step_length;
         ParsedSetsMemberKey parsed_sets_member_key(iter->key());
         std::string next_member = parsed_sets_member_key.member().ToString();
-        StoreSScanNextMember(key, pattern, *next_cursor, next_member);
+        StoreScanNextPoint(key, pattern, *next_cursor, next_member);
       } else {
         *next_cursor = 0;
       }
@@ -1111,32 +1117,6 @@ Status RedisSets::SScan(const Slice& key, int64_t cursor, const std::string& pat
     *next_cursor = 0;
     return s;
   }
-  return Status::OK();
-}
-
-Status RedisSets::GetSScanStartMember(const Slice& key, const Slice& pattern, int64_t cursor, std::string* start_member) {
-  slash::MutexLock l(&sscan_cursors_mutex_);
-  std::string index_key = key.ToString() + "_" + pattern.ToString() + "_" + std::to_string(cursor);
-  if (sscan_cursors_store_.map_.find(index_key) == sscan_cursors_store_.map_.end()) {
-    return Status::NotFound();
-  } else {
-    *start_member = sscan_cursors_store_.map_[index_key];
-  }
-  return Status::OK();
-}
-
-Status RedisSets::StoreSScanNextMember(const Slice& key, const Slice& pattern, int64_t cursor, const std::string& next_member) {
-  slash::MutexLock l(&sscan_cursors_mutex_);
-  std::string index_key = key.ToString() + "_" + pattern.ToString() +  "_" + std::to_string(cursor);
-  if (sscan_cursors_store_.list_.size() > sscan_cursors_store_.max_size_) {
-    std::string tail = sscan_cursors_store_.list_.back();
-    sscan_cursors_store_.map_.erase(tail);
-    sscan_cursors_store_.list_.pop_back();
-  }
-
-  sscan_cursors_store_.map_[index_key] = next_member;
-  sscan_cursors_store_.list_.remove(index_key);
-  sscan_cursors_store_.list_.push_front(index_key);
   return Status::OK();
 }
 

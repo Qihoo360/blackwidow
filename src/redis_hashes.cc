@@ -14,10 +14,6 @@
 
 namespace blackwidow {
 
-RedisHashes::RedisHashes() {
-  hscan_cursors_store_.max_size_ = 5000;
-}
-
 RedisHashes::~RedisHashes() {
   std::vector<rocksdb::ColumnFamilyHandle*> tmp_handles = handles_;
   handles_.clear();
@@ -718,14 +714,22 @@ Status RedisHashes::HScan(const Slice& key, int64_t cursor, const std::string& p
       *next_cursor = 0;
       return Status::NotFound();
     } else {
-      std::string start_field;
+      std::string sub_field;
+      std::string start_point;
       int32_t version = parsed_hashes_meta_value.version();
-      s = GetHScanStartField(key, pattern, cursor, &start_field);
+      s = GetScanStartPoint(key, pattern, cursor, &start_point);
       if (s.IsNotFound()) {
         cursor = 0;
+        if (isTailWildcard(pattern)) {
+          start_point = pattern.substr(0, pattern.size() - 1);
+        }
       }
-      HashesDataKey hashes_data_prefix(key, version, Slice());
-      HashesDataKey hashes_start_data_key(key, version, start_field);
+      if (isTailWildcard(pattern)) {
+        sub_field = pattern.substr(0, pattern.size() - 1);
+      }
+
+      HashesDataKey hashes_data_prefix(key, version, sub_field);
+      HashesDataKey hashes_start_data_key(key, version, start_point);
       std::string prefix = hashes_data_prefix.Encode().ToString();
       rocksdb::Iterator* iter = db_->NewIterator(read_options, handles_[1]);
       for (iter->Seek(hashes_start_data_key.Encode());
@@ -743,7 +747,7 @@ Status RedisHashes::HScan(const Slice& key, int64_t cursor, const std::string& p
         *next_cursor = cursor + step_length;
         ParsedHashesDataKey parsed_hashes_data_key(iter->key());
         std::string next_field = parsed_hashes_data_key.field().ToString();
-        StoreHScanNextField(key, pattern, *next_cursor, next_field);
+        StoreScanNextPoint(key, pattern, *next_cursor, next_field);
       } else {
         *next_cursor = 0;
       }
@@ -753,32 +757,6 @@ Status RedisHashes::HScan(const Slice& key, int64_t cursor, const std::string& p
     *next_cursor = 0;
     return s;
   }
-  return Status::OK();
-}
-
-Status RedisHashes::GetHScanStartField(const Slice& key, const Slice& pattern, int64_t cursor, std::string* start_field) {
-  slash::MutexLock l(&hscan_cursors_mutex_);
-  std::string index_key = key.ToString() + "_" + pattern.ToString() + "_" + std::to_string(cursor);
-  if (hscan_cursors_store_.map_.find(index_key) == hscan_cursors_store_.map_.end()) {
-    return Status::NotFound();
-  } else {
-    *start_field = hscan_cursors_store_.map_[index_key];
-  }
-  return Status::OK();
-}
-
-Status RedisHashes::StoreHScanNextField(const Slice& key, const Slice& pattern, int64_t cursor, const std::string& next_field) {
-  slash::MutexLock l(&hscan_cursors_mutex_);
-  std::string index_key = key.ToString() + "_" + pattern.ToString() + "_" + std::to_string(cursor);
-  if (hscan_cursors_store_.list_.size() > hscan_cursors_store_.max_size_) {
-    std::string tail = hscan_cursors_store_.list_.back();
-    hscan_cursors_store_.map_.erase(tail);
-    hscan_cursors_store_.list_.pop_back();
-  }
-
-  hscan_cursors_store_.map_[index_key] = next_field;
-  hscan_cursors_store_.list_.remove(index_key);
-  hscan_cursors_store_.list_.push_front(index_key);
   return Status::OK();
 }
 

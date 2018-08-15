@@ -14,7 +14,6 @@
 
 #include "src/redis.h"
 #include "src/custom_comparator.h"
-#include "blackwidow/blackwidow.h"
 
 #define SPOP_COMPACT_THRESHOLD_COUNT     500
 #define SPOP_COMPACT_THRESHOLD_DURATION  1000         // 1000us
@@ -90,14 +89,6 @@ class RedisSets : public Redis {
     BlackWidow::LRU<std::string, uint64_t> spop_counts_store_;
     Status ResetSpopCount(const std::string& key);
     Status AddAndGetSpopCount(const std::string& key, uint64_t* count);
-
-    // For SScan
-    slash::Mutex sscan_cursors_mutex_;
-    BlackWidow::LRU<std::string, std::string> sscan_cursors_store_;
-
-    Status GetSScanStartMember(const Slice& key, const Slice& pattern, int64_t cursor, std::string* start_member);
-    Status StoreSScanNextMember(const Slice& key, const Slice& pattern, int64_t cursor, const std::string& next_member);
-
 };
 
 }  //  namespace blackwidow

@@ -27,6 +27,7 @@ namespace blackwidow {
   int delete_dir(const char* dirname);
   int is_dir(const char* filename);
   int CalculateStartAndEndKey(const std::string& key, std::string* start_key, std::string* end_key);
+  bool isTailWildcard(const std::string& pattern);
 }
 
 #endif  //  SRC_UTIL_H_

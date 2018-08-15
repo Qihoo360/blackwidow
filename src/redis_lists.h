@@ -12,7 +12,6 @@
 
 #include "src/redis.h"
 #include "src/custom_comparator.h"
-#include "blackwidow/blackwidow.h"
 
 namespace blackwidow {
 
