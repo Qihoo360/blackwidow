@@ -1473,48 +1473,26 @@ uint64_t BlackWidow::GetProperty(const std::string &property) {
   char *pEnd;
   std::string out;
 
-  strings_db_->GetProperty(property, &out);
-  result += std::strtoull(out.c_str(), &pEnd, 10);
-  hashes_db_->GetProperty(property, &out);
-  result += std::strtoull(out.c_str(), &pEnd, 10);
-  zsets_db_->GetProperty(property, &out);
-  result += std::strtoull(out.c_str(), &pEnd, 10);
-  sets_db_->GetProperty(property, &out);
-  result += std::strtoull(out.c_str(), &pEnd, 10);
-  lists_db_->GetProperty(property, &out);
-  result += std::strtoull(out.c_str(), &pEnd, 10);
-
-  //printf ("cur-size-all-mem-tables: (%s)\n", out.c_str());
+  std::vector<Redis*> dbs = {strings_db_, lists_db_, hashes_db_, zsets_db_, sets_db_};
+  for (auto iter = dbs.begin(); iter != dbs.end(); ++iter) {
+    (*iter)->GetProperty(property, &out);
+    result += std::strtoull(out.c_str(), &pEnd, 10);
+  }
   return result;
 }
 
 Status BlackWidow::GetKeyNum(std::vector<uint64_t>* nums) {
   uint64_t num;
-  if (!scan_keynum_exit_) {
-    strings_db_->ScanKeyNum(&num);
+  // NOTE: keep the db order with string, hash, list, zset, set
+  std::vector<Redis*> dbs = {strings_db_, hashes_db_, lists_db_, zsets_db_, sets_db_};
+  for (auto iter = dbs.begin(); iter != dbs.end(); ++iter) {
+    // check the scanner was stopped or not, before scanning the next db
+    if (scan_keynum_exit_) {
+      break;
+    }
+    (*iter)->ScanKeyNum(&num);
     nums->push_back(num);
   }
-
-  if (!scan_keynum_exit_) {
-    hashes_db_->ScanKeyNum(&num);
-    nums->push_back(num);
-  }
-
-  if (!scan_keynum_exit_) {
-    lists_db_->ScanKeyNum(&num);
-    nums->push_back(num);
-  }
-
-  if (!scan_keynum_exit_) {
-    zsets_db_->ScanKeyNum(&num);
-    nums->push_back(num);
-  }
-
-  if (!scan_keynum_exit_) {
-    sets_db_->ScanKeyNum(&num);
-    nums->push_back(num);
-  }
-
   if (scan_keynum_exit_) {
     scan_keynum_exit_ = false;
     return Status::Corruption("exit");
