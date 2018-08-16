@@ -173,13 +173,23 @@ Status BlackWidow::MGet(const std::vector<std::string>& keys,
   return strings_db_->MGet(keys, values);
 }
 
-Status BlackWidow::Setnx(const Slice& key, const Slice& value, int32_t* ret, const int32_t ttl) {
+Status BlackWidow::Setnx(const Slice& key, const Slice& value,
+                         int32_t* ret, const int32_t ttl) {
   return strings_db_->Setnx(key, value, ret, ttl);
 }
 
 Status BlackWidow::MSetnx(const std::vector<KeyValue>& kvs,
                           int32_t* ret) {
   return strings_db_->MSetnx(kvs, ret);
+}
+
+Status BlackWidow::Setvx(const Slice& key, const Slice& value,
+                         const Slice& new_value, int32_t* ret, const int32_t ttl) {
+  return strings_db_->Setvx(key, value, new_value, ret, ttl);
+}
+
+Status BlackWidow::Delvx(const Slice& key, const Slice& value, int32_t* ret) {
+  return strings_db_->Delvx(key, value, ret);
 }
 
 Status BlackWidow::Setrange(const Slice& key, int64_t start_offset,
@@ -1473,7 +1483,7 @@ uint64_t BlackWidow::GetProperty(const std::string &property) {
   char *pEnd;
   std::string out;
 
-  std::vector<Redis*> dbs = {strings_db_, lists_db_, hashes_db_, zsets_db_, sets_db_};
+  std::vector<Redis*> dbs = {strings_db_, hashes_db_, lists_db_, zsets_db_, sets_db_};
   for (auto iter = dbs.begin(); iter != dbs.end(); ++iter) {
     (*iter)->GetProperty(property, &out);
     result += std::strtoull(out.c_str(), &pEnd, 10);

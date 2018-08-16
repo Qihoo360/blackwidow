@@ -477,8 +477,7 @@ bool isTailWildcard(const std::string& pattern) {
     } else {
       for (uint32_t idx = 0; idx < pattern.size() - 1; ++idx) {
         if (pattern[idx] == '*' || pattern[idx] == '?'
-          || pattern[idx] == '[' || pattern[idx] == '^'
-          || pattern[idx] == ']') {
+          || pattern[idx] == '[' || pattern[idx] == ']') {
           return false;
         }
       }

@@ -319,6 +319,7 @@ Status RedisStrings::Decrby(const Slice& key, int64_t value, int64_t* ret) {
 }
 
 Status RedisStrings::Get(const Slice& key, std::string* value) {
+  value->clear();
   Status s = db_->Get(default_read_options_, key, value);
   if (s.ok()) {
     ParsedStringsValue parsed_strings_value(value);
@@ -680,6 +681,63 @@ Status RedisStrings::Setnx(const Slice& key, const Slice& value, int32_t* ret, c
     if (s.ok()) {
       *ret = 1;
     }
+  }
+  return s;
+}
+
+Status RedisStrings::Setvx(const Slice& key, const Slice& value,
+                           const Slice& new_value, int32_t* ret, const int32_t ttl) {
+  *ret = 0;
+  std::string old_value;
+  ScopeRecordLock l(lock_mgr_, key);
+  Status s = db_->Get(default_read_options_, key, &old_value);
+  if (s.ok()) {
+    ParsedStringsValue parsed_strings_value(&old_value);
+    if (parsed_strings_value.IsStale()) {
+      *ret = 0;
+    } else {
+      if (!value.compare(parsed_strings_value.value())) {
+        StringsValue strings_value(new_value);
+        if (ttl > 0) {
+          strings_value.SetRelativeTimestamp(ttl);
+        }
+        s = db_->Put(default_write_options_, key, strings_value.Encode());
+        if (!s.ok()) {
+          return s;
+        }
+        *ret = 1;
+      } else {
+        *ret = -1;
+      }
+    }
+  } else if (s.IsNotFound()) {
+    *ret = 0;
+  } else {
+    return s;
+  }
+  return Status::OK();
+}
+
+Status RedisStrings::Delvx(const Slice& key, const Slice& value, int32_t* ret) {
+  *ret = 0;
+  std::string old_value;
+  ScopeRecordLock l(lock_mgr_, key);
+  Status s = db_->Get(default_read_options_, key, &old_value);
+  if (s.ok()) {
+    ParsedStringsValue parsed_strings_value(&old_value);
+    if (parsed_strings_value.IsStale()) {
+      *ret = 0;
+      return Status::NotFound("Stale");
+    } else {
+      if (!value.compare(parsed_strings_value.value())) {
+        *ret = 1;
+        return db_->Delete(default_write_options_, key);
+      } else {
+        *ret = -1;
+      }
+    }
+  } else if (s.IsNotFound()) {
+    *ret = 0;
   }
   return s;
 }

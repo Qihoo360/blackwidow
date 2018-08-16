@@ -199,6 +199,18 @@ class BlackWidow {
   // if just a single key already exists.
   Status MSetnx(const std::vector<KeyValue>& kvs, int32_t* ret);
 
+  // Set key to hold string new_value if key currently hold the give value
+  // return 1 if the key currently hold the give value And override success
+  // return 0 if the key doesn't exist And override fail
+  // return -1 if the key currently does not hold the given value And override fail
+  Status Setvx(const Slice& key, const Slice& value, const Slice& new_value, int32_t* ret, const int32_t ttl = 0);
+
+  // delete the key that holds a given value
+  // return 1 if the key currently hold the give value And delete success
+  // return 0 if the key doesn't exist And del fail
+  // return -1 if the key currently does not hold the given value And del fail
+  Status Delvx(const Slice& key, const Slice& value, int32_t* ret);
+
   // Set key to hold string value if key does not exist
   // return the length of the string after it was modified by the command
   Status Setrange(const Slice& key, int64_t start_offset,

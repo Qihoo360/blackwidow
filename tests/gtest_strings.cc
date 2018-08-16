@@ -42,6 +42,26 @@ static bool make_expired(blackwidow::BlackWidow *const db,
   return true;
 }
 
+static bool string_ttl(blackwidow::BlackWidow *const db,
+                       const Slice& key, int32_t* ttl) {
+  std::map<blackwidow::DataType, int64_t> type_ttl;
+  std::map<blackwidow::DataType, Status> type_status;
+  type_ttl = db->TTL(key, &type_status);
+  for (const auto& item : type_status) {
+    if (item.second != Status::OK()
+      && item.second != Status::NotFound()) {
+      return false;
+    }
+  }
+  if (type_ttl.find(blackwidow::DataType::kStrings) == type_ttl.end()) {
+    *ttl = -1;
+    return false;
+  } else {
+    *ttl = type_ttl[blackwidow::DataType::kStrings];
+    return true;
+  }
+}
+
 // Append
 TEST_F(StringsTest, AppendTest) {
   int32_t ret;
@@ -452,6 +472,160 @@ TEST_F(StringsTest, SetnxTest) {
   s = db.Setnx("SETNX_KEY", "TEST_VALUE", &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 0);
+}
+
+// Setvx
+TEST_F(StringsTest, SetvxTest) {
+
+  int32_t ret, ttl;
+  std::string value;
+  // ***************** Group 1 Test *****************
+  s = db.Set("GP1_SETVX_KEY", "GP1_SETVX_VALUE");
+  ASSERT_TRUE(s.ok());
+
+  s = db.Setvx("GP1_SETVX_KEY", "GP1_SETVX_VALUE", "GP1_SETVX_NEW_VALUE", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+
+  s = db.Get("GP1_SETVX_KEY", &value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(value, "GP1_SETVX_NEW_VALUE");
+
+
+  // ***************** Group 2 Test *****************
+  s = db.Setvx("GP2_SETVX_KEY", "GP2_SETVX_VALUE", "GP2_SETVX_NEW_VALUE", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 0);
+
+  s = db.Get("GP2_SETVX_KEY", &value);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(value, "");
+
+
+  // ***************** Group 3 Test *****************
+  s = db.Set("GP3_SETVX_KEY", "GP3_SETVX_VALUE");
+  ASSERT_TRUE(s.ok());
+
+  s = db.Setvx("GP3_SETVX_KEY", "GP3_SETVX_OTHER_VALUE", "GP3_SETVX_NEW_VALUE", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, -1);
+
+  s = db.Get("GP3_SETVX_KEY", &value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(value, "GP3_SETVX_VALUE");
+
+
+  // ***************** Group 4 Test *****************
+  s = db.Set("GP4_SETVX_KEY", "GP4_SETVX_VALUE");
+  ASSERT_TRUE(s.ok());
+
+  ASSERT_TRUE(make_expired(&db, "GP4_SETVX_KEY"));
+  s = db.Setvx("GP4_SETVX_KEY", "GP4_SETVX_VALUE", "GP4_SETVX_NEW_VALUE", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 0);
+
+  s = db.Get("GP4_SETVX_KEY", &value);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(value, "");
+
+
+  // ***************** Group 5 Test *****************
+  s = db.Set("GP5_SETVX_KEY", "GP5_SETVX_VALUE");
+  ASSERT_TRUE(s.ok());
+
+  s = db.Setvx("GP5_SETVX_KEY", "GP5_SETVX_VALUE", "GP5_SETVX_NEW_VALUE", &ret, 10);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+
+  s = db.Get("GP5_SETVX_KEY", &value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(value, "GP5_SETVX_NEW_VALUE");
+
+  ASSERT_TRUE(string_ttl(&db, "GP5_SETVX_KEY", &ttl));
+  ASSERT_LE(0, ttl);
+  ASSERT_GE(10, ttl);
+
+
+  // ***************** Group 6 Test *****************
+  s = db.Set("GP6_SETVX_KEY", "GP6_SETVX_VALUE");
+  ASSERT_TRUE(s.ok());
+
+  std::map<blackwidow::DataType, Status> type_status;
+  ret = db.Expire("GP6_SETVX_KEY", 10, &type_status);
+  ASSERT_EQ(ret, 1);
+
+  sleep(1);
+  ASSERT_TRUE(string_ttl(&db, "GP6_SETVX_KEY", &ttl));
+  ASSERT_LT(0, ttl);
+  ASSERT_GT(10, ttl);
+
+  s = db.Setvx("GP6_SETVX_KEY", "GP6_SETVX_VALUE", "GP6_SETVX_NEW_VALUE", &ret, 20);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+
+  s = db.Get("GP6_SETVX_KEY", &value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(value, "GP6_SETVX_NEW_VALUE");
+
+  sleep(1);
+  ASSERT_TRUE(string_ttl(&db, "GP6_SETVX_KEY", &ttl));
+  ASSERT_LE(10, ttl);
+  ASSERT_GE(20, ttl);
+}
+
+// Delvx
+TEST_F(StringsTest, DelvxTest) {
+
+  int32_t ret, ttl;
+  std::string value;
+  // ***************** Group 1 Test *****************
+  s = db.Set("GP1_DELVX_KEY", "GP1_DELVX_VALUE");
+  ASSERT_TRUE(s.ok());
+
+  s = db.Delvx("GP1_DELVX_KEY", "GP1_DELVX_VALUE", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 1);
+
+  s = db.Get("GP1_DELVX_KEY", &value);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(value, "");
+
+
+  // ***************** Group 2 Test *****************
+  s = db.Delvx("GP2_DELVX_KEY", "GP2_DELVX_VALUE", &ret);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(ret, 0);
+
+  s = db.Get("GP2_DELVX_KEY", &value);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(value, "");
+
+
+  // ***************** Group 3 Test *****************
+  s = db.Set("GP3_DELVX_KEY", "GP3_DELVX_VALUE");
+  ASSERT_TRUE(s.ok());
+
+  s = db.Delvx("GP3_DELVX_KEY", "GP3_DELVX_OTHER_VALUE", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, -1);
+
+  s = db.Get("GP3_DELVX_KEY", &value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(value, "GP3_DELVX_VALUE");
+
+
+  // ***************** Group 4 Test *****************
+  s = db.Set("GP4_DELVX_KEY", "GP4_DELVX_VALUE");
+  ASSERT_TRUE(s.ok());
+
+  ASSERT_TRUE(make_expired(&db, "GP4_DELVX_KEY"));
+  s = db.Delvx("GP4_DELVX_KEY", "GP4_DELVX_VALUE", &ret);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(ret, 0);
+
+  s = db.Get("GP4_DELVX_KEY", &value);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(value, "");
 }
 
 // Setrange
