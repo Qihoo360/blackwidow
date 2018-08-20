@@ -23,7 +23,7 @@ class RedisZSets : public Redis {
                         const std::string& db_path) override;
     virtual Status CompactRange(const rocksdb::Slice* begin,
                                 const rocksdb::Slice* end) override;
-    virtual Status GetProperty(const std::string& property, std::string* out) override;
+    virtual Status GetProperty(const std::string& property, uint64_t* out) override;
     virtual Status ScanKeyNum(uint64_t* num) override;
     virtual Status ScanKeys(const std::string& pattern,
                             std::vector<std::string>* keys) override;

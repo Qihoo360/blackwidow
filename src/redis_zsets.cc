@@ -94,8 +94,14 @@ Status RedisZSets::CompactRange(const rocksdb::Slice* begin,
           handles_[2], begin, end);
 }
 
-Status RedisZSets::GetProperty(const std::string& property, std::string* out) {
-  db_->GetProperty(property, out);
+Status RedisZSets::GetProperty(const std::string& property, uint64_t* out) {
+  std::string value;
+  db_->GetProperty(handles_[0], property, &value);
+  *out = std::strtoull(value.c_str(), NULL, 10);
+  db_->GetProperty(handles_[1], property, &value);
+  *out += std::strtoull(value.c_str(), NULL, 10);
+  db_->GetProperty(handles_[2], property, &value);
+  *out += std::strtoull(value.c_str(), NULL, 10);
   return Status::OK();
 }
 

@@ -1472,35 +1472,31 @@ Status BlackWidow::GetUsage(const std::string& type, uint64_t *result) {
   if (type == USAGE_TYPE_ALL || type == USAGE_TYPE_ROCKSDB || type == USAGE_TYPE_ROCKSDB_TABLE_READER) {
     *result += GetProperty("rocksdb.estimate-table-readers-mem");
   }
-  if (type == USAGE_TYPE_ALL || type == USAGE_TYPE_NEMO) {
-    //*result += GetLockUsage();
-  }
   return Status::OK();
 }
 
 uint64_t BlackWidow::GetProperty(const std::string &property) {
+  uint64_t out = 0;
   uint64_t result = 0;
-  char *pEnd;
-  std::string out;
 
   std::vector<Redis*> dbs = {strings_db_, hashes_db_, lists_db_, zsets_db_, sets_db_};
-  for (auto iter = dbs.begin(); iter != dbs.end(); ++iter) {
-    (*iter)->GetProperty(property, &out);
-    result += std::strtoull(out.c_str(), &pEnd, 10);
+  for (const auto& db : dbs) {
+    db->GetProperty(property, &out);
+    result += out;
   }
   return result;
 }
 
 Status BlackWidow::GetKeyNum(std::vector<uint64_t>* nums) {
-  uint64_t num;
+  uint64_t num = 0;
   // NOTE: keep the db order with string, hash, list, zset, set
   std::vector<Redis*> dbs = {strings_db_, hashes_db_, lists_db_, zsets_db_, sets_db_};
-  for (auto iter = dbs.begin(); iter != dbs.end(); ++iter) {
+  for (const auto& db : dbs) {
     // check the scanner was stopped or not, before scanning the next db
     if (scan_keynum_exit_) {
       break;
     }
-    (*iter)->ScanKeyNum(&num);
+    db->ScanKeyNum(&num);
     nums->push_back(num);
   }
   if (scan_keynum_exit_) {

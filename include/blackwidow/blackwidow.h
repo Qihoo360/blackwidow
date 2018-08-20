@@ -27,7 +27,6 @@ const double ZSET_SCORE_MAX = std::numeric_limits<double>::max();
 const double ZSET_SCORE_MIN = std::numeric_limits<double>::lowest();
 
 const std::string USAGE_TYPE_ALL = "all";
-const std::string USAGE_TYPE_NEMO = "nemo";
 const std::string USAGE_TYPE_ROCKSDB = "rocksdb";
 const std::string USAGE_TYPE_ROCKSDB_MEMTABLE = "rocksdb.memtable";
 //const std::string USAGE_TYPE_ROCKSDB_BLOCK_CACHE = "rocksdb.block_cache";

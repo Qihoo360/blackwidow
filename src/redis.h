@@ -36,7 +36,7 @@ class Redis {
                       const std::string& db_path) = 0;
   virtual Status CompactRange(const rocksdb::Slice* begin,
                               const rocksdb::Slice* end) = 0;
-  virtual Status GetProperty(const std::string& property, std::string* out) = 0;
+  virtual Status GetProperty(const std::string& property, uint64_t* out) = 0;
   virtual Status ScanKeyNum(uint64_t* num) = 0;
   virtual Status ScanKeys(const std::string& pattern,
                           std::vector<std::string>* keys) = 0;
