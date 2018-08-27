@@ -1293,7 +1293,8 @@ bool RedisZSets::Scan(const std::string& start_key,
   it->Seek(start_key);
   while (it->Valid() && (*count) > 0) {
     ParsedZSetsMetaValue parsed_zsets_meta_value(it->value());
-    if (parsed_zsets_meta_value.IsStale()) {
+    if (parsed_zsets_meta_value.IsStale()
+      || parsed_zsets_meta_value.count() == 0) {
       it->Next();
       continue;
     } else {
@@ -1308,7 +1309,9 @@ bool RedisZSets::Scan(const std::string& start_key,
     }
   }
 
-  if (it->Valid()) {
+  std::string prefix = isTailWildcard(pattern) ?
+    pattern.substr(0, pattern.size() - 1) : "";
+  if (it->Valid() && it->key().starts_with(prefix)) {
     *next_key = it->key().ToString();
     is_finish = false;
   } else {
