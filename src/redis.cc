@@ -8,7 +8,7 @@
 namespace blackwidow {
 
 Redis::Redis()
-    : lock_mgr_(new LockMgr(1000, 10000, std::make_shared<MutexFactoryImpl>())),
+    : lock_mgr_(new LockMgr(1000, 0, std::make_shared<MutexFactoryImpl>())),
       db_(nullptr) {
     scan_cursors_store_.max_size_ = 5000;
     default_compact_range_options_.exclusive_manual_compaction = false;
