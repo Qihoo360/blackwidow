@@ -324,10 +324,14 @@ Status BlackWidow::HDel(const Slice& key,
   return hashes_db_->HDel(key, fields, ret);
 }
 
-// See SCAN for HSCAN documentation.
 Status BlackWidow::HScan(const Slice& key, int64_t cursor, const std::string& pattern,
                          int64_t count, std::vector<FieldValue>* field_values, int64_t* next_cursor) {
   return hashes_db_->HScan(key, cursor, pattern, count, field_values, next_cursor);
+}
+
+Status BlackWidow::HScanx(const Slice& key, const std::string start_field, const std::string& pattern,
+                          int64_t count, std::vector<FieldValue>* field_values, std::string* next_field) {
+  return hashes_db_->HScanx(key, start_field, pattern, count, field_values, next_field);
 }
 
 // Sets Commands
@@ -966,6 +970,38 @@ int64_t BlackWidow::Scan(int64_t cursor, const std::string& pattern,
       }
   }
   return cursor_ret;
+}
+
+Status BlackWidow::Scanx(const DataType& data_type,
+                         const std::string& start_key,
+                         const std::string& pattern,
+                         int64_t count,
+                         std::vector<std::string>* keys,
+                         std::string* next_key) {
+  Status s;
+  keys->clear();
+  next_key->clear();
+  switch (data_type) {
+    case DataType::kStrings:
+      strings_db_->Scan(start_key, pattern, keys, &count, next_key);
+      break;
+    case DataType::kHashes:
+      hashes_db_->Scan(start_key, pattern, keys, &count, next_key);
+      break;
+    case DataType::kLists:
+      lists_db_->Scan(start_key, pattern, keys, &count, next_key);
+      break;
+    case DataType::kZSets:
+      zsets_db_->Scan(start_key, pattern, keys, &count, next_key);
+      break;
+    case DataType::kSets:
+      sets_db_->Scan(start_key, pattern, keys, &count, next_key);
+      break;
+    default:
+      Status::Corruption("Unsupported data types");
+      break;
+  }
+  return s;
 }
 
 int32_t BlackWidow::Expireat(const Slice& key, int32_t timestamp,

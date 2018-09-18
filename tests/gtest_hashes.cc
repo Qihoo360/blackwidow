@@ -1361,6 +1361,345 @@ TEST_F(HashesTest, HScanTest) {
   ASSERT_TRUE(field_value_match(field_value_out, {}));
 }
 
+// HScanx
+TEST_F(HashesTest, HScanxTest) {
+  std::string start_field;
+  std::string next_field;
+  std::vector<FieldValue> field_value_out;
+
+  // ***************** Group 1 Test *****************
+  // {a,v} {b,v} {c,v} {d,v} {e,v} {f,v} {g,v} {h,v}
+  // 0     1     2     3     4     5     6     7
+  std::vector<FieldValue> gp1_field_value {{"a", "v"}, {"b", "v"}, {"c", "v"},
+                                           {"d", "v"}, {"e", "v"}, {"f", "v"},
+                                           {"g", "v"}, {"h", "v"}};
+  s = db.HMSet("GP1_HSCANX_KEY", gp1_field_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP1_HSCANX_KEY", 8));
+
+  s = db.HScanx("GP1_HSCANX_KEY", "", "*", 3, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 3);
+  ASSERT_EQ(next_field, "d");
+  ASSERT_TRUE(field_value_match(field_value_out, {{"a", "v"}, {"b", "v"}, {"c", "v"}}));
+
+  field_value_out.clear();
+  start_field = next_field;
+  s = db.HScanx("GP1_HSCANX_KEY", start_field, "*", 3, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 3);
+  ASSERT_EQ(next_field, "g");
+  ASSERT_TRUE(field_value_match(field_value_out, {{"d", "v"}, {"e", "v"}, {"f", "v"}}));
+
+  field_value_out.clear();
+  start_field = next_field;
+  s = db.HScanx("GP1_HSCANX_KEY", start_field, "*", 3, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 2);
+  ASSERT_EQ(next_field, "");
+  ASSERT_TRUE(field_value_match(field_value_out, {{"g", "v"}, {"h", "v"}}));
+
+
+  // ***************** Group 2 Test *****************
+  // {a,v} {b,v} {c,v} {d,v} {e,v} {f,v} {g,v} {h,v}
+  // 0     1     2     3     4     5     6     7
+  std::vector<FieldValue> gp2_field_value {{"a", "v"}, {"b", "v"}, {"c", "v"},
+                                           {"d", "v"}, {"e", "v"}, {"f", "v"},
+                                           {"g", "v"}, {"h", "v"}};
+  s = db.HMSet("GP2_HSCANX_KEY", gp2_field_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP2_HSCANX_KEY", 8));
+
+  s = db.HScanx("GP2_HSCANX_KEY", "a", "*", 3, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 3);
+  ASSERT_EQ(next_field, "d");
+  ASSERT_TRUE(field_value_match(field_value_out, {{"a", "v"}, {"b", "v"}, {"c", "v"}}));
+
+  field_value_out.clear();
+  start_field = next_field;
+  s = db.HScanx("GP2_HSCANX_KEY", start_field, "*", 3, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 3);
+  ASSERT_EQ(next_field, "g");
+  ASSERT_TRUE(field_value_match(field_value_out, {{"d", "v"}, {"e", "v"}, {"f", "v"}}));
+
+  field_value_out.clear();
+  start_field = next_field;
+  s = db.HScanx("GP2_HSCANX_KEY", start_field, "*", 3, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 2);
+  ASSERT_EQ(next_field, "");
+  ASSERT_TRUE(field_value_match(field_value_out, {{"g", "v"}, {"h", "v"}}));
+
+
+  // ***************** Group 3 Test *****************
+  // {a,v} {b,v} {c,v} {d,v} {e,v} {f,v} {g,v} {h,v}
+  // 0     1     2     3     4     5     6     7
+  std::vector<FieldValue> gp3_field_value {{"a", "v"}, {"b", "v"}, {"c", "v"},
+                                           {"d", "v"}, {"e", "v"}, {"f", "v"},
+                                           {"g", "v"}, {"h", "v"}};
+  s = db.HMSet("GP3_HSCANX_KEY", gp3_field_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP3_HSCANX_KEY", 8));
+
+  field_value_out.clear();
+  s = db.HScanx("GP3_HSCANX_KEY", "a", "*", 10, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 8);
+  ASSERT_EQ(next_field, "");
+  ASSERT_TRUE(field_value_match(field_value_out, {{"a", "v"}, {"b", "v"}, {"c", "v"},
+                                                  {"d", "v"}, {"e", "v"}, {"f", "v"},
+                                                  {"g", "v"}, {"h", "v"}}));
+
+
+  // ***************** Group 4 Test *****************
+  // {a_f1,v} {a_f2,v} {a_f3,v} {b_f1,v} {b_f2,v} {b_f3,v} {c_f1,v} {c_f2,v}, {c_f3, v}
+  // 0        1        2        3        4        5        6        7         8
+  std::vector<FieldValue> gp4_field_value {{"a_f1", "v"}, {"a_f2", "v"}, {"a_f3", "v"},
+                                           {"b_f1", "v"}, {"b_f2", "v"}, {"b_f3", "v"},
+                                           {"c_f1", "v"}, {"c_f2", "v"}, {"c_f3", "v"}};
+  s = db.HMSet("GP4_HSCANX_KEY", gp4_field_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP4_HSCANX_KEY", 9));
+
+  field_value_out.clear();
+  s = db.HScanx("GP4_HSCANX_KEY", "a_", "*", 3, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 3);
+  ASSERT_EQ(next_field, "b_f1");
+  ASSERT_TRUE(field_value_match(field_value_out, {{"a_f1", "v"}, {"a_f2", "v"}, {"a_f3", "v"}}));
+
+  field_value_out.clear();
+  s = db.HScanx("GP4_HSCANX_KEY", "b_", "*", 3, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 3);
+  ASSERT_EQ(next_field, "c_f1");
+  ASSERT_TRUE(field_value_match(field_value_out, {{"b_f1", "v"}, {"b_f2", "v"}, {"b_f3", "v"}}));
+
+  field_value_out.clear();
+  s = db.HScanx("GP4_HSCANX_KEY", "c_", "*", 3, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 3);
+  ASSERT_EQ(next_field, "");
+  ASSERT_TRUE(field_value_match(field_value_out, {{"c_f1", "v"}, {"c_f2", "v"}, {"c_f3", "v"}}));
+
+  field_value_out.clear();
+  s = db.HScanx("GP4_HSCANX_KEY", "d_", "*", 3, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 0);
+  ASSERT_EQ(next_field, "");
+  ASSERT_TRUE(field_value_match(field_value_out, {}));
+
+
+  // ***************** Group 5 Test *****************
+  // {a_f1,v} {a_f2,v} {a_f3,v} {b_f1,v} {b_f2,v} {b_f3,v} {c_f1,v} {c_f2,v}, {c_f3, v}
+  // 0        1        2        3        4        5        6        7         8
+  std::vector<FieldValue> gp5_field_value {{"a_f1", "v"}, {"a_f2", "v"}, {"a_f3", "v"},
+                                           {"b_f1", "v"}, {"b_f2", "v"}, {"b_f3", "v"},
+                                           {"c_f1", "v"}, {"c_f2", "v"}, {"c_f3", "v"}};
+  s = db.HMSet("GP5_HSCANX_KEY", gp5_field_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP5_HSCANX_KEY", 9));
+
+  field_value_out.clear();
+  s = db.HScanx("GP5_HSCANX_KEY", "a_", "a_*", 5, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 3);
+  ASSERT_EQ(next_field, "b_f3");
+  ASSERT_TRUE(field_value_match(field_value_out, {{"a_f1", "v"}, {"a_f2", "v"}, {"a_f3", "v"}}));
+
+  field_value_out.clear();
+  s = db.HScanx("GP5_HSCANX_KEY", "b_", "b_*", 5, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 3);
+  ASSERT_EQ(next_field, "c_f3");
+  ASSERT_TRUE(field_value_match(field_value_out, {{"b_f1", "v"}, {"b_f2", "v"}, {"b_f3", "v"}}));
+
+  field_value_out.clear();
+  s = db.HScanx("GP5_HSCANX_KEY", "c_", "c_*", 5, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 3);
+  ASSERT_EQ(next_field, "");
+  ASSERT_TRUE(field_value_match(field_value_out, {{"c_f1", "v"}, {"c_f2", "v"}, {"c_f3", "v"}}));
+
+  field_value_out.clear();
+  s = db.HScanx("GP5_HSCANX_KEY", "d_", "d_", 5, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 0);
+  ASSERT_EQ(next_field, "");
+  ASSERT_TRUE(field_value_match(field_value_out, {}));
+
+
+  // ***************** Group 6 Test *****************
+  // {a_f1,v} {a_f2,v} {a_f3,v} {b_f1,v} {b_f2,v} {b_f3,v} {c_f1,v} {c_f2,v}, {c_f3, v}
+  // 0        1        2        3        4        5        6        7         8
+  std::vector<FieldValue> gp6_field_value {{"a_f1", "v"}, {"a_f2", "v"}, {"a_f3", "v"},
+                                           {"b_f1", "v"}, {"b_f2", "v"}, {"b_f3", "v"},
+                                           {"c_f1", "v"}, {"c_f2", "v"}, {"c_f3", "v"}};
+  s = db.HMSet("GP6_HSCANX_KEY", gp6_field_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP6_HSCANX_KEY", 9));
+
+  field_value_out.clear();
+  s = db.HScanx("GP6_HSCANX_KEY", "a_", "a_*", 5, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 3);
+  ASSERT_EQ(next_field, "b_f3");
+  ASSERT_TRUE(field_value_match(field_value_out, {{"a_f1", "v"}, {"a_f2", "v"}, {"a_f3", "v"}}));
+
+  field_value_out.clear();
+  s = db.HScanx("GP6_HSCANX_KEY", "b_", "b_*", 5, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 3);
+  ASSERT_EQ(next_field, "c_f3");
+  ASSERT_TRUE(field_value_match(field_value_out, {{"b_f1", "v"}, {"b_f2", "v"}, {"b_f3", "v"}}));
+
+  field_value_out.clear();
+  s = db.HScanx("GP6_HSCANX_KEY", "c_", "c_*", 5, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 3);
+  ASSERT_EQ(next_field, "");
+  ASSERT_TRUE(field_value_match(field_value_out, {{"c_f1", "v"}, {"c_f2", "v"}, {"c_f3", "v"}}));
+
+  field_value_out.clear();
+  s = db.HScanx("GP6_HSCANX_KEY", "d_", "d_", 5, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 0);
+  ASSERT_EQ(next_field, "");
+  ASSERT_TRUE(field_value_match(field_value_out, {}));
+
+
+  // ***************** Group 7 Test *****************
+  // {a_f1,v} {a_f2,v} {a_f3,v} {b_f1,v} {b_f2,v} {b_f3,v} {c_f1,v} {c_f2,v}, {c_f3, v}
+  // 0        1        2        3        4        5        6        7         8
+  std::vector<FieldValue> gp7_field_value {{"a_f1", "v"}, {"a_f2", "v"}, {"a_f3", "v"},
+                                           {"b_f1", "v"}, {"b_f2", "v"}, {"b_f3", "v"},
+                                           {"c_f1", "v"}, {"c_f2", "v"}, {"c_f3", "v"}};
+  s = db.HMSet("GP7_HSCANX_KEY", gp7_field_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP7_HSCANX_KEY", 9));
+
+  field_value_out.clear();
+  s = db.HScanx("GP7_HSCANX_KEY", "a_", "*f2", 3, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 1);
+  ASSERT_EQ(next_field, "b_f1");
+  ASSERT_TRUE(field_value_match(field_value_out, {{"a_f2", "v"}}));
+
+  start_field = next_field;
+  field_value_out.clear();
+  s = db.HScanx("GP7_HSCANX_KEY", start_field, "*f2", 3, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 1);
+  ASSERT_EQ(next_field, "c_f1");
+  ASSERT_TRUE(field_value_match(field_value_out, {{"b_f2", "v"}}));
+
+  start_field = next_field;
+  field_value_out.clear();
+  s = db.HScanx("GP7_HSCANX_KEY", start_field, "*f2", 3, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 1);
+  ASSERT_EQ(next_field, "");
+  ASSERT_TRUE(field_value_match(field_value_out, {{"c_f2", "v"}}));
+
+
+  // ***************** Group 8 Test *****************
+  // {a_f1,v} {a_f2,v} {a_f3,v} {b_f1,v} {b_f2,v} {b_f3,v} {c_f1,v} {c_f2,v}, {c_f3, v}
+  // 0        1        2        3        4        5        6        7         8
+  std::vector<FieldValue> gp8_field_value {{"a_f1", "v"}, {"a_f2", "v"}, {"a_f3", "v"},
+                                           {"b_f1", "v"}, {"b_f2", "v"}, {"b_f3", "v"},
+                                           {"c_f1", "v"}, {"c_f2", "v"}, {"c_f3", "v"}};
+  s = db.HMSet("GP8_HSCANX_KEY", gp8_field_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP8_HSCANX_KEY", 9));
+
+  field_value_out.clear();
+  s = db.HScanx("GP8_HSCANX_KEY", "a_", "*n*", 3, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 0);
+  ASSERT_EQ(next_field, "b_f1");
+  ASSERT_TRUE(field_value_match(field_value_out, {}));
+
+  start_field = next_field;
+  field_value_out.clear();
+  s = db.HScanx("GP8_HSCANX_KEY", start_field, "*n*", 3, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 0);
+  ASSERT_EQ(next_field, "c_f1");
+  ASSERT_TRUE(field_value_match(field_value_out, {}));
+
+  start_field = next_field;
+  field_value_out.clear();
+  s = db.HScanx("GP8_HSCANX_KEY", start_field, "*n*", 3, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 0);
+  ASSERT_EQ(next_field, "");
+  ASSERT_TRUE(field_value_match(field_value_out, {}));
+
+
+  // ***************** Group 9 Test *****************
+  // {a_f1,v} {a_f2,v} {a_f3,v} {b_f1,v} {b_f2,v} {b_f3,v} {c_f1,v} {c_f2,v}, {c_f3, v}
+  // 0        1        2        3        4        5        6        7         8
+  std::vector<FieldValue> gp9_field_value {{"a_f1", "v"}, {"a_f2", "v"}, {"a_f3", "v"},
+                                           {"b_f1", "v"}, {"b_f2", "v"}, {"b_f3", "v"},
+                                           {"c_f1", "v"}, {"c_f2", "v"}, {"c_f3", "v"}};
+  s = db.HMSet("GP9_HSCANX_KEY", gp9_field_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP9_HSCANX_KEY", 9));
+
+  ASSERT_TRUE(make_expired(&db, "GP9_HSCANX_KEY"));
+
+  field_value_out.clear();
+  s = db.HScanx("GP9_HSCANX_KEY", "", "*", 10, &field_value_out, &next_field);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(field_value_out.size(), 0);
+  ASSERT_EQ(next_field, "");
+  ASSERT_TRUE(field_value_match(field_value_out, {}));
+
+
+  // ***************** Group 10 Test *****************
+  // {a_f1,v} {a_f2,v} {a_f3,v} {b_f1,v} {b_f2,v} {b_f3,v} {c_f1,v} {c_f2,v}, {c_f3, v}
+  // 0        1        2        3        4        5        6        7         8
+  std::vector<FieldValue> gp10_field_value {{"a_f1", "v"}, {"a_f2", "v"}, {"a_f3", "v"},
+                                            {"b_f1", "v"}, {"b_f2", "v"}, {"b_f3", "v"},
+                                            {"c_f1", "v"}, {"c_f2", "v"}, {"c_f3", "v"}};
+
+  field_value_out.clear();
+  s = db.HScanx("GP10_HSCANX_KEY", "", "*", 10, &field_value_out, &next_field);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(field_value_out.size(), 0);
+  ASSERT_EQ(next_field, "");
+  ASSERT_TRUE(field_value_match(field_value_out, {}));
+
+
+  // ***************** Group 11 Test *****************
+  // {a_f1,v} {a_f2,v} {a_f3,v} {b_f1,v} {b_f2,v} {b_f3,v} {c_f1,v} {c_f2,v}, {c_f3, v}
+  // 0        1        2        3        4        5        6        7         8
+  std::vector<FieldValue> gp11_field_value {{"a_f1", "v"}, {"a_f2", "v"}, {"a_f3", "v"},
+                                            {"b_f1", "v"}, {"b_f2", "v"}, {"b_f3", "v"},
+                                            {"c_f1", "v"}, {"c_f2", "v"}, {"c_f3", "v"}};
+  std::vector<std::string> gp11_del_field {"a_f1", "a_f2", "a_f3",
+                                           "b_f1", "b_f2", "b_f3",
+                                           "c_f1", "c_f2", "c_f3"};
+
+  s = db.HMSet("GP11_HSCANX_KEY", gp9_field_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP11_HSCANX_KEY", 9));
+
+  int32_t ret = 0;
+  s = db.HDel("GP11_HSCANX_KEY", gp11_del_field, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 9);
+
+  field_value_out.clear();
+  s = db.HScanx("GP11_HSCANX_KEY", "", "*", 10, &field_value_out, &next_field);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(field_value_out.size(), 0);
+  ASSERT_EQ(next_field, "");
+  ASSERT_TRUE(field_value_match(field_value_out, {}));
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

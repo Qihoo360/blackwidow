@@ -360,6 +360,12 @@ class BlackWidow {
   Status HScan(const Slice& key, int64_t cursor, const std::string& pattern,
                int64_t count, std::vector<FieldValue>* field_values, int64_t* next_cursor);
 
+  // Iterate over a Hash table of fields
+  // return next_field that the user need to use as the start_field argument
+  // in the next call
+  Status HScanx(const Slice& key, const std::string start_field, const std::string& pattern,
+                int64_t count, std::vector<FieldValue>* field_values, std::string* next_field);
+
 
   // Sets Commands
 
@@ -933,6 +939,16 @@ class BlackWidow {
   // in the next call
   int64_t Scan(int64_t cursor, const std::string& pattern,
                int64_t count, std::vector<std::string>* keys);
+
+  // Iterate over a collection of elements
+  // return next_key that the user need to use as the start_key argument
+  // in the next call
+  Status Scanx(const DataType& data_type,
+               const std::string& start_key,
+               const std::string& pattern,
+               int64_t count,
+               std::vector<std::string>* keys,
+               std::string* next_key);
 
   // Returns if key exists.
   // return -1 operation exception errors happen in database

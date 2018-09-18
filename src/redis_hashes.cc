@@ -764,6 +764,56 @@ Status RedisHashes::HScan(const Slice& key, int64_t cursor, const std::string& p
   return Status::OK();
 }
 
+Status RedisHashes::HScanx(const Slice& key, const std::string start_field, const std::string& pattern,
+                           int64_t count, std::vector<FieldValue>* field_values, std::string* next_field) {
+  next_field->clear();
+  field_values->clear();
+
+  int64_t rest = count;
+  std::string meta_value;
+  rocksdb::ReadOptions read_options;
+  const rocksdb::Snapshot* snapshot;
+  ScopeSnapshot ss(db_, &snapshot);
+  read_options.snapshot = snapshot;
+  Status s = db_->Get(read_options, handles_[0], key, &meta_value);
+  if (s.ok()) {
+    ParsedHashesMetaValue parsed_hashes_meta_value(&meta_value);
+    if (parsed_hashes_meta_value.IsStale()
+      || parsed_hashes_meta_value.count() == 0) {
+      *next_field = "";
+      return Status::NotFound();
+    } else {
+      int32_t version = parsed_hashes_meta_value.version();
+      HashesDataKey hashes_data_prefix(key, version, Slice());
+      HashesDataKey hashes_start_data_key(key, version, start_field);
+      std::string prefix = hashes_data_prefix.Encode().ToString();
+      rocksdb::Iterator* iter = db_->NewIterator(read_options, handles_[1]);
+      for (iter->Seek(hashes_start_data_key.Encode());
+           iter->Valid() && rest > 0 && iter->key().starts_with(prefix);
+           iter->Next()) {
+        ParsedHashesDataKey parsed_hashes_data_key(iter->key());
+        std::string field = parsed_hashes_data_key.field().ToString();
+        if (StringMatch(pattern.data(), pattern.size(), field.data(), field.size(), 0)) {
+          field_values->push_back({field, iter->value().ToString()});
+        }
+        rest--;
+      }
+
+      if (iter->Valid() && iter->key().starts_with(prefix)) {
+        ParsedHashesDataKey parsed_hashes_data_key(iter->key());
+        *next_field = parsed_hashes_data_key.field().ToString();
+      } else {
+        *next_field = "";
+      }
+      delete iter;
+    }
+  } else {
+    *next_field = "";
+    return s;
+  }
+  return Status::OK();
+}
+
 Status RedisHashes::Expire(const Slice& key, int32_t ttl) {
   std::string meta_value;
   ScopeRecordLock l(lock_mgr_, key);

@@ -56,6 +56,8 @@ class RedisHashes : public Redis {
     Status HStrlen(const Slice& key, const Slice& field, int32_t* len);
     Status HScan(const Slice& key, int64_t cursor, const std::string& pattern,
                  int64_t count, std::vector<FieldValue>* field_values, int64_t* next_cursor);
+    Status HScanx(const Slice& key, const std::string start_field, const std::string& pattern,
+                  int64_t count, std::vector<FieldValue>* field_values, std::string* next_field);
 
 
     // Keys Commands
