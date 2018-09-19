@@ -79,7 +79,7 @@ class ListsTest : public ::testing::Test {
       mkdir(path.c_str(), 0755);
     }
     options.create_if_missing = true;
-    s = db.Open(options, path);
+    s = db.Open(options, table_options, path);
     if (!s.ok()) {
       printf("Open db failed, exit...\n");
       exit(1);
@@ -91,6 +91,7 @@ class ListsTest : public ::testing::Test {
   static void TearDownTestCase() { }
 
   blackwidow::Options options;
+  blackwidow::BlockBasedTableOptions table_options;
   blackwidow::BlackWidow db;
   blackwidow::Status s;
 };

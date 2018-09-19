@@ -30,6 +30,7 @@ RedisSets::~RedisSets() {
 }
 
 Status RedisSets::Open(const rocksdb::Options& options,
+                       const rocksdb::BlockBasedTableOptions& table_options,
                        const std::string& db_path) {
   rocksdb::Options ops(options);
   Status s = rocksdb::DB::Open(ops, db_path, &db_);
@@ -56,10 +57,10 @@ Status RedisSets::Open(const rocksdb::Options& options,
       std::make_shared<SetsMemberFilterFactory>(&db_, &handles_);
 
   //use the bloom filter policy to reduce disk reads
-  rocksdb::BlockBasedTableOptions table_options;
-  table_options.filter_policy.reset(rocksdb::NewBloomFilterPolicy(10, true));
-  meta_cf_ops.table_factory.reset(rocksdb::NewBlockBasedTableFactory(table_options));
-  member_cf_ops.table_factory.reset(rocksdb::NewBlockBasedTableFactory(table_options));
+  rocksdb::BlockBasedTableOptions table_ops(table_options);
+  table_ops.filter_policy.reset(rocksdb::NewBloomFilterPolicy(10, true));
+  meta_cf_ops.table_factory.reset(rocksdb::NewBlockBasedTableFactory(table_ops));
+  member_cf_ops.table_factory.reset(rocksdb::NewBlockBasedTableFactory(table_ops));
 
   std::vector<rocksdb::ColumnFamilyDescriptor> column_families;
   // Meta CF

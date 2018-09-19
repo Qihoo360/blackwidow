@@ -66,39 +66,40 @@ static std::string AppendSubDirectory(const std::string& db_path,
 }
 
 Status BlackWidow::Open(const rocksdb::Options& options,
+                        const rocksdb::BlockBasedTableOptions& table_options,
                         const std::string& db_path) {
   mkpath(db_path.c_str(), 0755);
 
   strings_db_ = new RedisStrings();
-  Status s = strings_db_->Open(options, AppendSubDirectory(db_path, "strings"));
+  Status s = strings_db_->Open(options, table_options, AppendSubDirectory(db_path, "strings"));
   if (!s.ok()) {
     fprintf (stderr, "[FATAL] open kv db failed, %s\n", s.ToString().c_str());
     exit(-1);
   }
 
   hashes_db_ = new RedisHashes();
-  s = hashes_db_->Open(options, AppendSubDirectory(db_path, "hashes"));
+  s = hashes_db_->Open(options, table_options, AppendSubDirectory(db_path, "hashes"));
   if (!s.ok()) {
     fprintf (stderr, "[FATAL] open hashes db failed, %s\n", s.ToString().c_str());
     exit(-1);
   }
 
   sets_db_ = new RedisSets();
-  s = sets_db_->Open(options, AppendSubDirectory(db_path, "sets"));
+  s = sets_db_->Open(options, table_options, AppendSubDirectory(db_path, "sets"));
   if (!s.ok()) {
     fprintf (stderr, "[FATAL] open set db failed, %s\n", s.ToString().c_str());
     exit(-1);
   }
 
   lists_db_ = new RedisLists();
-  s = lists_db_->Open(options, AppendSubDirectory(db_path, "lists"));
+  s = lists_db_->Open(options, table_options, AppendSubDirectory(db_path, "lists"));
   if (!s.ok()) {
     fprintf (stderr, "[FATAL] open list db failed, %s\n", s.ToString().c_str());
     exit(-1);
   }
 
   zsets_db_ = new RedisZSets();
-  s = zsets_db_->Open(options, AppendSubDirectory(db_path, "zsets"));
+  s = zsets_db_->Open(options, table_options, AppendSubDirectory(db_path, "zsets"));
   if (!s.ok()) {
     fprintf (stderr, "[FATAL] open zset db failed, %s\n", s.ToString().c_str());
     exit(-1);

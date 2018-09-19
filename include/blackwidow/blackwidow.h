@@ -40,6 +40,7 @@ const std::string ZSETS_DB = "zsets";
 const std::string SETS_DB = "sets";
 
 using Options = rocksdb::Options;
+using BlockBasedTableOptions = rocksdb::BlockBasedTableOptions;
 using Status = rocksdb::Status;
 using Slice = rocksdb::Slice;
 
@@ -141,7 +142,7 @@ class BlackWidow {
   BlackWidow();
   ~BlackWidow();
 
-  Status Open(const Options& options, const std::string& db_path);
+  Status Open(const Options& options, const BlockBasedTableOptions& table_options, const std::string& db_path);
 
   Status GetStartKey(int64_t cursor, std::string* start_key);
 

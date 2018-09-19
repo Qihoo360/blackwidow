@@ -13,6 +13,7 @@ using namespace blackwidow;
 
 int main() {
   blackwidow::Options options;
+  blackwidow::BlockBasedTableOptions table_options;
   blackwidow::BlackWidow db;
   blackwidow::Status s;
 
@@ -21,7 +22,7 @@ int main() {
     mkdir(path.c_str(), 0755);
   }
   options.create_if_missing = true;
-  s = db.Open(options, path);
+  s = db.Open(options, table_options, path);
   uint64_t result = 0;
   s = db.GetUsage("all", &result);
   return 0;

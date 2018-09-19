@@ -18,14 +18,15 @@
 namespace blackwidow {
 
 Status RedisStrings::Open(const rocksdb::Options& options,
+    const rocksdb::BlockBasedTableOptions& table_options,
     const std::string& db_path) {
   rocksdb::Options ops(options);
   ops.compaction_filter_factory = std::make_shared<StringsFilterFactory>();
 
   //use the bloom filter policy to reduce disk reads
-  rocksdb::BlockBasedTableOptions table_options;
-  table_options.filter_policy.reset(rocksdb::NewBloomFilterPolicy(10, true));
-  ops.table_factory.reset(rocksdb::NewBlockBasedTableFactory(table_options));
+  rocksdb::BlockBasedTableOptions table_ops(table_options);
+  table_ops.filter_policy.reset(rocksdb::NewBloomFilterPolicy(10, true));
+  ops.table_factory.reset(rocksdb::NewBlockBasedTableFactory(table_ops));
 
   return rocksdb::DB::Open(ops, db_path, &db_);
 }

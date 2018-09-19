@@ -22,6 +22,7 @@ class RedisLists : public Redis {
 
     // Common commands
     virtual Status Open(const rocksdb::Options& options,
+                        const rocksdb::BlockBasedTableOptions& table_options,
                         const std::string& db_path) override;
     virtual Status CompactRange(const rocksdb::Slice* begin,
                                 const rocksdb::Slice* end) override;

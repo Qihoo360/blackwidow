@@ -33,6 +33,7 @@ class Redis {
 
   // Common Commands
   virtual Status Open(const rocksdb::Options& options,
+                      const rocksdb::BlockBasedTableOptions& table_options,
                       const std::string& db_path) = 0;
   virtual Status CompactRange(const rocksdb::Slice* begin,
                               const rocksdb::Slice* end) = 0;
