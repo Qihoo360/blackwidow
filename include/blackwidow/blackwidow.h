@@ -54,6 +54,13 @@ class HyperLogLog;
 class MutexFactory;
 class Mutex;
 
+struct BlackwidowOptions {
+  rocksdb::Options options;
+  rocksdb::BlockBasedTableOptions table_options;
+  size_t block_cache_size;
+  bool share_block_cache;
+};
+
 struct KeyValue {
   std::string key;
   std::string value;
@@ -143,7 +150,7 @@ class BlackWidow {
   BlackWidow();
   ~BlackWidow();
 
-  Status Open(const Options& options, const BlockBasedTableOptions& table_options, const std::string& db_path);
+  Status Open(BlackwidowOptions& bw_options, const std::string& db_path);
 
   Status GetStartKey(int64_t cursor, std::string* start_key);
 

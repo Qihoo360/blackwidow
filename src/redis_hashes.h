@@ -20,8 +20,7 @@ class RedisHashes : public Redis {
     ~RedisHashes();
 
     // Common Commands
-    virtual Status Open(const rocksdb::Options& options,
-                        const rocksdb::BlockBasedTableOptions& table_options,
+    virtual Status Open(const BlackwidowOptions& bw_options,
                         const std::string& db_path) override;
     virtual Status CompactRange(const rocksdb::Slice* begin,
                                 const rocksdb::Slice* end) override;

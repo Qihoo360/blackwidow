@@ -29,10 +29,9 @@ RedisSets::~RedisSets() {
   }
 }
 
-Status RedisSets::Open(const rocksdb::Options& options,
-                       const rocksdb::BlockBasedTableOptions& table_options,
+Status RedisSets::Open(const BlackwidowOptions& bw_options,
                        const std::string& db_path) {
-  rocksdb::Options ops(options);
+  rocksdb::Options ops(bw_options.options);
   Status s = rocksdb::DB::Open(ops, db_path, &db_);
   if (s.ok()) {
     // create column family
@@ -48,19 +47,25 @@ Status RedisSets::Open(const rocksdb::Options& options,
   }
 
   // Open
-  rocksdb::DBOptions db_ops(options);
-  rocksdb::ColumnFamilyOptions meta_cf_ops(options);
-  rocksdb::ColumnFamilyOptions member_cf_ops(options);
+  rocksdb::DBOptions db_ops(bw_options.options);
+  rocksdb::ColumnFamilyOptions meta_cf_ops(bw_options.options);
+  rocksdb::ColumnFamilyOptions member_cf_ops(bw_options.options);
   meta_cf_ops.compaction_filter_factory =
       std::make_shared<SetsMetaFilterFactory>();
   member_cf_ops.compaction_filter_factory =
       std::make_shared<SetsMemberFilterFactory>(&db_, &handles_);
 
   //use the bloom filter policy to reduce disk reads
-  rocksdb::BlockBasedTableOptions table_ops(table_options);
+  rocksdb::BlockBasedTableOptions table_ops(bw_options.table_options);
   table_ops.filter_policy.reset(rocksdb::NewBloomFilterPolicy(10, true));
-  meta_cf_ops.table_factory.reset(rocksdb::NewBlockBasedTableFactory(table_ops));
-  member_cf_ops.table_factory.reset(rocksdb::NewBlockBasedTableFactory(table_ops));
+  rocksdb::BlockBasedTableOptions meta_cf_table_ops(table_ops);
+  rocksdb::BlockBasedTableOptions member_cf_table_ops(table_ops);
+  if (!bw_options.share_block_cache && bw_options.block_cache_size > 0) {
+    meta_cf_table_ops.block_cache = rocksdb::NewLRUCache(bw_options.block_cache_size);
+    member_cf_table_ops.block_cache = rocksdb::NewLRUCache(bw_options.block_cache_size);
+  }
+  meta_cf_ops.table_factory.reset(rocksdb::NewBlockBasedTableFactory(meta_cf_table_ops));
+  member_cf_ops.table_factory.reset(rocksdb::NewBlockBasedTableFactory(member_cf_table_ops));
 
   std::vector<rocksdb::ColumnFamilyDescriptor> column_families;
   // Meta CF
