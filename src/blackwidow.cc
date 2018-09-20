@@ -43,6 +43,12 @@ BlackWidow::~BlackWidow() {
   bg_tasks_should_exit_ = true;
   bg_tasks_cond_var_.Signal();
 
+  rocksdb::CancelAllBackgroundWork(strings_db_->get_db(), true);
+  rocksdb::CancelAllBackgroundWork(hashes_db_->get_db(), true);
+  rocksdb::CancelAllBackgroundWork(sets_db_->get_db(), true);
+  rocksdb::CancelAllBackgroundWork(lists_db_->get_db(), true);
+  rocksdb::CancelAllBackgroundWork(zsets_db_->get_db(), true);
+
   int ret = 0;
   if ((ret = pthread_join(bg_tasks_thread_id_, NULL)) != 0) {
     fprintf (stderr, "pthread_join failed with bgtask thread error %d\n", ret);
