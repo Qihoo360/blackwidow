@@ -1698,6 +1698,62 @@ TEST_F(HashesTest, HScanxTest) {
   ASSERT_EQ(field_value_out.size(), 0);
   ASSERT_EQ(next_field, "");
   ASSERT_TRUE(field_value_match(field_value_out, {}));
+
+
+  // ***************** Group 12 Test *****************
+  // {aaa,v} {aab,v} {aac,v} {aad,v} {aaf,v} {aba,v} {abb,v} {abc,v}, {abd, v}, {abf, v}
+  // 0       1       2       3       4        5      6       7        8         9
+  std::vector<FieldValue> gp12_field_value {{"aaa", "v"}, {"aab", "v"}, {"aac", "v"},
+                                            {"aad", "v"}, {"aaf", "v"}, {"aba", "v"},
+                                            {"abb", "v"}, {"abc", "v"}, {"abd", "v"},
+                                            {"abf", "v"}};
+
+  s = db.HMSet("GP12_HSCANX_KEY", gp12_field_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP12_HSCANX_KEY", 10));
+
+  field_value_out.clear();
+  s = db.HScanx("GP12_HSCANX_KEY", "aa", "ab*", 3, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 0);
+  ASSERT_EQ(next_field, "aad");
+  ASSERT_TRUE(field_value_match(field_value_out, {}));
+
+  field_value_out.clear();
+  s = db.HScanx("GP12_HSCANX_KEY", "aad", "ab*", 3, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 1);
+  ASSERT_EQ(next_field, "abb");
+  ASSERT_TRUE(field_value_match(field_value_out, {{"aba", "v"}}));
+
+  field_value_out.clear();
+  s = db.HScanx("GP12_HSCANX_KEY", "abb", "ab*", 3, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 3);
+  ASSERT_EQ(next_field, "abf");
+  ASSERT_TRUE(field_value_match(field_value_out, {{"abb", "v"}, {"abc", "v"}, {"abd", "v"}}));
+
+  field_value_out.clear();
+  s = db.HScanx("GP12_HSCANX_KEY", "abf", "ab*", 3, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 1);
+  ASSERT_EQ(next_field, "");
+  ASSERT_TRUE(field_value_match(field_value_out, {{"abf", "v"}}));
+
+
+  field_value_out.clear();
+  s = db.HScanx("GP12_HSCANX_KEY", "aa", "ab*", 5, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 0);
+  ASSERT_EQ(next_field, "aba");
+  ASSERT_TRUE(field_value_match(field_value_out, {}));
+
+  field_value_out.clear();
+  s = db.HScanx("GP12_HSCANX_KEY", "aba", "ab*", 5, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(field_value_out.size(), 5);
+  ASSERT_EQ(next_field, "");
+  ASSERT_TRUE(field_value_match(field_value_out, {{"aba", "v"}, {"abb", "v"}, {"abc", "v"}, {"abd", "v"}, {"abf", "v"}}));
 }
 
 int main(int argc, char** argv) {

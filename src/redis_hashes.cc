@@ -753,7 +753,8 @@ Status RedisHashes::HScan(const Slice& key, int64_t cursor, const std::string& p
         rest--;
       }
 
-      if (iter->Valid() && iter->key().starts_with(prefix)) {
+      if (iter->Valid()
+        && (iter->key().compare(prefix) <= 0 || iter->key().starts_with(prefix))) {
         *next_cursor = cursor + step_length;
         ParsedHashesDataKey parsed_hashes_data_key(iter->key());
         std::string next_field = parsed_hashes_data_key.field().ToString();
@@ -896,7 +897,8 @@ bool RedisHashes::Scan(const std::string& start_key,
 
   std::string prefix = isTailWildcard(pattern) ?
     pattern.substr(0, pattern.size() - 1) : "";
-  if (it->Valid() && it->key().starts_with(prefix)) {
+  if (it->Valid()
+    && (it->key().compare(prefix) <= 0 || it->key().starts_with(prefix))) {
     *next_key = it->key().ToString();
     is_finish = false;
   } else {

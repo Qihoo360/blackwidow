@@ -1064,7 +1064,8 @@ bool RedisStrings::Scan(const std::string& start_key,
 
   std::string prefix = isTailWildcard(pattern) ?
     pattern.substr(0, pattern.size() - 1) : "";
-  if (it->Valid() && it->key().starts_with(prefix)) {
+  if (it->Valid()
+    && (it->key().compare(prefix) <= 0 || it->key().starts_with(prefix))) {
     is_finish = false;
     *next_key = it->key().ToString();
   } else {
