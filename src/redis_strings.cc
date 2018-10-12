@@ -1032,7 +1032,7 @@ bool RedisStrings::Scan(const std::string& start_key,
                         std::vector<std::string>* keys,
                         int64_t* count,
                         std::string* next_key) {
-  std::string key, value;
+  std::string key;
   bool is_finish = true;
   rocksdb::ReadOptions iterator_options;
   const rocksdb::Snapshot* snapshot;
@@ -1052,7 +1052,6 @@ bool RedisStrings::Scan(const std::string& start_key,
       continue;
     } else {
       key = it->key().ToString();
-      value = it->value().ToString();
       if (StringMatch(pattern.data(), pattern.size(),
                          key.data(), key.size(), 0)) {
         keys->push_back(key);

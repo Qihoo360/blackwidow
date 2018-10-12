@@ -1288,7 +1288,7 @@ bool RedisZSets::Scan(const std::string& start_key,
                       std::vector<std::string>* keys,
                       int64_t* count,
                       std::string* next_key) {
-  std::string meta_key, meta_value;
+  std::string meta_key;
   bool is_finish = true;
   rocksdb::ReadOptions iterator_options;
   const rocksdb::Snapshot* snapshot;
@@ -1307,7 +1307,6 @@ bool RedisZSets::Scan(const std::string& start_key,
       continue;
     } else {
       meta_key = it->key().ToString();
-      meta_value = it->value().ToString();
       if (StringMatch(pattern.data(), pattern.size(),
                          meta_key.data(), meta_key.size(), 0)) {
         keys->push_back(meta_key);
