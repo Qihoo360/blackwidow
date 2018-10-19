@@ -50,6 +50,12 @@ class RedisLists : public Redis {
     Status RPush(const Slice& key, const std::vector<std::string>& values,
                  uint64_t* ret);
     Status RPushx(const Slice& key, const Slice& value, uint64_t* len);
+    Status PKScanRange(const Slice& key_start, const Slice& key_end,
+                       const Slice& pattern, int32_t limit,
+                       std::vector<std::string>* keys, std::string* next_key);
+    Status PKRScanRange(const Slice& key_start, const Slice& key_end,
+                        const Slice& pattern, int32_t limit,
+                        std::vector<std::string>* keys, std::string* next_key);
 
     // Keys Commands
     virtual Status Expire(const Slice& key, int32_t ttl) override;

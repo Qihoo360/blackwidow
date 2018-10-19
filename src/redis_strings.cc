@@ -994,6 +994,117 @@ Status RedisStrings::BitPos(const Slice& key, int32_t bit,
   return Status::OK();
 }
 
+Status RedisStrings::PKScanRange(const Slice& key_start, const Slice& key_end,
+                                 const Slice& pattern, int32_t limit,
+                                 std::vector<KeyValue>* kvs, std::string* next_key) {
+  std::string key, value;
+  int32_t remain = limit;
+  rocksdb::ReadOptions iterator_options;
+  const rocksdb::Snapshot* snapshot;
+  ScopeSnapshot ss(db_, &snapshot);
+  iterator_options.snapshot = snapshot;
+  iterator_options.fill_cache = false;
+
+  bool start_no_limit = !key_start.compare("");
+  bool end_no_limit = !key_end.compare("");
+
+  if (!start_no_limit
+    && !end_no_limit
+    && (key_start.compare(key_end) > 0)) {
+    return Status::InvalidArgument("error in given range");
+  }
+
+  // Note: This is a string type and does not need to pass the column family as
+  // a parameter, use the default column family
+  rocksdb::Iterator* it = db_->NewIterator(iterator_options);
+  if (start_no_limit) {
+    it->SeekToFirst();
+  } else {
+    it->Seek(key_start);
+  }
+
+  while (it->Valid() && remain > 0
+       && (end_no_limit || it->key().compare(key_end) <= 0)) {
+    ParsedStringsValue parsed_strings_value(it->value());
+    if (parsed_strings_value.IsStale()) {
+      it->Next();
+    } else {
+      key = it->key().ToString();
+      value = parsed_strings_value.value().ToString();
+      if (StringMatch(pattern.data(), pattern.size(),
+                         key.data(), key.size(), 0)) {
+        kvs->push_back({key, value});
+      }
+      remain--;
+      it->Next();
+    }
+  }
+
+  if (it->Valid()) {
+    *next_key = it->key().ToString();
+  } else {
+    *next_key = "";
+  }
+  delete it;
+  return Status::OK();
+}
+
+Status RedisStrings::PKRScanRange(const Slice& key_start, const Slice& key_end,
+                                  const Slice& pattern, int32_t limit,
+                                  std::vector<KeyValue>* kvs, std::string* next_key) {
+  std::string key, value;
+  int32_t remain = limit;
+  rocksdb::ReadOptions iterator_options;
+  const rocksdb::Snapshot* snapshot;
+  ScopeSnapshot ss(db_, &snapshot);
+  iterator_options.snapshot = snapshot;
+  iterator_options.fill_cache = false;
+
+  bool start_no_limit = !key_start.compare("");
+  bool end_no_limit = !key_end.compare("");
+
+  if (!start_no_limit
+    && !end_no_limit
+    && (key_start.compare(key_end) < 0)) {
+    return Status::InvalidArgument("error in given range");
+  }
+
+  // Note: This is a string type and does not need to pass the column family as
+  // a parameter, use the default column family
+  rocksdb::Iterator* it = db_->NewIterator(iterator_options);
+  if (start_no_limit) {
+    it->SeekToLast();
+  } else {
+    it->SeekForPrev(key_start);
+  }
+
+  while (it->Valid() && remain > 0
+       && (end_no_limit || it->key().compare(key_end) >= 0)) {
+    ParsedStringsValue parsed_strings_value(it->value());
+    if (parsed_strings_value.IsStale()) {
+      it->Prev();
+    } else {
+      key = it->key().ToString();
+      value = parsed_strings_value.value().ToString();
+      if (StringMatch(pattern.data(), pattern.size(),
+                         key.data(), key.size(), 0)) {
+        kvs->push_back({key, value});
+      }
+      remain--;
+      it->Prev();
+    }
+  }
+
+  if (it->Valid()) {
+    *next_key = it->key().ToString();
+  } else {
+    *next_key = "";
+  }
+  delete it;
+  return Status::OK();
+}
+
+
 Status RedisStrings::Expire(const Slice& key, int32_t ttl) {
   std::string value;
   ScopeRecordLock l(lock_mgr_, key);

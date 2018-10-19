@@ -821,6 +821,113 @@ Status RedisHashes::HScanx(const Slice& key, const std::string start_field, cons
   return Status::OK();
 }
 
+Status RedisHashes::PKScanRange(const Slice& key_start, const Slice& key_end,
+                                const Slice& pattern, int32_t limit,
+                                std::vector<std::string>* keys, std::string* next_key) {
+  std::string key;
+  int32_t remain = limit;
+  rocksdb::ReadOptions iterator_options;
+  const rocksdb::Snapshot* snapshot;
+  ScopeSnapshot ss(db_, &snapshot);
+  iterator_options.snapshot = snapshot;
+  iterator_options.fill_cache = false;
+
+  bool start_no_limit = !key_start.compare("");
+  bool end_no_limit = !key_end.compare("");
+
+  if (!start_no_limit
+    && !end_no_limit
+    && (key_start.compare(key_end) > 0)) {
+    return Status::InvalidArgument("error in given range");
+  }
+
+  rocksdb::Iterator* it = db_->NewIterator(iterator_options, handles_[0]);
+  if (start_no_limit) {
+    it->SeekToFirst();
+  } else {
+    it->Seek(key_start);
+  }
+
+  while (it->Valid() && remain > 0
+       && (end_no_limit || it->key().compare(key_end) <= 0)) {
+    ParsedHashesMetaValue parsed_hashes_meta_value(it->value());
+    if (parsed_hashes_meta_value.IsStale()
+      || parsed_hashes_meta_value.count() == 0) {
+      it->Next();
+    } else {
+      key = it->key().ToString();
+      if (StringMatch(pattern.data(), pattern.size(),
+                         key.data(), key.size(), 0)) {
+        keys->push_back(key);
+      }
+      remain--;
+      it->Next();
+    }
+  }
+
+  if (it->Valid()) {
+    *next_key = it->key().ToString();
+  } else {
+    *next_key = "";
+  }
+  delete it;
+  return Status::OK();
+}
+
+Status RedisHashes::PKRScanRange(const Slice& key_start, const Slice& key_end,
+                                 const Slice& pattern, int32_t limit,
+                                 std::vector<std::string>* keys, std::string* next_key) {
+  std::string key;
+  int32_t remain = limit;
+  rocksdb::ReadOptions iterator_options;
+  const rocksdb::Snapshot* snapshot;
+  ScopeSnapshot ss(db_, &snapshot);
+  iterator_options.snapshot = snapshot;
+  iterator_options.fill_cache = false;
+
+  bool start_no_limit = !key_start.compare("");
+  bool end_no_limit = !key_end.compare("");
+
+  if (!start_no_limit
+    && !end_no_limit
+    && (key_start.compare(key_end) < 0)) {
+    return Status::InvalidArgument("error in given range");
+  }
+
+  rocksdb::Iterator* it = db_->NewIterator(iterator_options, handles_[0]);
+  if (start_no_limit) {
+    it->SeekToLast();
+  } else {
+    it->SeekForPrev(key_start);
+  }
+
+  while (it->Valid() && remain > 0
+       && (end_no_limit || it->key().compare(key_end) >= 0)) {
+    ParsedHashesMetaValue parsed_hashes_meta_value(it->value());
+    if (parsed_hashes_meta_value.IsStale()
+      || parsed_hashes_meta_value.count() == 0) {
+      it->Prev();
+    } else {
+      key = it->key().ToString();
+      if (StringMatch(pattern.data(), pattern.size(),
+                         key.data(), key.size(), 0)) {
+        keys->push_back(key);
+      }
+      remain--;
+      it->Prev();
+    }
+  }
+
+  if (it->Valid()) {
+    *next_key = it->key().ToString();
+  } else {
+    *next_key = "";
+  }
+  delete it;
+  return Status::OK();
+}
+
+
 Status RedisHashes::Expire(const Slice& key, int32_t ttl) {
   std::string meta_value;
   ScopeRecordLock l(lock_mgr_, key);

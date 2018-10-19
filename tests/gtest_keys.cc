@@ -31,6 +31,785 @@ class KeysTest : public ::testing::Test {
   blackwidow::Status s;
 };
 
+static bool make_expired(blackwidow::BlackWidow *const db,
+                         const Slice& key) {
+  std::map<blackwidow::DataType, rocksdb::Status> type_status;
+  int ret = db->Expire(key, 1, &type_status);
+  if (!ret || !type_status[blackwidow::DataType::kStrings].ok()) {
+    return false;
+  }
+  std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+  return true;
+}
+
+static bool key_value_match(const std::vector<KeyValue>& key_value_out,
+                            const std::vector<KeyValue>& expect_key_value) {
+  if (key_value_out.size() != expect_key_value.size()) {
+    return false;
+  }
+  for (int32_t idx = 0; idx < key_value_out.size(); ++idx) {
+    if (key_value_out[idx].key != expect_key_value[idx].key
+      || key_value_out[idx].value != expect_key_value[idx].value) {
+      return false;
+    }
+  }
+  return true;
+}
+
+static bool key_match(const std::vector<std::string>& keys_out,
+                      const std::vector<std::string>& expect_keys) {
+  if (keys_out.size() != expect_keys.size()) {
+    return false;
+  }
+  for (int32_t idx = 0; idx < keys_out.size(); ++idx) {
+    if (keys_out[idx] != expect_keys[idx]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+// XScanRange
+// Note: This test needs to execute at first because all of the data is
+// predetermined.
+TEST_F(KeysTest, PKScanRangeTest) {
+  int32_t ret;
+  std::string next_key;
+  std::vector<std::string> keys_del;
+  std::vector<std::string> keys_out;
+  std::vector<std::string> expect_keys;
+  std::vector<blackwidow::KeyValue> kvs_out;
+  std::vector<blackwidow::KeyValue> expect_kvs;
+  std::vector<blackwidow::KeyValue> kvs {{"PKSCANRANGE_A", "VALUE"},
+                                         {"PKSCANRANGE_C", "VALUE"},
+                                         {"PKSCANRANGE_E", "VALUE"},
+                                         {"PKSCANRANGE_G", "VALUE"},
+                                         {"PKSCANRANGE_I", "VALUE"},
+                                         {"PKSCANRANGE_K", "VALUE"},
+                                         {"PKSCANRANGE_M", "VALUE"},
+                                         {"PKSCANRANGE_O", "VALUE"},
+                                         {"PKSCANRANGE_Q", "VALUE"},
+                                         {"PKSCANRANGE_S", "VALUE"}};
+  for (const auto& kv : kvs) {
+    keys_del.push_back(kv.key);
+  }
+
+  //=============================== Strings ===============================
+  s = db.MSet(kvs);
+  ASSERT_TRUE(s.ok());
+
+
+  // ************************** Group 1 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      A     C     E     G     I     K     M     O     Q     S
+  //    ^                                                         ^
+  // key_start                                             key_end/next_key
+  kvs_out.clear();
+  expect_kvs.clear();
+  s = db.PKScanRange(DataType::kStrings, "", "", "*", 10, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 0; idx <= 9; ++idx) {
+    expect_kvs.push_back(kvs[idx]);
+  }
+  ASSERT_TRUE(key_value_match(kvs_out, expect_kvs));
+  ASSERT_EQ(next_key, "");
+
+
+  // ************************** Group 2 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      A     C     E     G     I     K     M     O     Q     S
+  //         ^                                                    ^
+  //      key_start                                        key_end/next_key
+  kvs_out.clear();
+  expect_kvs.clear();
+  s = db.PKScanRange(DataType::kStrings, "PKSCANRANGE_B", "", "*", 10, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 1; idx <= 9; ++idx) {
+    expect_kvs.push_back(kvs[idx]);
+  }
+  ASSERT_TRUE(key_value_match(kvs_out, expect_kvs));
+  ASSERT_EQ(next_key, "");
+
+
+  // ************************** Group 3 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      A     C     E     G     I     K     M     O     Q     S
+  //    ^                                                    ^  ^
+  // key_start                                         key_end  next_key
+  kvs_out.clear();
+  expect_kvs.clear();
+  s = db.PKScanRange(DataType::kStrings, "", "PKSCANRANGE_R", "*", 10, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 0; idx <= 8; ++idx) {
+    expect_kvs.push_back(kvs[idx]);
+  }
+  ASSERT_TRUE(key_value_match(kvs_out, expect_kvs));
+  ASSERT_EQ(next_key, "PKSCANRANGE_S");
+
+
+  // ************************** Group 4 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      A     C     E     G     I     K     M     O     Q     S
+  //               ^                                   ^  ^
+  //            key_start                        key_end  next_key
+  kvs_out.clear();
+  expect_kvs.clear();
+  s = db.PKScanRange(DataType::kStrings, "PKSCANRANGE_D", "PKSCANRANGE_P", "*", 10, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 2; idx <= 7; ++idx) {
+    expect_kvs.push_back(kvs[idx]);
+  }
+  ASSERT_TRUE(key_value_match(kvs_out, expect_kvs));
+  ASSERT_EQ(next_key, "PKSCANRANGE_Q");
+
+
+  // ************************** Group 5 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      A     C     E     G     I     K     M     O     Q     S
+  //            ^                                         ^     ^
+  //         key_start                              key_end     next_key
+  kvs_out.clear();
+  expect_kvs.clear();
+  s = db.PKScanRange(DataType::kStrings, "PKSCANRANGE_C", "PKSCANRANGE_Q", "*", 10, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 1; idx <= 8; ++idx) {
+    expect_kvs.push_back(kvs[idx]);
+  }
+  ASSERT_TRUE(key_value_match(kvs_out, expect_kvs));
+  ASSERT_EQ(next_key, "PKSCANRANGE_S");
+
+
+  // ************************** Group 6 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      A     C     E     G     I     K     M     O     Q     S
+  //                              ^     ^     ^
+  //                      key_start  key_end  next_key
+  kvs_out.clear();
+  expect_kvs.clear();
+  s = db.PKScanRange(DataType::kStrings, "PKSCANRANGE_I", "PKSCANRANGE_K", "*", 10, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 4; idx <= 5; ++idx) {
+    expect_kvs.push_back(kvs[idx]);
+  }
+  ASSERT_TRUE(key_value_match(kvs_out, expect_kvs));
+  ASSERT_EQ(next_key, "PKSCANRANGE_M");
+
+
+  // ************************** Group 7 Test **************************
+  //      0     1     2     3     4        5     6     7     8     9
+  //      A     C     E     G     I        K     M     O     Q     S
+  //                              ^        ^
+  //                     key_start/key_end next_key
+  kvs_out.clear();
+  expect_kvs.clear();
+  s = db.PKScanRange(DataType::kStrings, "PKSCANRANGE_I", "PKSCANRANGE_I", "*", 10, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 4; idx <= 4; ++idx) {
+    expect_kvs.push_back(kvs[idx]);
+  }
+  ASSERT_TRUE(key_value_match(kvs_out, expect_kvs));
+  ASSERT_EQ(next_key, "PKSCANRANGE_K");
+
+
+  // ************************** Group 8 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      A     C     E     G     I     K     M     O     Q     S
+  //                              ^     ^
+  //                        key_end     key_start
+  kvs_out.clear();
+  expect_kvs.clear();
+  s = db.PKScanRange(DataType::kStrings, "PKSCANRANGE_K", "PKSCANRANGE_I", "*", 10, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.IsInvalidArgument());
+  ASSERT_TRUE(key_value_match(kvs_out, expect_kvs));
+  ASSERT_EQ(next_key, "");
+
+
+  // ************************** Group 9 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      A     C     E     G     I     K     M     O     Q     S
+  //            ^                             ^           ^
+  //         key_start                    next_key     key_end
+  kvs_out.clear();
+  expect_kvs.clear();
+  s = db.PKScanRange(DataType::kStrings, "PKSCANRANGE_C", "PKSCANRANGE_Q", "*", 5, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 1; idx <= 5; ++idx) {
+    expect_kvs.push_back(kvs[idx]);
+  }
+  ASSERT_TRUE(key_value_match(kvs_out, expect_kvs));
+  ASSERT_EQ(next_key, "PKSCANRANGE_M");
+
+
+  // ************************** Group 10 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      A     C     E     G     I     K     M     O     Q     S
+  //            ^           ^                       ^     ^
+  //         key_start   expire              next_key  key_end
+  ASSERT_TRUE(make_expired(&db, "PKSCANRANGE_G"));
+  kvs_out.clear();
+  expect_kvs.clear();
+  s = db.PKScanRange(DataType::kStrings, "PKSCANRANGE_C", "PKSCANRANGE_Q", "*", 5, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 1; idx <= 6; ++idx) {
+    if (idx != 3) {
+      expect_kvs.push_back(kvs[idx]);
+    }
+  }
+  ASSERT_TRUE(key_value_match(kvs_out, expect_kvs));
+  ASSERT_EQ(next_key, "PKSCANRANGE_O");
+
+
+
+  //=============================== Sets ===============================
+  for (const auto& kv : kvs) {
+    s = db.SAdd(kv.key, {"MEMBER"}, &ret);
+  }
+
+
+  // ************************** Group 11 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      A     C     E     G     I     K     M     O     Q     S
+  //    ^                                                         ^
+  // key_start                                             key_end/next_key
+  keys_out.clear();
+  expect_keys.clear();
+  s = db.PKScanRange(DataType::kSets, "", "", "*", 10, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 0; idx <= 9; ++idx) {
+    expect_keys.push_back(kvs[idx].key);
+  }
+  ASSERT_TRUE(key_match(keys_out, expect_keys));
+  ASSERT_EQ(next_key, "");
+
+
+  // ************************** Group 12 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      A     C     E     G     I     K     M     O     Q     S
+  //         ^                                                    ^
+  //      key_start                                        key_end/next_key
+  keys_out.clear();
+  expect_keys.clear();
+  s = db.PKScanRange(DataType::kSets, "PKSCANRANGE_B", "", "*", 10, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 1; idx <= 9; ++idx) {
+    expect_keys.push_back(kvs[idx].key);
+  }
+  ASSERT_TRUE(key_match(keys_out, expect_keys));
+  ASSERT_EQ(next_key, "");
+
+
+  // ************************** Group 13 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      A     C     E     G     I     K     M     O     Q     S
+  //    ^                                                    ^  ^
+  // key_start                                         key_end  next_key
+  keys_out.clear();
+  expect_keys.clear();
+  s = db.PKScanRange(DataType::kSets, "", "PKSCANRANGE_R", "*", 10, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 0; idx <= 8; ++idx) {
+    expect_keys.push_back(kvs[idx].key);
+  }
+  ASSERT_TRUE(key_match(keys_out, expect_keys));
+  ASSERT_EQ(next_key, "PKSCANRANGE_S");
+
+
+  // ************************** Group 14 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      A     C     E     G     I     K     M     O     Q     S
+  //               ^                                   ^  ^
+  //            key_start                        key_end  next_key
+  keys_out.clear();
+  expect_keys.clear();
+  s = db.PKScanRange(DataType::kSets, "PKSCANRANGE_D", "PKSCANRANGE_P", "*", 10, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 2; idx <= 7; ++idx) {
+    expect_keys.push_back(kvs[idx].key);
+  }
+  ASSERT_TRUE(key_match(keys_out, expect_keys));
+  ASSERT_EQ(next_key, "PKSCANRANGE_Q");
+
+
+  // ************************** Group 15 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      A     C     E     G     I     K     M     O     Q     S
+  //            ^                                         ^     ^
+  //         key_start                              key_end     next_key
+  keys_out.clear();
+  expect_keys.clear();
+  s = db.PKScanRange(DataType::kSets, "PKSCANRANGE_C", "PKSCANRANGE_Q", "*", 10, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 1; idx <= 8; ++idx) {
+    expect_keys.push_back(kvs[idx].key);
+  }
+  ASSERT_TRUE(key_match(keys_out, expect_keys));
+  ASSERT_EQ(next_key, "PKSCANRANGE_S");
+
+
+  // ************************** Group 16 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      A     C     E     G     I     K     M     O     Q     S
+  //                              ^     ^     ^
+  //                      key_start  key_end  next_key
+  keys_out.clear();
+  expect_keys.clear();
+  s = db.PKScanRange(DataType::kSets, "PKSCANRANGE_I", "PKSCANRANGE_K", "*", 10, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 4; idx <= 5; ++idx) {
+    expect_keys.push_back(kvs[idx].key);
+  }
+  ASSERT_TRUE(key_match(keys_out, expect_keys));
+  ASSERT_EQ(next_key, "PKSCANRANGE_M");
+
+
+  // ************************** Group 17 Test **************************
+  //      0     1     2     3     4        5     6     7     8     9
+  //      A     C     E     G     I        K     M     O     Q     S
+  //                              ^        ^
+  //                     key_start/key_end next_key
+  keys_out.clear();
+  expect_keys.clear();
+  s = db.PKScanRange(DataType::kSets, "PKSCANRANGE_I", "PKSCANRANGE_I", "*", 10, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 4; idx <= 4; ++idx) {
+    expect_keys.push_back(kvs[idx].key);
+  }
+  ASSERT_TRUE(key_match(keys_out, expect_keys));
+  ASSERT_EQ(next_key, "PKSCANRANGE_K");
+
+
+  // ************************** Group 18 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      A     C     E     G     I     K     M     O     Q     S
+  //                              ^     ^
+  //                        key_end     key_start
+  keys_out.clear();
+  expect_keys.clear();
+  s = db.PKScanRange(DataType::kSets, "PKSCANRANGE_K", "PKSCANRANGE_I", "*", 10, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.IsInvalidArgument());
+  ASSERT_TRUE(key_match(keys_out, expect_keys));
+  ASSERT_EQ(next_key, "");
+
+
+  // ************************** Group 19 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      A     C     E     G     I     K     M     O     Q     S
+  //            ^                             ^           ^
+  //         key_start                    next_key     key_end
+  keys_out.clear();
+  expect_keys.clear();
+  s = db.PKScanRange(DataType::kSets, "PKSCANRANGE_C", "PKSCANRANGE_Q", "*", 5, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 1; idx <= 5; ++idx) {
+    expect_keys.push_back(kvs[idx].key);
+  }
+  ASSERT_TRUE(key_match(keys_out, expect_keys));
+  ASSERT_EQ(next_key, "PKSCANRANGE_M");
+
+
+  // ************************** Group 20 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      A     C     E     G     I     K     M     O     Q     S
+  //            ^           ^                       ^     ^
+  //         key_start   expire              next_key  key_end
+  ASSERT_TRUE(make_expired(&db, "PKSCANRANGE_G"));
+  keys_out.clear();
+  expect_keys.clear();
+  s = db.PKScanRange(DataType::kSets, "PKSCANRANGE_C", "PKSCANRANGE_Q", "*", 5, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 1; idx <= 6; ++idx) {
+    if (idx != 3) {
+      expect_keys.push_back(kvs[idx].key);
+    }
+  }
+  ASSERT_TRUE(key_match(keys_out, expect_keys));
+  ASSERT_EQ(next_key, "PKSCANRANGE_O");
+
+
+  std::map<DataType, Status> type_status;
+  db.Del(keys_del, &type_status);
+  db.Compact(DataType::kStrings, true);
+}
+
+// XRScanRange
+// Note: This test needs to execute at first because all of the data is
+// predetermined.
+TEST_F(KeysTest, PKRScanRangeTest) {
+  int32_t ret;
+  std::string next_key;
+  std::vector<std::string> keys_del;
+  std::vector<std::string> keys_out;
+  std::vector<std::string> expect_keys;
+  std::vector<blackwidow::KeyValue> kvs_out;
+  std::vector<blackwidow::KeyValue> expect_kvs;
+  std::vector<blackwidow::KeyValue> kvs {{"PKRSCANRANGE_A", "VALUE"},
+                                         {"PKRSCANRANGE_C", "VALUE"},
+                                         {"PKRSCANRANGE_E", "VALUE"},
+                                         {"PKRSCANRANGE_G", "VALUE"},
+                                         {"PKRSCANRANGE_I", "VALUE"},
+                                         {"PKRSCANRANGE_K", "VALUE"},
+                                         {"PKRSCANRANGE_M", "VALUE"},
+                                         {"PKRSCANRANGE_O", "VALUE"},
+                                         {"PKRSCANRANGE_Q", "VALUE"},
+                                         {"PKRSCANRANGE_S", "VALUE"}};
+  for (const auto& kv : kvs) {
+    keys_del.push_back(kv.key);
+  }
+
+  //=============================== Strings ===============================
+  s = db.MSet(kvs);
+  ASSERT_TRUE(s.ok());
+
+
+  // ************************** Group 1 Test **************************
+  //         0     1     2     3     4     5     6     7     8     9
+  //         A     C     E     G     I     K     M     O     Q     S
+  //       ^                                                         ^
+  //key_end/next_key                                             key_start
+  kvs_out.clear();
+  expect_kvs.clear();
+  s = db.PKRScanRange(DataType::kStrings, "", "", "*", 10, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 9; idx >= 0; --idx) {
+    expect_kvs.push_back(kvs[idx]);
+  }
+  ASSERT_TRUE(key_value_match(kvs_out, expect_kvs));
+  ASSERT_EQ(next_key, "");
+
+
+  // ************************** Group 2 Test **************************
+  //       0     1     2     3     4     5     6     7     8     9
+  //       A     C     E     G     I     K     M     O     Q     S
+  //       ^  ^                                                    ^
+  //next_key  key_end                                              key_start
+  kvs_out.clear();
+  expect_kvs.clear();
+  s = db.PKRScanRange(DataType::kStrings, "", "PKRSCANRANGE_B", "*", 10, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 9; idx >= 1; --idx) {
+    expect_kvs.push_back(kvs[idx]);
+  }
+  ASSERT_TRUE(key_value_match(kvs_out, expect_kvs));
+  ASSERT_EQ(next_key, "PKRSCANRANGE_A");
+
+
+  // ************************** Group 3 Test **************************
+  //         0     1     2     3     4     5     6     7     8     9
+  //         A     C     E     G     I     K     M     O     Q     S
+  //       ^                                                    ^
+  //key_end/next_key                                         key_start
+  kvs_out.clear();
+  expect_kvs.clear();
+  s = db.PKRScanRange(DataType::kStrings, "PKRSCANRANGE_R", "", "*", 10, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 8; idx >= 0; --idx) {
+    expect_kvs.push_back(kvs[idx]);
+  }
+  ASSERT_TRUE(key_value_match(kvs_out, expect_kvs));
+  ASSERT_EQ(next_key, "");
+
+
+  // ************************** Group 4 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      A     C     E     G     I     K     M     O     Q     S
+  //            ^  ^                                   ^
+  //     next_key  key_end                          key_start
+  kvs_out.clear();
+  expect_kvs.clear();
+  s = db.PKRScanRange(DataType::kStrings, "PKRSCANRANGE_P", "PKRSCANRANGE_D", "*", 10, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 7; idx >= 2; --idx) {
+    expect_kvs.push_back(kvs[idx]);
+  }
+  ASSERT_TRUE(key_value_match(kvs_out, expect_kvs));
+  ASSERT_EQ(next_key, "PKRSCANRANGE_C");
+
+
+  // ************************** Group 5 Test **************************
+  //       0     1     2     3     4     5     6     7     8     9
+  //       A     C     E     G     I     K     M     O     Q     S
+  //       ^     ^                                         ^
+  //next_key     key_end                                key_start
+  kvs_out.clear();
+  expect_kvs.clear();
+  s = db.PKRScanRange(DataType::kStrings, "PKRSCANRANGE_Q", "PKRSCANRANGE_C", "*", 10, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 8; idx >= 1; --idx) {
+    expect_kvs.push_back(kvs[idx]);
+  }
+  ASSERT_TRUE(key_value_match(kvs_out, expect_kvs));
+  ASSERT_EQ(next_key, "PKRSCANRANGE_A");
+
+
+  // ************************** Group 6 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      A     C     E     G     I     K     M     O     Q     S
+  //                        ^     ^     ^
+  //                 next_key  key_end  key_start
+  kvs_out.clear();
+  expect_kvs.clear();
+  s = db.PKRScanRange(DataType::kStrings, "PKRSCANRANGE_K", "PKRSCANRANGE_I", "*", 10, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 5; idx >= 4; --idx) {
+    expect_kvs.push_back(kvs[idx]);
+  }
+  ASSERT_TRUE(key_value_match(kvs_out, expect_kvs));
+  ASSERT_EQ(next_key, "PKRSCANRANGE_G");
+
+
+  // ************************** Group 7 Test **************************
+  //      0     1     2     3       4     5     6     7     8     9
+  //      A     C     E     G       I     K     M     O     Q     S
+  //                        ^       ^
+  //                    next_key key_start/key_end
+  kvs_out.clear();
+  expect_kvs.clear();
+  s = db.PKRScanRange(DataType::kStrings, "PKRSCANRANGE_I", "PKRSCANRANGE_I", "*", 10, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 4; idx >= 4; --idx) {
+    expect_kvs.push_back(kvs[idx]);
+  }
+  ASSERT_TRUE(key_value_match(kvs_out, expect_kvs));
+  ASSERT_EQ(next_key, "PKRSCANRANGE_G");
+
+
+  // ************************** Group 8 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      A     C     E     G     I     K     M     O     Q     S
+  //                              ^     ^
+  //                      key_start     key_end
+  kvs_out.clear();
+  expect_kvs.clear();
+  s = db.PKRScanRange(DataType::kStrings, "PKRSCANRANGE_I", "PKRSCANRANGE_K", "*", 10, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.IsInvalidArgument());
+  ASSERT_TRUE(key_value_match(kvs_out, expect_kvs));
+  ASSERT_EQ(next_key, "");
+
+
+  // ************************** Group 9 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      A     C     E     G     I     K     M     O     Q     S
+  //            ^           ^                             ^
+  //         key_end    next_key                       key_start
+  kvs_out.clear();
+  expect_kvs.clear();
+  s = db.PKRScanRange(DataType::kStrings, "PKRSCANRANGE_Q", "PKRSCANRANGE_C", "*", 5, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 8; idx >= 4; --idx) {
+    expect_kvs.push_back(kvs[idx]);
+  }
+  ASSERT_TRUE(key_value_match(kvs_out, expect_kvs));
+  ASSERT_EQ(next_key, "PKRSCANRANGE_G");
+
+
+  // ************************** Group 10 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      A     C     E     G     I     K     M     O     Q     S
+  //            ^     ^                       ^           ^
+  //         key_end  next_key              expire     key_start
+  kvs_out.clear();
+  expect_kvs.clear();
+  ASSERT_TRUE(make_expired(&db, "PKRSCANRANGE_M"));
+  s = db.PKRScanRange(DataType::kStrings, "PKRSCANRANGE_Q", "PKRSCANRANGE_C", "*", 5, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 8; idx >= 3; --idx) {
+    if (idx != 6) {
+      expect_kvs.push_back(kvs[idx]);
+    }
+  }
+  ASSERT_TRUE(key_value_match(kvs_out, expect_kvs));
+  ASSERT_EQ(next_key, "PKRSCANRANGE_E");
+
+
+  //=============================== Sets ===============================
+  for (const auto& kv : kvs) {
+    s = db.SAdd(kv.key, {"MEMBER"}, &ret);
+  }
+
+  // ************************** Group 11 Test **************************
+  //         0     1     2     3     4     5     6     7     8     9
+  //         A     C     E     G     I     K     M     O     Q     S
+  //       ^                                                         ^
+  //key_end/next_key                                             key_start
+  keys_out.clear();
+  expect_keys.clear();
+  s = db.PKRScanRange(DataType::kSets, "", "", "*", 10, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 9; idx >= 0; --idx) {
+    expect_keys.push_back(kvs[idx].key);
+  }
+  ASSERT_TRUE(key_match(keys_out, expect_keys));
+  ASSERT_EQ(next_key, "");
+
+
+  // ************************** Group 12 Test **************************
+  //       0     1     2     3     4     5     6     7     8     9
+  //       A     C     E     G     I     K     M     O     Q     S
+  //       ^  ^                                                    ^
+  //next_key  key_end                                              key_start
+  keys_out.clear();
+  expect_keys.clear();
+  s = db.PKRScanRange(DataType::kSets, "", "PKRSCANRANGE_B", "*", 10, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 9; idx >= 1; --idx) {
+    expect_keys.push_back(kvs[idx].key);
+  }
+  ASSERT_TRUE(key_match(keys_out, expect_keys));
+  ASSERT_EQ(next_key, "PKRSCANRANGE_A");
+
+
+  // ************************** Group 13 Test **************************
+  //         0     1     2     3     4     5     6     7     8     9
+  //         A     C     E     G     I     K     M     O     Q     S
+  //       ^                                                    ^
+  //key_end/next_key                                         key_start
+  keys_out.clear();
+  expect_keys.clear();
+  s = db.PKRScanRange(DataType::kSets, "PKRSCANRANGE_R", "", "*", 10, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 8; idx >= 0; --idx) {
+    expect_keys.push_back(kvs[idx].key);
+  }
+  ASSERT_TRUE(key_match(keys_out, expect_keys));
+  ASSERT_EQ(next_key, "");
+
+
+  // ************************** Group 14 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      A     C     E     G     I     K     M     O     Q     S
+  //            ^  ^                                   ^
+  //     next_key  key_end                          key_start
+  keys_out.clear();
+  expect_keys.clear();
+  s = db.PKRScanRange(DataType::kSets, "PKRSCANRANGE_P", "PKRSCANRANGE_D", "*", 10, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 7; idx >= 2; --idx) {
+    expect_keys.push_back(kvs[idx].key);
+  }
+  ASSERT_TRUE(key_match(keys_out, expect_keys));
+  ASSERT_EQ(next_key, "PKRSCANRANGE_C");
+
+
+  // ************************** Group 15 Test **************************
+  //       0     1     2     3     4     5     6     7     8     9
+  //       A     C     E     G     I     K     M     O     Q     S
+  //       ^     ^                                         ^
+  //next_key     key_end                                key_start
+  keys_out.clear();
+  expect_keys.clear();
+  s = db.PKRScanRange(DataType::kSets, "PKRSCANRANGE_Q", "PKRSCANRANGE_C", "*", 10, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 8; idx >= 1; --idx) {
+    expect_keys.push_back(kvs[idx].key);
+  }
+  ASSERT_TRUE(key_match(keys_out, expect_keys));
+  ASSERT_EQ(next_key, "PKRSCANRANGE_A");
+
+
+  // ************************** Group 16 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      A     C     E     G     I     K     M     O     Q     S
+  //                        ^     ^     ^
+  //                 next_key  key_end  key_start
+  keys_out.clear();
+  expect_keys.clear();
+  s = db.PKRScanRange(DataType::kSets, "PKRSCANRANGE_K", "PKRSCANRANGE_I", "*", 10, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 5; idx >= 4; --idx) {
+    expect_keys.push_back(kvs[idx].key);
+  }
+  ASSERT_TRUE(key_match(keys_out, expect_keys));
+  ASSERT_EQ(next_key, "PKRSCANRANGE_G");
+
+
+  // ************************** Group 17 Test **************************
+  //      0     1     2     3       4     5     6     7     8     9
+  //      A     C     E     G       I     K     M     O     Q     S
+  //                        ^       ^
+  //                    next_key key_start/key_end
+  keys_out.clear();
+  expect_keys.clear();
+  s = db.PKRScanRange(DataType::kSets, "PKRSCANRANGE_I", "PKRSCANRANGE_I", "*", 10, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 4; idx >= 4; --idx) {
+    expect_keys.push_back(kvs[idx].key);
+  }
+  ASSERT_TRUE(key_match(keys_out, expect_keys));
+  ASSERT_EQ(next_key, "PKRSCANRANGE_G");
+
+
+  // ************************** Group 18 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      A     C     E     G     I     K     M     O     Q     S
+  //                              ^     ^
+  //                      key_start     key_end
+  keys_out.clear();
+  expect_keys.clear();
+  s = db.PKRScanRange(DataType::kSets, "PKRSCANRANGE_I", "PKRSCANRANGE_K", "*", 10, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.IsInvalidArgument());
+  ASSERT_TRUE(key_match(keys_out, expect_keys));
+  ASSERT_EQ(next_key, "");
+
+
+  // ************************** Group 19 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      A     C     E     G     I     K     M     O     Q     S
+  //            ^           ^                             ^
+  //         key_end    next_key                       key_start
+  keys_out.clear();
+  expect_keys.clear();
+  s = db.PKRScanRange(DataType::kSets, "PKRSCANRANGE_Q", "PKRSCANRANGE_C", "*", 5, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 8; idx >= 4; --idx) {
+    expect_keys.push_back(kvs[idx].key);
+  }
+  ASSERT_TRUE(key_match(keys_out, expect_keys));
+  ASSERT_EQ(next_key, "PKRSCANRANGE_G");
+
+
+  // ************************** Group 20 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      A     C     E     G     I     K     M     O     Q     S
+  //            ^     ^                       ^           ^
+  //         key_end  next_key              expire     key_start
+  keys_out.clear();
+  expect_keys.clear();
+  ASSERT_TRUE(make_expired(&db, "PKRSCANRANGE_M"));
+  s = db.PKRScanRange(DataType::kSets, "PKRSCANRANGE_Q", "PKRSCANRANGE_C", "*", 5, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 8; idx >= 3; --idx) {
+    if (idx != 6) {
+      expect_keys.push_back(kvs[idx].key);
+    }
+  }
+  ASSERT_TRUE(key_match(keys_out, expect_keys));
+  ASSERT_EQ(next_key, "PKRSCANRANGE_E");
+
+
+  // ************************** Group 20 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      A     C     E     G     I     K     M     O     Q     S
+  //            ^     ^           ^           ^           ^
+  //         key_end  next_key  empty       expire     key_start
+  keys_out.clear();
+  expect_keys.clear();
+  s = db.SRem("PKRSCANRANGE_I", {"MEMBER"}, &ret);
+  ASSERT_TRUE(s.ok());
+  s = db.PKRScanRange(DataType::kSets, "PKRSCANRANGE_Q", "PKRSCANRANGE_C", "*", 4, &keys_out, &kvs_out, &next_key);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 8; idx >= 3; --idx) {
+    if (idx != 6 && idx != 4) {
+      expect_keys.push_back(kvs[idx].key);
+    }
+  }
+  ASSERT_TRUE(key_match(keys_out, expect_keys));
+  ASSERT_EQ(next_key, "PKRSCANRANGE_E");
+
+  std::map<DataType, Status> type_status;
+  db.Del(keys_del, &type_status);
+}
+
+
 // Scan
 // Note: This test needs to execute at first because all of the data is
 // predetermined.

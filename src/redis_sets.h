@@ -67,6 +67,12 @@ class RedisSets : public Redis {
                        int32_t* ret);
     Status SScan(const Slice& key, int64_t cursor, const std::string& pattern,
                  int64_t count, std::vector<std::string>* members, int64_t* next_cursor);
+    Status PKScanRange(const Slice& key_start, const Slice& key_end,
+                       const Slice& pattern, int32_t limit,
+                       std::vector<std::string>* keys, std::string* next_key);
+    Status PKRScanRange(const Slice& key_start, const Slice& key_end,
+                        const Slice& pattern, int32_t limit,
+                        std::vector<std::string>* keys, std::string* next_key);
 
     // Keys Commands
     virtual Status Expire(const Slice& key, int32_t ttl) override;

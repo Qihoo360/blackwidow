@@ -984,6 +984,68 @@ int64_t BlackWidow::Scan(int64_t cursor, const std::string& pattern,
   return cursor_ret;
 }
 
+Status BlackWidow::PKScanRange(const DataType& data_type,
+                               const Slice& key_start, const Slice& key_end,
+                               const Slice& pattern, int32_t limit,
+                               std::vector<std::string>* keys, std::vector<KeyValue>* kvs,
+                               std::string* next_key) {
+  Status s;
+  keys->clear();
+  next_key->clear();
+  switch (data_type) {
+    case DataType::kStrings:
+      s = strings_db_->PKScanRange(key_start, key_end, pattern, limit, kvs, next_key);
+      break;
+    case DataType::kHashes:
+      s = hashes_db_->PKScanRange(key_start, key_end, pattern, limit, keys, next_key);
+      break;
+    case DataType::kLists:
+      s = lists_db_->PKScanRange(key_start, key_end, pattern, limit, keys, next_key);
+      break;
+    case DataType::kZSets:
+      s = zsets_db_->PKScanRange(key_start, key_end, pattern, limit, keys, next_key);
+      break;
+    case DataType::kSets:
+      s = sets_db_->PKScanRange(key_start, key_end, pattern, limit, keys, next_key);
+      break;
+    default:
+      s = Status::Corruption("Unsupported data types");
+      break;
+  }
+  return s;
+}
+
+Status BlackWidow::PKRScanRange(const DataType& data_type,
+                                const Slice& key_start, const Slice& key_end,
+                                const Slice& pattern, int32_t limit,
+                                std::vector<std::string>* keys, std::vector<KeyValue>* kvs,
+                                std::string* next_key) {
+  Status s;
+  keys->clear();
+  next_key->clear();
+  switch (data_type) {
+    case DataType::kStrings:
+      s = strings_db_->PKRScanRange(key_start, key_end, pattern, limit, kvs, next_key);
+      break;
+    case DataType::kHashes:
+      s = hashes_db_->PKRScanRange(key_start, key_end, pattern, limit, keys, next_key);
+      break;
+    case DataType::kLists:
+      s = lists_db_->PKRScanRange(key_start, key_end, pattern, limit, keys, next_key);
+      break;
+    case DataType::kZSets:
+      s = zsets_db_->PKRScanRange(key_start, key_end, pattern, limit, keys, next_key);
+      break;
+    case DataType::kSets:
+      s = sets_db_->PKRScanRange(key_start, key_end, pattern, limit, keys, next_key);
+      break;
+    default:
+      s = Status::Corruption("Unsupported data types");
+      break;
+  }
+  return s;
+}
+
 Status BlackWidow::Scanx(const DataType& data_type,
                          const std::string& start_key,
                          const std::string& pattern,

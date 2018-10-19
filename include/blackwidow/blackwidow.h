@@ -949,6 +949,22 @@ class BlackWidow {
   int64_t Scan(int64_t cursor, const std::string& pattern,
                int64_t count, std::vector<std::string>* keys);
 
+  // Iterate over a collection of elements by specified range
+  // return a next_key that the user need to use as the key_start argument
+  // in the next call
+  Status PKScanRange(const DataType& data_type,
+                     const Slice& key_start, const Slice& key_end,
+                     const Slice& pattern, int32_t limit,
+                     std::vector<std::string>* keys, std::vector<KeyValue>* kvs,
+                     std::string* next_key);
+
+  // part from the reversed ordering, PKRSCANRANGE is similar to PKScanRange
+  Status PKRScanRange(const DataType& data_type,
+                      const Slice& key_start, const Slice& key_end,
+                      const Slice& pattern, int32_t limit,
+                      std::vector<std::string>* keys, std::vector<KeyValue>* kvs,
+                      std::string* next_key);
+
   // Iterate over a collection of elements
   // return next_key that the user need to use as the start_key argument
   // in the next call
