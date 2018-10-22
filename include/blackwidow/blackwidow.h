@@ -375,6 +375,20 @@ class BlackWidow {
   Status HScanx(const Slice& key, const std::string start_field, const std::string& pattern,
                 int64_t count, std::vector<FieldValue>* field_values, std::string* next_field);
 
+  // Iterate over a Hash table of fields by specified range
+  // return next_field that the user need to use as the start_field argument
+  // in the next call
+  Status PKHScanRange(const Slice& key,
+                      const Slice& field_start, const std::string& field_end,
+                      const Slice& pattern, int32_t limit,
+                      std::vector<FieldValue>* field_values, std::string* next_field);
+
+  // part from the reversed ordering, PKHRSCANRANGE is similar to PKHScanRange
+  Status PKHRScanRange(const Slice& key,
+                       const Slice& field_start, const std::string& field_end,
+                       const Slice& pattern, int32_t limit,
+                       std::vector<FieldValue>* field_values, std::string* next_field);
+
 
   // Sets Commands
 

@@ -786,7 +786,7 @@ TEST_F(KeysTest, PKRScanRangeTest) {
   ASSERT_EQ(next_key, "PKRSCANRANGE_E");
 
 
-  // ************************** Group 20 Test **************************
+  // ************************** Group 21 Test **************************
   //      0     1     2     3     4     5     6     7     8     9
   //      A     C     E     G     I     K     M     O     Q     S
   //            ^     ^           ^           ^           ^

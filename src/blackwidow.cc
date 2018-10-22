@@ -346,6 +346,20 @@ Status BlackWidow::HScanx(const Slice& key, const std::string start_field, const
   return hashes_db_->HScanx(key, start_field, pattern, count, field_values, next_field);
 }
 
+Status BlackWidow::PKHScanRange(const Slice& key,
+                                const Slice& field_start, const std::string& field_end,
+                                const Slice& pattern, int32_t limit,
+                                std::vector<FieldValue>* field_values, std::string* next_field) {
+  return hashes_db_->PKHScanRange(key, field_start, field_end, pattern, limit, field_values, next_field);
+}
+
+Status BlackWidow::PKHRScanRange(const Slice& key,
+                                 const Slice& field_start, const std::string& field_end,
+                                 const Slice& pattern, int32_t limit,
+                                 std::vector<FieldValue>* field_values, std::string* next_field) {
+  return hashes_db_->PKHRScanRange(key, field_start, field_end, pattern, limit, field_values, next_field);
+}
+
 // Sets Commands
 Status BlackWidow::SAdd(const Slice& key,
                         const std::vector<std::string>& members,

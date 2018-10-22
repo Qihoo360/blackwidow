@@ -821,6 +821,139 @@ Status RedisHashes::HScanx(const Slice& key, const std::string start_field, cons
   return Status::OK();
 }
 
+Status RedisHashes::PKHScanRange(const Slice& key,
+                                 const Slice& field_start, const std::string& field_end,
+                                 const Slice& pattern, int32_t limit,
+                                 std::vector<FieldValue>* field_values, std::string* next_field) {
+  next_field->clear();
+  field_values->clear();
+
+  int64_t remain = limit;
+  std::string meta_value;
+  rocksdb::ReadOptions read_options;
+  const rocksdb::Snapshot* snapshot;
+  ScopeSnapshot ss(db_, &snapshot);
+  read_options.snapshot = snapshot;
+
+  bool start_no_limit = !field_start.compare("");
+  bool end_no_limit = !field_end.compare("");
+
+  if (!start_no_limit
+    && !end_no_limit
+    && (field_start.compare(field_end) > 0)) {
+    return Status::InvalidArgument("error in given range");
+  }
+
+  Status s = db_->Get(read_options, handles_[0], key, &meta_value);
+  if (s.ok()) {
+    ParsedHashesMetaValue parsed_hashes_meta_value(&meta_value);
+    if (parsed_hashes_meta_value.IsStale()
+      || parsed_hashes_meta_value.count() == 0) {
+      *next_field = "";
+      return Status::NotFound();
+    } else {
+      int32_t version = parsed_hashes_meta_value.version();
+      HashesDataKey hashes_data_prefix(key, version, Slice());
+      HashesDataKey hashes_start_data_key(key, version, field_start);
+      std::string prefix = hashes_data_prefix.Encode().ToString();
+      rocksdb::Iterator* iter = db_->NewIterator(read_options, handles_[1]);
+      for (iter->Seek(start_no_limit ? prefix : hashes_start_data_key.Encode());
+           iter->Valid() && remain > 0 && iter->key().starts_with(prefix);
+           iter->Next()) {
+        ParsedHashesDataKey parsed_hashes_data_key(iter->key());
+        std::string field = parsed_hashes_data_key.field().ToString();
+        if (!end_no_limit && field.compare(field_end) > 0) {
+          break;
+        }
+        if (StringMatch(pattern.data(), pattern.size(), field.data(), field.size(), 0)) {
+          field_values->push_back({field, iter->value().ToString()});
+        }
+        remain--;
+      }
+
+      if (iter->Valid() && iter->key().starts_with(prefix)) {
+        ParsedHashesDataKey parsed_hashes_data_key(iter->key());
+        *next_field = parsed_hashes_data_key.field().ToString();
+      } else {
+        *next_field = "";
+      }
+      delete iter;
+    }
+  } else {
+    *next_field = "";
+    return s;
+  }
+  return Status::OK();
+}
+
+Status RedisHashes::PKHRScanRange(const Slice& key,
+                                  const Slice& field_start, const std::string& field_end,
+                                  const Slice& pattern, int32_t limit,
+                                  std::vector<FieldValue>* field_values, std::string* next_field) {
+
+  next_field->clear();
+  field_values->clear();
+
+  int64_t remain = limit;
+  std::string meta_value;
+  rocksdb::ReadOptions read_options;
+  const rocksdb::Snapshot* snapshot;
+  ScopeSnapshot ss(db_, &snapshot);
+  read_options.snapshot = snapshot;
+
+  bool start_no_limit = !field_start.compare("");
+  bool end_no_limit = !field_end.compare("");
+
+  if (!start_no_limit
+    && !end_no_limit
+    && (field_start.compare(field_end) < 0)) {
+    return Status::InvalidArgument("error in given range");
+  }
+
+  Status s = db_->Get(read_options, handles_[0], key, &meta_value);
+  if (s.ok()) {
+    ParsedHashesMetaValue parsed_hashes_meta_value(&meta_value);
+    if (parsed_hashes_meta_value.IsStale()
+      || parsed_hashes_meta_value.count() == 0) {
+      *next_field = "";
+      return Status::NotFound();
+    } else {
+      int32_t version = parsed_hashes_meta_value.version();
+      int32_t start_key_version = start_no_limit ? version + 1 : version;
+      std::string start_key_field = start_no_limit ? "" : field_start.ToString();
+      HashesDataKey hashes_data_prefix(key, version, Slice());
+      HashesDataKey hashes_start_data_key(key, start_key_version, start_key_field);
+      std::string prefix = hashes_data_prefix.Encode().ToString();
+      rocksdb::Iterator* iter = db_->NewIterator(read_options, handles_[1]);
+      for (iter->SeekForPrev(hashes_start_data_key.Encode().ToString());
+           iter->Valid() && remain > 0 && iter->key().starts_with(prefix);
+           iter->Prev()) {
+        ParsedHashesDataKey parsed_hashes_data_key(iter->key());
+        std::string field = parsed_hashes_data_key.field().ToString();
+        if (!end_no_limit && field.compare(field_end) < 0) {
+          break;
+        }
+        if (StringMatch(pattern.data(), pattern.size(), field.data(), field.size(), 0)) {
+          field_values->push_back({field, iter->value().ToString()});
+        }
+        remain--;
+      }
+
+      if (iter->Valid() && iter->key().starts_with(prefix)) {
+        ParsedHashesDataKey parsed_hashes_data_key(iter->key());
+        *next_field = parsed_hashes_data_key.field().ToString();
+      } else {
+        *next_field = "";
+      }
+      delete iter;
+    }
+  } else {
+    *next_field = "";
+    return s;
+  }
+  return Status::OK();
+}
+
 Status RedisHashes::PKScanRange(const Slice& key_start, const Slice& key_end,
                                 const Slice& pattern, int32_t limit,
                                 std::vector<std::string>* keys, std::string* next_key) {

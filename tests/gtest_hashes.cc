@@ -1756,6 +1756,760 @@ TEST_F(HashesTest, HScanxTest) {
   ASSERT_TRUE(field_value_match(field_value_out, {{"aba", "v"}, {"abb", "v"}, {"abc", "v"}, {"abd", "v"}, {"abf", "v"}}));
 }
 
+// PKHScanRange
+TEST_F(HashesTest, PKHScanRangeTest) {
+  int32_t ret;
+  std::string start_field;
+  std::string next_field;
+  std::vector<FieldValue> field_value_out;
+  std::vector<FieldValue> expect_field_value;
+
+  // ************************** Group 1 Test **************************
+  //        0     1     2     3     4     5     6     7     8     9
+  //        a     c     e     g     i     k     m     o     q     s
+  //      ^                                                         ^
+  // field_start                                           field_end/next_field
+  std::vector<FieldValue> gp1_field_value {{"a", "v"}, {"c", "v"}, {"e", "v"},
+                                           {"g", "v"}, {"i", "v"}, {"k", "v"},
+                                           {"m", "v"}, {"o", "v"}, {"q", "v"},
+                                           {"s", "v"}};
+  s = db.HMSet("GP1_PKHSCANRANGE_KEY", gp1_field_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP1_PKHSCANRANGE_KEY", 10));
+
+  field_value_out.clear();
+  expect_field_value.clear();
+  s = db.PKHScanRange("GP1_PKHSCANRANGE_KEY", "", "", "*", 10, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 0; idx <= 9; ++idx) {
+    expect_field_value.push_back(gp1_field_value[idx]);
+  }
+  ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
+  ASSERT_EQ(next_field, "");
+
+
+  // ************************** Group 2 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      a     c     e     g     i     k     m     o     q     s
+  //         ^                                                    ^
+  //    field_start                                      field_end/next_field
+  std::vector<FieldValue> gp2_field_value {{"a", "v"}, {"c", "v"}, {"e", "v"},
+                                           {"g", "v"}, {"i", "v"}, {"k", "v"},
+                                           {"m", "v"}, {"o", "v"}, {"q", "v"},
+                                           {"s", "v"}};
+  s = db.HMSet("GP2_PKHSCANRANGE_KEY", gp2_field_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP2_PKHSCANRANGE_KEY", 10));
+
+  field_value_out.clear();
+  expect_field_value.clear();
+  s = db.PKHScanRange("GP2_PKHSCANRANGE_KEY", "b", "", "*", 10, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 1; idx <= 9; ++idx) {
+    expect_field_value.push_back(gp2_field_value[idx]);
+  }
+  ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
+  ASSERT_EQ(next_field, "");
+
+
+  // ************************** Group 3 Test **************************
+  //        0     1     2     3     4     5     6     7     8     9
+  //        a     c     e     g     i     k     m     o     q     s
+  //      ^                                                    ^  ^
+  // field_start                                       field_end  next_field
+  std::vector<FieldValue> gp3_field_value {{"a", "v"}, {"c", "v"}, {"e", "v"},
+                                           {"g", "v"}, {"i", "v"}, {"k", "v"},
+                                           {"m", "v"}, {"o", "v"}, {"q", "v"},
+                                           {"s", "v"}};
+  s = db.HMSet("GP3_PKHSCANRANGE_KEY", gp3_field_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP3_PKHSCANRANGE_KEY", 10));
+
+  field_value_out.clear();
+  expect_field_value.clear();
+  s = db.PKHScanRange("GP3_PKHSCANRANGE_KEY", "", "r", "*", 10, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 0; idx <= 8; ++idx) {
+    expect_field_value.push_back(gp3_field_value[idx]);
+  }
+  ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
+  ASSERT_EQ(next_field, "s");
+
+
+  // ************************** Group 4 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      a     c     e     g     i     k     m     o     q     s
+  //               ^                                   ^  ^
+  //          field_start                      field_end  next_field
+  std::vector<FieldValue> gp4_field_value {{"a", "v"}, {"c", "v"}, {"e", "v"},
+                                           {"g", "v"}, {"i", "v"}, {"k", "v"},
+                                           {"m", "v"}, {"o", "v"}, {"q", "v"},
+                                           {"s", "v"}};
+  s = db.HMSet("GP4_PKHSCANRANGE_KEY", gp4_field_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP4_PKHSCANRANGE_KEY", 10));
+
+  field_value_out.clear();
+  expect_field_value.clear();
+  s = db.PKHScanRange("GP4_PKHSCANRANGE_KEY", "d", "p", "*", 10, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 2; idx <= 7; ++idx) {
+    expect_field_value.push_back(gp4_field_value[idx]);
+  }
+  ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
+  ASSERT_EQ(next_field, "q");
+
+
+  // ************************** Group 5 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      a     c     e     g     i     k     m     o     q     s
+  //            ^                                         ^     ^
+  //       field_start                            field_end     next_field
+  std::vector<FieldValue> gp5_field_value {{"a", "v"}, {"c", "v"}, {"e", "v"},
+                                           {"g", "v"}, {"i", "v"}, {"k", "v"},
+                                           {"m", "v"}, {"o", "v"}, {"q", "v"},
+                                           {"s", "v"}};
+  s = db.HMSet("GP5_PKHSCANRANGE_KEY", gp5_field_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP5_PKHSCANRANGE_KEY", 10));
+
+  field_value_out.clear();
+  expect_field_value.clear();
+  s = db.PKHScanRange("GP5_PKHSCANRANGE_KEY", "c", "q", "*", 10, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 1; idx <= 8; ++idx) {
+    expect_field_value.push_back(gp5_field_value[idx]);
+  }
+  ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
+  ASSERT_EQ(next_field, "s");
+
+
+  // ************************** Group 6 Test **************************
+  //      0     1     2     3     4       5     6     7     8     9
+  //      a     c     e     g     i       k     m     o     q     s
+  //                              ^       ^     ^
+  //                    field_start  field_end  next_field
+  std::vector<FieldValue> gp6_field_value {{"a", "v"}, {"c", "v"}, {"e", "v"},
+                                           {"g", "v"}, {"i", "v"}, {"k", "v"},
+                                           {"m", "v"}, {"o", "v"}, {"q", "v"},
+                                           {"s", "v"}};
+  s = db.HMSet("GP6_PKHSCANRANGE_KEY", gp6_field_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP6_PKHSCANRANGE_KEY", 10));
+
+  field_value_out.clear();
+  expect_field_value.clear();
+  s = db.PKHScanRange("GP6_PKHSCANRANGE_KEY", "i", "k", "*", 10, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 4; idx <= 5; ++idx) {
+    expect_field_value.push_back(gp6_field_value[idx]);
+  }
+  ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
+  ASSERT_EQ(next_field, "m");
+
+
+  // ************************** Group 7 Test **************************
+  //      0     1     2     3     4          5     6     7     8     9
+  //      a     c     e     g     i          k     m     o     q     s
+  //                              ^          ^
+  //                   field_start/field_end next_field
+  std::vector<FieldValue> gp7_field_value {{"a", "v"}, {"c", "v"}, {"e", "v"},
+                                           {"g", "v"}, {"i", "v"}, {"k", "v"},
+                                           {"m", "v"}, {"o", "v"}, {"q", "v"},
+                                           {"s", "v"}};
+  s = db.HMSet("GP7_PKHSCANRANGE_KEY", gp7_field_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP7_PKHSCANRANGE_KEY", 10));
+
+  field_value_out.clear();
+  expect_field_value.clear();
+  s = db.PKHScanRange("GP7_PKHSCANRANGE_KEY", "i", "i", "*", 10, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 4; idx <= 4; ++idx) {
+    expect_field_value.push_back(gp7_field_value[idx]);
+  }
+  ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
+  ASSERT_EQ(next_field, "k");
+
+
+  // ************************** Group 8 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      a     c     e     g     i     k     m     o     q     s
+  //                              ^     ^
+  //                      field_end     field_start
+  std::vector<FieldValue> gp8_field_value {{"a", "v"}, {"c", "v"}, {"e", "v"},
+                                           {"g", "v"}, {"i", "v"}, {"k", "v"},
+                                           {"m", "v"}, {"o", "v"}, {"q", "v"},
+                                           {"s", "v"}};
+  s = db.HMSet("GP8_PKHSCANRANGE_KEY", gp8_field_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP8_PKHSCANRANGE_KEY", 10));
+
+  field_value_out.clear();
+  expect_field_value.clear();
+  s = db.PKHScanRange("GP8_PKHSCANRANGE_KEY", "k", "i", "*", 10, &field_value_out, &next_field);
+  ASSERT_TRUE(s.IsInvalidArgument());
+  ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
+  ASSERT_EQ(next_field, "");
+
+
+  // ************************** Group 9 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      a     c     e     g     i     k     m     o     q     s
+  //            ^                             ^           ^
+  //       field_start                    next_field field_end
+  std::vector<FieldValue> gp9_field_value {{"a", "v"}, {"c", "v"}, {"e", "v"},
+                                           {"g", "v"}, {"i", "v"}, {"k", "v"},
+                                           {"m", "v"}, {"o", "v"}, {"q", "v"},
+                                           {"s", "v"}};
+  s = db.HMSet("GP9_PKHSCANRANGE_KEY", gp9_field_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP9_PKHSCANRANGE_KEY", 10));
+
+  field_value_out.clear();
+  expect_field_value.clear();
+  s = db.PKHScanRange("GP9_PKHSCANRANGE_KEY", "c", "q", "*", 5, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 1; idx <= 5; ++idx) {
+    expect_field_value.push_back(gp7_field_value[idx]);
+  }
+  ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
+  ASSERT_EQ(next_field, "m");
+
+
+  // ************************** Group 10 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      a     c     e     g     i     k     m     o     q     s
+  //            ^           ^                       ^     ^
+  //       field_start   deleted           next_field     field_end
+  std::vector<FieldValue> gp10_field_value {{"a", "v"}, {"c", "v"}, {"e", "v"},
+                                            {"g", "v"}, {"i", "v"}, {"k", "v"},
+                                            {"m", "v"}, {"o", "v"}, {"q", "v"},
+                                            {"s", "v"}};
+  s = db.HMSet("GP10_PKHSCANRANGE_KEY", gp10_field_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP10_PKHSCANRANGE_KEY", 10));
+  s = db.HDel("GP10_PKHSCANRANGE_KEY", {"g"}, &ret);
+  ASSERT_TRUE(s.ok());
+
+  field_value_out.clear();
+  expect_field_value.clear();
+  s = db.PKHScanRange("GP10_PKHSCANRANGE_KEY", "c", "q", "*", 5, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 1; idx <= 6; ++idx) {
+    if (idx != 3) {
+      expect_field_value.push_back(gp10_field_value[idx]);
+    }
+  }
+  ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
+  ASSERT_EQ(next_field, "o");
+
+
+  // ************************** Group 11 Test **************************
+  //      0     1     2     3     4     5     6     7     8
+  //     a_f1  a_f2  a_f3  b_f1  b_f2  b_f3  c_f1  c_f2  c_f3
+  //      ^                 ^                             ^
+  // field_start        next_field                   field_end
+  std::vector<FieldValue> gp11_field_value {{"a_f1", "v"}, {"a_f2", "v"}, {"a_f3", "v"},
+                                            {"b_f1", "v"}, {"b_f2", "v"}, {"b_f3", "v"},
+                                            {"c_f1", "v"}, {"c_f2", "v"}, {"c_f3", "v"}};
+  s = db.HMSet("GP11_PKHSCANRANGE_KEY", gp11_field_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP11_PKHSCANRANGE_KEY", 9));
+  ASSERT_TRUE(s.ok());
+
+  field_value_out.clear();
+  expect_field_value.clear();
+  s = db.PKHScanRange("GP11_PKHSCANRANGE_KEY", "a_f1", "c_f3", "*f1", 3, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 0; idx <= 2; ++idx) {
+    if (idx != 1 && idx != 2) {
+      expect_field_value.push_back(gp11_field_value[idx]);
+    }
+  }
+  ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
+  ASSERT_EQ(next_field, "b_f1");
+
+
+  // ************************** Group 12 Test **************************
+  //           0     1     2     3     4     5     6     7     8
+  //      a    c     e     g     i     k     m     o     q     s
+  //      ^                                  ^     ^
+  // field_start                    next_field     field_end
+  std::vector<FieldValue> gp12_field_value_a {{"c", "v"}, {"e", "v"}, {"g", "v"},
+                                              {"i", "v"}, {"k", "v"}, {"m", "v"},
+                                              {"o", "v"}, {"q", "v"}, {"s", "v"}};
+  std::vector<FieldValue> gp12_field_value_b {{"c", "v"}, {"e", "v"}, {"g", "v"},
+                                              {"i", "v"}, {"k", "v"}, {"m", "v"},
+                                              {"o", "v"}, {"q", "v"}, {"s", "v"}};
+  std::vector<FieldValue> gp12_field_value_c {{"c", "v"}, {"e", "v"}, {"g", "v"},
+                                              {"i", "v"}, {"k", "v"}, {"m", "v"},
+                                              {"o", "v"}, {"q", "v"}, {"s", "v"}};
+  s = db.HMSet("GP12_PKHSCANRANGE_KEY_A", gp12_field_value_a);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP12_PKHSCANRANGE_KEY_A", 9));
+  s = db.HMSet("GP12_PKHSCANRANGE_KEY_B", gp12_field_value_b);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP12_PKHSCANRANGE_KEY_B", 9));
+  s = db.HMSet("GP12_PKHSCANRANGE_KEY_C", gp12_field_value_c);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP12_PKHSCANRANGE_KEY_C", 9));
+
+  field_value_out.clear();
+  expect_field_value.clear();
+  s = db.PKHScanRange("GP12_PKHSCANRANGE_KEY_B", "a", "o", "*", 5, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 0; idx <= 4; ++idx) {
+    expect_field_value.push_back(gp12_field_value_b[idx]);
+  }
+  ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
+  ASSERT_EQ(next_field, "m");
+
+
+  // ************************** Group 13 Test **************************
+  //          0     1     2     3     4     5     6     7     8
+  //          c     e     g     i     k     m     o     q     s
+  //                ^                             ^     ^
+  //            field_start              next_field     field_end
+  std::vector<FieldValue> gp13_field_value_a {{"c", "v"}, {"e", "v"}, {"g", "v"},
+                                              {"i", "v"}, {"k", "v"}, {"m", "v"},
+                                              {"o", "v"}, {"q", "v"}, {"s", "v"}};
+  std::vector<FieldValue> gp13_field_value_b {{"c", "v"}, {"e", "v"}, {"g", "v"},
+                                              {"i", "v"}, {"k", "v"}, {"m", "v"},
+                                              {"o", "v"}, {"q", "v"}, {"s", "v"}};
+  std::vector<FieldValue> gp13_field_value_c {{"c", "v"}, {"e", "v"}, {"g", "v"},
+                                              {"i", "v"}, {"k", "v"}, {"m", "v"},
+                                              {"o", "v"}, {"q", "v"}, {"s", "v"}};
+  s = db.HMSet("GP13_PKHSCANRANGE_KEY_A", gp13_field_value_a);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP13_PKHSCANRANGE_KEY_A", 9));
+  s = db.HMSet("GP13_PKHSCANRANGE_KEY_B", gp13_field_value_b);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP13_PKHSCANRANGE_KEY_B", 9));
+  s = db.HMSet("GP13_PKHSCANRANGE_KEY_C", gp13_field_value_c);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP13_PKHSCANRANGE_KEY_C", 9));
+
+  field_value_out.clear();
+  expect_field_value.clear();
+  s = db.PKHScanRange("GP13_PKHSCANRANGE_KEY_B", "e", "q", "*", 5, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 1; idx <= 5; ++idx) {
+    expect_field_value.push_back(gp13_field_value_b[idx]);
+  }
+  ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
+  ASSERT_EQ(next_field, "o");
+
+
+  // ************************** Group 14 Test **************************
+  //  0     1     2     3     4     5     6     7     8
+  //  c     e     g     i     k     m     o     q     s    u
+  //                                                       ^            ^
+  //                                             field_start  next_field/field_end
+  std::vector<FieldValue> gp14_field_value_a {{"c", "v"}, {"e", "v"}, {"g", "v"},
+                                              {"i", "v"}, {"k", "v"}, {"m", "v"},
+                                              {"o", "v"}, {"q", "v"}, {"s", "v"}};
+  std::vector<FieldValue> gp14_field_value_b {{"c", "v"}, {"e", "v"}, {"g", "v"},
+                                              {"i", "v"}, {"k", "v"}, {"m", "v"},
+                                              {"o", "v"}, {"q", "v"}, {"s", "v"}};
+  std::vector<FieldValue> gp14_field_value_c {{"c", "v"}, {"e", "v"}, {"g", "v"},
+                                              {"i", "v"}, {"k", "v"}, {"m", "v"},
+                                              {"o", "v"}, {"q", "v"}, {"s", "v"}};
+  s = db.HMSet("GP14_PKHSCANRANGE_KEY_A", gp14_field_value_a);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP14_PKHSCANRANGE_KEY_A", 9));
+  s = db.HMSet("GP14_PKHSCANRANGE_KEY_B", gp14_field_value_b);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP14_PKHSCANRANGE_KEY_B", 9));
+  s = db.HMSet("GP14_PKHSCANRANGE_KEY_C", gp14_field_value_c);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP14_PKHSCANRANGE_KEY_C", 9));
+
+  field_value_out.clear();
+  expect_field_value.clear();
+  s = db.PKHScanRange("GP14_PKHSCANRANGE_KEY_B", "u", "", "*", 5, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
+  ASSERT_EQ(next_field, "");
+}
+
+// PKHRScanRange
+TEST_F(HashesTest, PKHRScanRangeTest) {
+  int32_t ret;
+  std::string start_field;
+  std::string next_field;
+  std::vector<FieldValue> field_value_out;
+  std::vector<FieldValue> expect_field_value;
+
+  // ************************** Group 1 Test **************************
+  //            0     1     2     3     4     5     6     7     8     9
+  //            a     c     e     g     i     k     m     o     q     s
+  //          ^                                                         ^
+  // field_end/next_field                                          field_start
+  std::vector<FieldValue> gp1_field_value {{"a", "v"}, {"c", "v"}, {"e", "v"},
+                                           {"g", "v"}, {"i", "v"}, {"k", "v"},
+                                           {"m", "v"}, {"o", "v"}, {"q", "v"},
+                                           {"s", "v"}};
+  s = db.HMSet("GP1_PKHRSCANRANGE_KEY", gp1_field_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP1_PKHRSCANRANGE_KEY", 10));
+
+  field_value_out.clear();
+  expect_field_value.clear();
+  s = db.PKHScanRange("GP1_PKHRSCANRANGE_KEY", "", "", "*", 10, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 9; idx >= 0; --idx) {
+    expect_field_value.push_back(gp1_field_value[idx]);
+  }
+  ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
+  ASSERT_EQ(next_field, "");
+
+
+  // ************************** Group 2 Test **************************
+  //         0     1     2     3     4     5     6     7     8     9
+  //         a     c     e     g     i     k     m     o     q     s
+  //         ^  ^                                                    ^
+  //next_field  field_end                                       field_start
+  std::vector<FieldValue> gp2_field_value {{"a", "v"}, {"c", "v"}, {"e", "v"},
+                                           {"g", "v"}, {"i", "v"}, {"k", "v"},
+                                           {"m", "v"}, {"o", "v"}, {"q", "v"},
+                                           {"s", "v"}};
+  s = db.HMSet("GP2_PKHRSCANRANGE_KEY", gp2_field_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP2_PKHRSCANRANGE_KEY", 10));
+
+  field_value_out.clear();
+  expect_field_value.clear();
+  s = db.PKHRScanRange("GP2_PKHRSCANRANGE_KEY", "", "b", "*", 10, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 9; idx >= 1; --idx) {
+    expect_field_value.push_back(gp2_field_value[idx]);
+  }
+  ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
+  ASSERT_EQ(next_field, "a");
+
+
+  // ************************** Group 3 Test **************************
+  //            0     1     2     3     4     5     6     7     8     9
+  //            a     c     e     g     i     k     m     o     q     s
+  //          ^                                                    ^
+  // field_end/next_field                                     field_start
+  std::vector<FieldValue> gp3_field_value {{"a", "v"}, {"c", "v"}, {"e", "v"},
+                                           {"g", "v"}, {"i", "v"}, {"k", "v"},
+                                           {"m", "v"}, {"o", "v"}, {"q", "v"},
+                                           {"s", "v"}};
+  s = db.HMSet("GP3_PKHRSCANRANGE_KEY", gp3_field_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP3_PKHRSCANRANGE_KEY", 10));
+
+  field_value_out.clear();
+  expect_field_value.clear();
+  s = db.PKHRScanRange("GP3_PKHRSCANRANGE_KEY", "r", "", "*", 10, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 8; idx >= 0; --idx) {
+    expect_field_value.push_back(gp3_field_value[idx]);
+  }
+  ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
+  ASSERT_EQ(next_field, "");
+
+
+  // ************************** Group 4 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      a     c     e     g     i     k     m     o     q     s
+  //            ^  ^                                   ^
+  //   next_field  field_end                      field_start
+  std::vector<FieldValue> gp4_field_value {{"a", "v"}, {"c", "v"}, {"e", "v"},
+                                           {"g", "v"}, {"i", "v"}, {"k", "v"},
+                                           {"m", "v"}, {"o", "v"}, {"q", "v"},
+                                           {"s", "v"}};
+  s = db.HMSet("GP4_PKHRSCANRANGE_KEY", gp4_field_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP4_PKHRSCANRANGE_KEY", 10));
+
+  field_value_out.clear();
+  expect_field_value.clear();
+  s = db.PKHRScanRange("GP4_PKHRSCANRANGE_KEY", "p", "d", "*", 10, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 7; idx >= 2; --idx) {
+    expect_field_value.push_back(gp4_field_value[idx]);
+  }
+  ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
+  ASSERT_EQ(next_field, "c");
+
+
+  // ************************** Group 5 Test **************************
+  //         0     1     2     3     4     5     6     7     8     9
+  //         a     c     e     g     i     k     m     o     q     s
+  //         ^     ^                                         ^
+  //next_field     field_end                            field_start
+  std::vector<FieldValue> gp5_field_value {{"a", "v"}, {"c", "v"}, {"e", "v"},
+                                           {"g", "v"}, {"i", "v"}, {"k", "v"},
+                                           {"m", "v"}, {"o", "v"}, {"q", "v"},
+                                           {"s", "v"}};
+  s = db.HMSet("GP5_PKHRSCANRANGE_KEY", gp5_field_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP5_PKHRSCANRANGE_KEY", 10));
+
+  field_value_out.clear();
+  expect_field_value.clear();
+  s = db.PKHRScanRange("GP5_PKHRSCANRANGE_KEY", "q", "c", "*", 10, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 8; idx >= 1; --idx) {
+    expect_field_value.push_back(gp5_field_value[idx]);
+  }
+  ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
+  ASSERT_EQ(next_field, "a");
+
+
+  // ************************** Group 6 Test **************************
+  //      0     1     2     3      4     5     6     7     8     9
+  //      a     c     e     g      i     k     m     o     q     s
+  //                        ^      ^     ^
+  //               next_field field_end  field_start
+  std::vector<FieldValue> gp6_field_value {{"a", "v"}, {"c", "v"}, {"e", "v"},
+                                           {"g", "v"}, {"i", "v"}, {"k", "v"},
+                                           {"m", "v"}, {"o", "v"}, {"q", "v"},
+                                           {"s", "v"}};
+  s = db.HMSet("GP6_PKHRSCANRANGE_KEY", gp6_field_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP6_PKHRSCANRANGE_KEY", 10));
+
+  field_value_out.clear();
+  expect_field_value.clear();
+  s = db.PKHRScanRange("GP6_PKHRSCANRANGE_KEY", "k", "i", "*", 10, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 5; idx >= 4; --idx) {
+    expect_field_value.push_back(gp6_field_value[idx]);
+  }
+  ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
+  ASSERT_EQ(next_field, "g");
+
+
+  // ************************** Group 7 Test **************************
+  //      0     1     2     3            4     5     6     7     8     9
+  //      a     c     e     g            i     k     m     o     q     s
+  //                        ^            ^
+  //               next_field field_start/field_end
+  std::vector<FieldValue> gp7_field_value {{"a", "v"}, {"c", "v"}, {"e", "v"},
+                                           {"g", "v"}, {"i", "v"}, {"k", "v"},
+                                           {"m", "v"}, {"o", "v"}, {"q", "v"},
+                                           {"s", "v"}};
+  s = db.HMSet("GP7_PKHRSCANRANGE_KEY", gp7_field_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP7_PKHRSCANRANGE_KEY", 10));
+
+  field_value_out.clear();
+  expect_field_value.clear();
+  s = db.PKHRScanRange("GP7_PKHRSCANRANGE_KEY", "i", "i", "*", 10, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 4; idx >= 4; --idx) {
+    expect_field_value.push_back(gp7_field_value[idx]);
+  }
+  ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
+  ASSERT_EQ(next_field, "g");
+
+
+  // ************************** Group 8 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      a     c     e     g     i     k     m     o     q     s
+  //                              ^     ^
+  //                    field_start     field_end
+  std::vector<FieldValue> gp8_field_value {{"a", "v"}, {"c", "v"}, {"e", "v"},
+                                           {"g", "v"}, {"i", "v"}, {"k", "v"},
+                                           {"m", "v"}, {"o", "v"}, {"q", "v"},
+                                           {"s", "v"}};
+  s = db.HMSet("GP8_PKHRSCANRANGE_KEY", gp8_field_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP8_PKHRSCANRANGE_KEY", 10));
+
+  field_value_out.clear();
+  expect_field_value.clear();
+  s = db.PKHRScanRange("GP8_PKHRSCANRANGE_KEY", "i", "k", "*", 10, &field_value_out, &next_field);
+  ASSERT_TRUE(s.IsInvalidArgument());
+  ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
+  ASSERT_EQ(next_field, "");
+
+
+  // ************************** Group 9 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      a     c     e     g     i     k     m     o     q     s
+  //            ^           ^                             ^
+  //       field_end    next_field                   field_start
+  std::vector<FieldValue> gp9_field_value {{"a", "v"}, {"c", "v"}, {"e", "v"},
+                                           {"g", "v"}, {"i", "v"}, {"k", "v"},
+                                           {"m", "v"}, {"o", "v"}, {"q", "v"},
+                                           {"s", "v"}};
+  s = db.HMSet("GP9_PKHRSCANRANGE_KEY", gp9_field_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP9_PKHRSCANRANGE_KEY", 10));
+
+  field_value_out.clear();
+  expect_field_value.clear();
+  s = db.PKHRScanRange("GP9_PKHRSCANRANGE_KEY", "q", "c", "*", 5, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 8; idx >= 4; --idx) {
+    expect_field_value.push_back(gp7_field_value[idx]);
+  }
+  ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
+  ASSERT_EQ(next_field, "g");
+
+
+  // ************************** Group 10 Test **************************
+  //      0     1     2     3     4     5     6     7     8     9
+  //      a     c     e     g     i     k     m     o     q     s
+  //            ^     ^                       ^           ^
+  //    field_end     next_field           deleted   field_start
+  std::vector<FieldValue> gp10_field_value {{"a", "v"}, {"c", "v"}, {"e", "v"},
+                                            {"g", "v"}, {"i", "v"}, {"k", "v"},
+                                            {"m", "v"}, {"o", "v"}, {"q", "v"},
+                                            {"s", "v"}};
+  s = db.HMSet("GP10_PKHRSCANRANGE_KEY", gp10_field_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP10_PKHRSCANRANGE_KEY", 10));
+  s = db.HDel("GP10_PKHRSCANRANGE_KEY", {"m"}, &ret);
+  ASSERT_TRUE(s.ok());
+
+  field_value_out.clear();
+  expect_field_value.clear();
+  s = db.PKHRScanRange("GP10_PKHRSCANRANGE_KEY", "q", "c", "*", 5, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 8; idx >= 3; --idx) {
+    if (idx != 6) {
+      expect_field_value.push_back(gp10_field_value[idx]);
+    }
+  }
+  ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
+  ASSERT_EQ(next_field, "e");
+
+
+  // ************************** Group 11 Test **************************
+  //      0     1     2     3     4     5     6     7     8
+  //     a_f1  a_f2  a_f3  b_f1  b_f2  b_f3  c_f1  c_f2  c_f3
+  //      ^                 ^                             ^
+  // field_end          next_field                   field_start
+  std::vector<FieldValue> gp11_field_value {{"a_f1", "v"}, {"a_f2", "v"}, {"a_f3", "v"},
+                                            {"b_f1", "v"}, {"b_f2", "v"}, {"b_f3", "v"},
+                                            {"c_f1", "v"}, {"c_f2", "v"}, {"c_f3", "v"}};
+  s = db.HMSet("GP11_PKHRSCANRANGE_KEY", gp11_field_value);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP11_PKHRSCANRANGE_KEY", 9));
+  ASSERT_TRUE(s.ok());
+
+  field_value_out.clear();
+  expect_field_value.clear();
+  s = db.PKHRScanRange("GP11_PKHRSCANRANGE_KEY", "c_f3", "a_f1", "*f3", 3, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 8; idx >= 6; --idx) {
+    if (idx != 6 && idx != 7) {
+      expect_field_value.push_back(gp11_field_value[idx]);
+    }
+  }
+  ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
+  ASSERT_EQ(next_field, "b_f3");
+
+
+  // ************************** Group 12 Test **************************
+  //                                0     1     2     3     4     5     6     7     8
+  //                           a    c     e     g     i     k     m     o     q     s
+  //          ^                ^
+  // field_end/next_field field_start
+  std::vector<FieldValue> gp12_field_value_a {{"c", "v"}, {"e", "v"}, {"g", "v"},
+                                              {"i", "v"}, {"k", "v"}, {"m", "v"},
+                                              {"o", "v"}, {"q", "v"}, {"s", "v"}};
+  std::vector<FieldValue> gp12_field_value_b {{"c", "v"}, {"e", "v"}, {"g", "v"},
+                                              {"i", "v"}, {"k", "v"}, {"m", "v"},
+                                              {"o", "v"}, {"q", "v"}, {"s", "v"}};
+  std::vector<FieldValue> gp12_field_value_c {{"c", "v"}, {"e", "v"}, {"g", "v"},
+                                              {"i", "v"}, {"k", "v"}, {"m", "v"},
+                                              {"o", "v"}, {"q", "v"}, {"s", "v"}};
+  s = db.HMSet("GP12_PKHRSCANRANGE_KEY_A", gp12_field_value_a);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP12_PKHRSCANRANGE_KEY_A", 9));
+  s = db.HMSet("GP12_PKHRSCANRANGE_KEY_B", gp12_field_value_b);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP12_PKHRSCANRANGE_KEY_B", 9));
+  s = db.HMSet("GP12_PKHRSCANRANGE_KEY_C", gp12_field_value_c);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP12_PKHRSCANRANGE_KEY_C", 9));
+
+  field_value_out.clear();
+  expect_field_value.clear();
+  s = db.PKHRScanRange("GP12_PKHRSCANRANGE_KEY_B", "a", "", "*", 5, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
+  ASSERT_EQ(next_field, "");
+
+
+  // ************************** Group 13 Test **************************
+  //          0     1     2     3     4     5     6     7     8
+  //          c     e     g     i     k     m     o     q     s
+  //          ^     ^                             ^
+  //     field_end  next_field               field_start
+  std::vector<FieldValue> gp13_field_value_a {{"c", "v"}, {"e", "v"}, {"g", "v"},
+                                              {"i", "v"}, {"k", "v"}, {"m", "v"},
+                                              {"o", "v"}, {"q", "v"}, {"s", "v"}};
+  std::vector<FieldValue> gp13_field_value_b {{"c", "v"}, {"e", "v"}, {"g", "v"},
+                                              {"i", "v"}, {"k", "v"}, {"m", "v"},
+                                              {"o", "v"}, {"q", "v"}, {"s", "v"}};
+  std::vector<FieldValue> gp13_field_value_c {{"c", "v"}, {"e", "v"}, {"g", "v"},
+                                              {"i", "v"}, {"k", "v"}, {"m", "v"},
+                                              {"o", "v"}, {"q", "v"}, {"s", "v"}};
+  s = db.HMSet("GP13_PKHRSCANRANGE_KEY_A", gp13_field_value_a);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP13_PKHRSCANRANGE_KEY_A", 9));
+  s = db.HMSet("GP13_PKHRSCANRANGE_KEY_B", gp13_field_value_b);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP13_PKHRSCANRANGE_KEY_B", 9));
+  s = db.HMSet("GP13_PKHRSCANRANGE_KEY_C", gp13_field_value_c);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP13_PKHRSCANRANGE_KEY_C", 9));
+
+  field_value_out.clear();
+  expect_field_value.clear();
+  s = db.PKHRScanRange("GP13_PKHRSCANRANGE_KEY_B", "o", "c", "*", 5, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 6; idx >= 2; --idx) {
+    expect_field_value.push_back(gp13_field_value_b[idx]);
+  }
+  ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
+  ASSERT_EQ(next_field, "e");
+
+
+  // ************************** Group 14 Test **************************
+  //  0     1     2        3     4     5     6     7     8
+  //  c     e     g        i     k     m     o     q     s    u
+  //              ^        ^                                  ^
+  //         field_end next_field                        field_start
+  std::vector<FieldValue> gp14_field_value_a {{"c", "v"}, {"e", "v"}, {"g", "v"},
+                                              {"i", "v"}, {"k", "v"}, {"m", "v"},
+                                              {"o", "v"}, {"q", "v"}, {"s", "v"}};
+  std::vector<FieldValue> gp14_field_value_b {{"c", "v"}, {"e", "v"}, {"g", "v"},
+                                              {"i", "v"}, {"k", "v"}, {"m", "v"},
+                                              {"o", "v"}, {"q", "v"}, {"s", "v"}};
+  std::vector<FieldValue> gp14_field_value_c {{"c", "v"}, {"e", "v"}, {"g", "v"},
+                                              {"i", "v"}, {"k", "v"}, {"m", "v"},
+                                              {"o", "v"}, {"q", "v"}, {"s", "v"}};
+  s = db.HMSet("GP14_PKHRSCANRANGE_KEY_A", gp14_field_value_a);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP14_PKHRSCANRANGE_KEY_A", 9));
+  s = db.HMSet("GP14_PKHRSCANRANGE_KEY_B", gp14_field_value_b);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP14_PKHRSCANRANGE_KEY_B", 9));
+  s = db.HMSet("GP14_PKHRSCANRANGE_KEY_C", gp14_field_value_c);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(size_match(&db, "GP14_PKHRSCANRANGE_KEY_C", 9));
+
+  field_value_out.clear();
+  expect_field_value.clear();
+  s = db.PKHRScanRange("GP14_PKHRSCANRANGE_KEY_B", "u", "g", "*", 5, &field_value_out, &next_field);
+  ASSERT_TRUE(s.ok());
+  for (int32_t idx = 8; idx >= 4; --idx) {
+    expect_field_value.push_back(gp14_field_value_b[idx]);
+  }
+  ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
+  ASSERT_EQ(next_field, "i");
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
