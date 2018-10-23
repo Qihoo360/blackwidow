@@ -80,7 +80,8 @@ LockMgr::LockMgr(size_t default_num_stripes,
     : default_num_stripes_(default_num_stripes),
       max_num_locks_(max_num_locks),
       mutex_factory_(mutex_factory),
-      lock_map_(std::shared_ptr<LockMap>(new LockMap(default_num_stripes, mutex_factory))) {}
+      lock_map_(std::shared_ptr<LockMap>(
+            new LockMap(default_num_stripes, mutex_factory))) {}
 
 LockMgr::~LockMgr() {}
 

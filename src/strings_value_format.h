@@ -17,7 +17,7 @@ class StringsValue : public InternalValue {
   explicit StringsValue(const Slice& user_value) :
     InternalValue(user_value) {
   }
-  virtual size_t AppendTimestampAndVersion() override {
+  size_t AppendTimestampAndVersion() override {
     size_t usize = user_value_.size();
     char* dst = start_;
     memcpy(dst, user_value_.data(), usize);
@@ -51,7 +51,7 @@ class ParsedStringsValue : public ParsedInternalValue {
     }
   }
 
-  virtual void StripSuffix() override {
+  void StripSuffix() override {
     if (value_ != nullptr) {
       value_->erase(value_->size() - kStringsValueSuffixLength,
           kStringsValueSuffixLength);
@@ -59,10 +59,10 @@ class ParsedStringsValue : public ParsedInternalValue {
   }
 
   // Strings type do not have version field;
-  virtual void SetVersionToValue() override {
+  void SetVersionToValue() override {
   }
 
-  virtual void SetTimestampToValue() override {
+  void SetTimestampToValue() override {
     if (value_ != nullptr) {
       char* dst = const_cast<char*>(value_->data()) + value_->size() -
         kStringsValueSuffixLength;

@@ -5,6 +5,8 @@
 
 #ifndef INCLUDE_CUSTOM_COMPARATOR_H_
 #define INCLUDE_CUSTOM_COMPARATOR_H_
+#include "string"
+
 #include "src/coding.h"
 
 namespace blackwidow {
@@ -13,11 +15,11 @@ class ListsDataKeyComparatorImpl : public rocksdb::Comparator {
  public:
   ListsDataKeyComparatorImpl() { }
 
-  virtual const char* Name() const override {
+  const char* Name() const override {
     return "blackwidow.ListsDataKeyComparator";
   }
 
-  virtual int Compare(const Slice& a, const Slice& b) const override {
+  int Compare(const Slice& a, const Slice& b) const override {
     assert(!a.empty() && !b.empty());
     const char* ptr_a = a.data();
     const char* ptr_b = b.data();
@@ -70,29 +72,31 @@ class ListsDataKeyComparatorImpl : public rocksdb::Comparator {
     }
   }
 
-  virtual bool Equal(const Slice& a, const Slice& b) const override {
+  bool Equal(const Slice& a, const Slice& b) const override {
     return !Compare(a, b);
   }
 
-  virtual void FindShortestSeparator(std::string* start,
-                                     const Slice& limit) const override {
+  void FindShortestSeparator(std::string* start,
+                             const Slice& limit) const override {
   }
 
-  virtual void FindShortSuccessor(std::string* key) const override {
+  void FindShortSuccessor(std::string* key) const override {
   }
 };
 
 class ZSetsScoreKeyComparatorImpl : public rocksdb::Comparator {
  public:
-  virtual const char* Name() const override {
+  const char* Name() const override {
     return "blackwidow.ZSetsScoreKeyComparator";
   }
 
-  virtual int Compare(const Slice& a, const Slice& b) const override {
+  int Compare(const Slice& a, const Slice& b) const override {
     assert(a.size() > sizeof(int32_t));
-    assert(a.size() >= DecodeFixed32(a.data()) + 2 * sizeof(int32_t) + sizeof(uint64_t));
+    assert(a.size() >= DecodeFixed32(a.data())
+            + 2 * sizeof(int32_t) + sizeof(uint64_t));
     assert(b.size() > sizeof(int32_t));
-    assert(b.size() >= DecodeFixed32(b.data()) + 2 * sizeof(int32_t) + sizeof(uint64_t));
+    assert(b.size() >= DecodeFixed32(b.data())
+            + 2 * sizeof(int32_t) + sizeof(uint64_t));
 
     const char* ptr_a = a.data();
     const char* ptr_b = b.data();
@@ -138,15 +142,15 @@ class ZSetsScoreKeyComparatorImpl : public rocksdb::Comparator {
     return 0;
   }
 
-  virtual bool Equal(const Slice& a, const Slice& b) const override {
+  bool Equal(const Slice& a, const Slice& b) const override {
     return !Compare(a, b);
   }
 
-  virtual void FindShortestSeparator(std::string* start,
-                                     const Slice& limit) const override {
+  void FindShortestSeparator(std::string* start,
+                             const Slice& limit) const override {
   }
 
-  virtual void FindShortSuccessor(std::string* key) const override {
+  void FindShortSuccessor(std::string* key) const override {
   }
 };
 

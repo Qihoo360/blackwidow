@@ -15,23 +15,24 @@ namespace blackwidow {
 /* Return the number of digits of 'v' when converted to string in radix 10.
  * See ll2string() for more information. */
 uint32_t Digits10(uint64_t v) {
-    if (v < 10) return 1;
-    if (v < 100) return 2;
-    if (v < 1000) return 3;
-    if (v < 1000000000000UL) {
-        if (v < 100000000UL) {
-            if (v < 1000000) {
-                if (v < 10000) return 4;
-                return 5 + (v >= 100000);
-            }
-            return 7 + (v >= 10000000UL);
-        }
-        if (v < 10000000000UL) {
-            return 9 + (v >= 1000000000UL);
-        }
-        return 11 + (v >= 100000000000UL);
+  if (v < 10) return 1;
+  if (v < 100) return 2;
+  if (v < 1000) return 3;
+  if (v < 1000000000000UL) {
+    if (v < 100000000UL) {
+      if (v < 1000000) {
+        if (v < 10000)
+          return 4;
+        return 5 + (v >= 100000);
+      }
+      return 7 + (v >= 10000000UL);
     }
-    return 12 + Digits10(v / 1000000000000UL);
+    if (v < 10000000000UL) {
+      return 9 + (v >= 1000000000UL);
+    }
+    return 11 + (v >= 100000000000UL);
+  }
+  return 12 + Digits10(v / 1000000000000UL);
 }
 
 /* Convert a long long into a string. Returns the number of
@@ -394,8 +395,7 @@ int mkpath(const char *path, mode_t mode) {
   return (status);
 }
 
-int delete_dir(const char* dirname)
-{
+int delete_dir(const char* dirname) {
     char chBuf[256];
     DIR * dir = NULL;
     struct dirent *ptr;
@@ -404,7 +404,7 @@ int delete_dir(const char* dirname)
     if (NULL == dir) {
         return -1;
     }
-    while((ptr = readdir(dir)) != NULL) {
+    while ((ptr = readdir(dir)) != NULL) {
         ret = strcmp(ptr->d_name, ".");
         if (0 == ret) {
             continue;
@@ -413,19 +413,18 @@ int delete_dir(const char* dirname)
         if (0 == ret) {
             continue;
         }
-        snprintf(chBuf, 256, "%s/%s", dirname, ptr->d_name);
+        snprintf(chBuf, sizeof(256), "%s/%s", dirname, ptr->d_name);
         ret = is_dir(chBuf);
         if (0 == ret) {
-            //is dir
+            // is dir
             ret = delete_dir(chBuf);
             if (0 != ret) {
                 return -1;
             }
-        }
-        else if (1 == ret) {
-            //is file
+        } else if (1 == ret) {
+            // is file
             ret = remove(chBuf);
-            if(0 != ret) {
+            if (0 != ret) {
                 return -1;
             }
         }
@@ -440,20 +439,22 @@ int delete_dir(const char* dirname)
 
 int is_dir(const char* filename) {
     struct stat buf;
-    int ret = stat(filename,&buf);
+    int ret = stat(filename, &buf);
     if (0 == ret) {
         if (buf.st_mode & S_IFDIR) {
-            //folder
+            // folder
             return 0;
         } else {
-            //file
+            // file
             return 1;
         }
     }
     return -1;
 }
 
-int CalculateStartAndEndKey(const std::string& key, std::string* start_key, std::string* end_key) {
+int CalculateStartAndEndKey(const std::string& key,
+                            std::string* start_key,
+                            std::string* end_key) {
   size_t needed = sizeof(int32_t) + key.size() + 1;
   char* dst = new char[needed];
   const char* start = dst;

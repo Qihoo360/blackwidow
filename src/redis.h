@@ -65,8 +65,10 @@ class Redis {
   slash::Mutex scan_cursors_mutex_;
   BlackWidow::LRU<std::string, std::string> scan_cursors_store_;
 
-  Status GetScanStartPoint(const Slice& key, const Slice& pattern, int64_t cursor, std::string* start_point);
-  Status StoreScanNextPoint(const Slice& key, const Slice& pattern, int64_t cursor, const std::string& next_point);
+  Status GetScanStartPoint(const Slice& key, const Slice& pattern,
+                           int64_t cursor, std::string* start_point);
+  Status StoreScanNextPoint(const Slice& key, const Slice& pattern,
+                            int64_t cursor, const std::string& next_point);
 };
 
 }  //  namespace blackwidow

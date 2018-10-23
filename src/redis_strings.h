@@ -15,75 +15,78 @@
 namespace blackwidow {
 
 class RedisStrings : public Redis {
-  public:
-    RedisStrings() = default;
-    ~RedisStrings() = default;
+ public:
+  RedisStrings() = default;
+  ~RedisStrings() = default;
 
-    // Common Commands
-    virtual Status Open(const BlackwidowOptions& bw_options,
-                        const std::string& db_path) override;
-    virtual Status CompactRange(const rocksdb::Slice* begin,
-                                const rocksdb::Slice* end) override;
-    virtual Status GetProperty(const std::string& property, uint64_t* out) override;
-    virtual Status ScanKeyNum(uint64_t* num) override;
-    virtual Status ScanKeys(const std::string& pattern,
-                            std::vector<std::string>* keys) override;
+  // Common Commands
+  Status Open(const BlackwidowOptions& bw_options,
+              const std::string& db_path) override;
+  Status CompactRange(const rocksdb::Slice* begin,
+                      const rocksdb::Slice* end) override;
+  Status GetProperty(const std::string& property, uint64_t* out) override;
+  Status ScanKeyNum(uint64_t* num) override;
+  Status ScanKeys(const std::string& pattern,
+                  std::vector<std::string>* keys) override;
 
-    // Strings Commands
-    Status Append(const Slice& key, const Slice& value, int32_t* ret);
-    Status BitCount(const Slice& key, int64_t start_offset, int64_t end_offset,
-                    int32_t* ret, bool have_offset);
-    Status BitOp(BitOpType op, const std::string& dest_key,
-                 const std::vector<std::string>& src_keys, int64_t* ret);
-    Status Decrby(const Slice& key, int64_t value, int64_t* ret);
-    Status Get(const Slice& key, std::string* value);
-    Status GetBit(const Slice& key, int64_t offset, int32_t* ret);
-    Status Getrange(const Slice& key, int64_t start_offset, int64_t end_offset,
-                    std::string* ret);
-    Status GetSet(const Slice& key, const Slice& value, std::string* old_value);
-    Status Incrby(const Slice& key, int64_t value, int64_t* ret);
-    Status Incrbyfloat(const Slice& key, const Slice& value, std::string* ret);
-    Status MGet(const std::vector<std::string>& keys,
-                std::vector<std::string>* values);
-    Status MSet(const std::vector<KeyValue>& kvs);
-    Status MSetnx(const std::vector<KeyValue>& kvs, int32_t* ret);
-    Status Set(const Slice& key, const Slice& value, const int32_t ttl = 0);
-    Status Setxx(const Slice& key, const Slice& value, int32_t* ret, const int32_t ttl = 0);
-    Status SetBit(const Slice& key, int64_t offset, int32_t value, int32_t* ret);
-    Status Setex(const Slice& key, const Slice& value, int32_t ttl);
-    Status Setnx(const Slice& key, const Slice& value, int32_t* ret, const int32_t ttl = 0);
-    Status Setvx(const Slice& key, const Slice& value,
-                 const Slice& new_value, int32_t* ret, const int32_t ttl = 0);
-    Status Delvx(const Slice& key, const Slice& value, int32_t* ret);
-    Status Setrange(const Slice& key, int64_t start_offset,
-                    const Slice& value, int32_t* ret);
-    Status Strlen(const Slice& key, int32_t *len);
+  // Strings Commands
+  Status Append(const Slice& key, const Slice& value, int32_t* ret);
+  Status BitCount(const Slice& key, int64_t start_offset, int64_t end_offset,
+                  int32_t* ret, bool have_offset);
+  Status BitOp(BitOpType op, const std::string& dest_key,
+               const std::vector<std::string>& src_keys, int64_t* ret);
+  Status Decrby(const Slice& key, int64_t value, int64_t* ret);
+  Status Get(const Slice& key, std::string* value);
+  Status GetBit(const Slice& key, int64_t offset, int32_t* ret);
+  Status Getrange(const Slice& key, int64_t start_offset, int64_t end_offset,
+                  std::string* ret);
+  Status GetSet(const Slice& key, const Slice& value, std::string* old_value);
+  Status Incrby(const Slice& key, int64_t value, int64_t* ret);
+  Status Incrbyfloat(const Slice& key, const Slice& value, std::string* ret);
+  Status MGet(const std::vector<std::string>& keys,
+              std::vector<std::string>* values);
+  Status MSet(const std::vector<KeyValue>& kvs);
+  Status MSetnx(const std::vector<KeyValue>& kvs, int32_t* ret);
+  Status Set(const Slice& key, const Slice& value, const int32_t ttl = 0);
+  Status Setxx(const Slice& key, const Slice& value,
+               int32_t* ret, const int32_t ttl = 0);
+  Status SetBit(const Slice& key, int64_t offset,
+                int32_t value, int32_t* ret);
+  Status Setex(const Slice& key, const Slice& value, int32_t ttl);
+  Status Setnx(const Slice& key, const Slice& value,
+               int32_t* ret, const int32_t ttl = 0);
+  Status Setvx(const Slice& key, const Slice& value,
+               const Slice& new_value, int32_t* ret, const int32_t ttl = 0);
+  Status Delvx(const Slice& key, const Slice& value, int32_t* ret);
+  Status Setrange(const Slice& key, int64_t start_offset,
+                  const Slice& value, int32_t* ret);
+  Status Strlen(const Slice& key, int32_t *len);
 
-    Status BitPos(const Slice& key, int32_t bit, int64_t* ret);
-    Status BitPos(const Slice& key, int32_t bit,
-                  int64_t start_offset, int64_t* ret);
-    Status BitPos(const Slice& key, int32_t bit,
-                  int64_t start_offset, int64_t end_offset,
-                  int64_t* ret);
-    Status PKScanRange(const Slice& key_start, const Slice& key_end,
-                       const Slice& pattern, int32_t limit,
-                       std::vector<KeyValue>* kvs, std::string* next_key);
-    Status PKRScanRange(const Slice& key_start, const Slice& key_end,
-                        const Slice& pattern, int32_t limit,
-                        std::vector<KeyValue>* kvs, std::string* next_key);
+  Status BitPos(const Slice& key, int32_t bit, int64_t* ret);
+  Status BitPos(const Slice& key, int32_t bit,
+                int64_t start_offset, int64_t* ret);
+  Status BitPos(const Slice& key, int32_t bit,
+                int64_t start_offset, int64_t end_offset,
+                int64_t* ret);
+  Status PKScanRange(const Slice& key_start, const Slice& key_end,
+                     const Slice& pattern, int32_t limit,
+                     std::vector<KeyValue>* kvs, std::string* next_key);
+  Status PKRScanRange(const Slice& key_start, const Slice& key_end,
+                      const Slice& pattern, int32_t limit,
+                      std::vector<KeyValue>* kvs, std::string* next_key);
 
-    // Keys Commands
-    virtual Status Expire(const Slice& key, int32_t ttl) override;
-    virtual Status Del(const Slice& key) override;
-    virtual bool Scan(const std::string& start_key, const std::string& pattern,
-                      std::vector<std::string>* keys,
-                      int64_t* count, std::string* next_key) override;
-    virtual Status Expireat(const Slice& key, int32_t timestamp) override;
-    virtual Status Persist(const Slice& key) override;
-    virtual Status TTL(const Slice& key, int64_t* timestamp) override;
+  // Keys Commands
+  Status Expire(const Slice& key, int32_t ttl) override;
+  Status Del(const Slice& key) override;
+  bool Scan(const std::string& start_key, const std::string& pattern,
+            std::vector<std::string>* keys,
+            int64_t* count, std::string* next_key) override;
+  Status Expireat(const Slice& key, int32_t timestamp) override;
+  Status Persist(const Slice& key) override;
+  Status TTL(const Slice& key, int64_t* timestamp) override;
 
-    // Iterate all data
-    void ScanDatabase();
+  // Iterate all data
+  void ScanDatabase();
 };
 
 }  //  namespace blackwidow

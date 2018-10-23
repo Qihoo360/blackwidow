@@ -48,17 +48,21 @@ Status RedisHashes::Open(const BlackwidowOptions& bw_options,
   data_cf_ops.compaction_filter_factory =
     std::make_shared<HashesDataFilterFactory>(&db_, &handles_);
 
-  //use the bloom filter policy to reduce disk reads
+  // use the bloom filter policy to reduce disk reads
   rocksdb::BlockBasedTableOptions table_ops(bw_options.table_options);
   table_ops.filter_policy.reset(rocksdb::NewBloomFilterPolicy(10, true));
   rocksdb::BlockBasedTableOptions meta_cf_table_ops(table_ops);
   rocksdb::BlockBasedTableOptions data_cf_table_ops(table_ops);
   if (!bw_options.share_block_cache && bw_options.block_cache_size > 0) {
-    meta_cf_table_ops.block_cache = rocksdb::NewLRUCache(bw_options.block_cache_size);
-    data_cf_table_ops.block_cache = rocksdb::NewLRUCache(bw_options.block_cache_size);
+    meta_cf_table_ops.block_cache =
+      rocksdb::NewLRUCache(bw_options.block_cache_size);
+    data_cf_table_ops.block_cache =
+      rocksdb::NewLRUCache(bw_options.block_cache_size);
   }
-  meta_cf_ops.table_factory.reset(rocksdb::NewBlockBasedTableFactory(meta_cf_table_ops));
-  data_cf_ops.table_factory.reset(rocksdb::NewBlockBasedTableFactory(data_cf_table_ops));
+  meta_cf_ops.table_factory.reset(
+      rocksdb::NewBlockBasedTableFactory(meta_cf_table_ops));
+  data_cf_ops.table_factory.reset(
+      rocksdb::NewBlockBasedTableFactory(data_cf_table_ops));
 
   std::vector<rocksdb::ColumnFamilyDescriptor> column_families;
   // Meta CF
@@ -91,7 +95,6 @@ Status RedisHashes::GetProperty(const std::string& property, uint64_t* out) {
 }
 
 Status RedisHashes::ScanKeyNum(uint64_t* num) {
-
   uint64_t count = 0;
   rocksdb::ReadOptions iterator_options;
   const rocksdb::Snapshot* snapshot;
@@ -116,7 +119,6 @@ Status RedisHashes::ScanKeyNum(uint64_t* num) {
 
 Status RedisHashes::ScanKeys(const std::string& pattern,
                              std::vector<std::string>* keys) {
-
   std::string key;
   rocksdb::ReadOptions iterator_options;
   const rocksdb::Snapshot* snapshot;
@@ -132,7 +134,8 @@ Status RedisHashes::ScanKeys(const std::string& pattern,
     if (!parsed_hashes_meta_value.IsStale()
       && parsed_hashes_meta_value.count() != 0) {
       key = iter->key().ToString();
-      if (StringMatch(pattern.data(), pattern.size(), key.data(), key.size(), 0)) {
+      if (StringMatch(pattern.data(),
+            pattern.size(), key.data(), key.size(), 0)) {
         keys->push_back(key);
       }
     }
@@ -574,7 +577,8 @@ Status RedisHashes::HSet(const Slice& key, const Slice& field,
       version = parsed_hashes_meta_value.version();
       std::string data_value;
       HashesDataKey hashes_data_key(key, version, field);
-      s = db_->Get(default_read_options_, handles_[1], hashes_data_key.Encode(), &data_value);
+      s = db_->Get(default_read_options_,
+          handles_[1], hashes_data_key.Encode(), &data_value);
       if (s.ok()) {
         *res = 0;
         if (data_value == value.ToString()) {
@@ -699,8 +703,12 @@ Status RedisHashes::HStrlen(const Slice& key,
   return s;
 }
 
-Status RedisHashes::HScan(const Slice& key, int64_t cursor, const std::string& pattern,
-                          int64_t count, std::vector<FieldValue>* field_values, int64_t* next_cursor) {
+Status RedisHashes::HScan(const Slice& key,
+                          int64_t cursor,
+                          const std::string& pattern,
+                          int64_t count,
+                          std::vector<FieldValue>* field_values,
+                          int64_t* next_cursor) {
   *next_cursor = 0;
   field_values->clear();
   if (cursor < 0) {
@@ -747,14 +755,16 @@ Status RedisHashes::HScan(const Slice& key, int64_t cursor, const std::string& p
            iter->Next()) {
         ParsedHashesDataKey parsed_hashes_data_key(iter->key());
         std::string field = parsed_hashes_data_key.field().ToString();
-        if (StringMatch(pattern.data(), pattern.size(), field.data(), field.size(), 0)) {
+        if (StringMatch(pattern.data(),
+              pattern.size(), field.data(), field.size(), 0)) {
           field_values->push_back({field, iter->value().ToString()});
         }
         rest--;
       }
 
       if (iter->Valid()
-        && (iter->key().compare(prefix) <= 0 || iter->key().starts_with(prefix))) {
+        && (iter->key().compare(prefix) <= 0
+          || iter->key().starts_with(prefix))) {
         *next_cursor = cursor + step_length;
         ParsedHashesDataKey parsed_hashes_data_key(iter->key());
         std::string next_field = parsed_hashes_data_key.field().ToString();
@@ -771,8 +781,11 @@ Status RedisHashes::HScan(const Slice& key, int64_t cursor, const std::string& p
   return Status::OK();
 }
 
-Status RedisHashes::HScanx(const Slice& key, const std::string start_field, const std::string& pattern,
-                           int64_t count, std::vector<FieldValue>* field_values, std::string* next_field) {
+Status RedisHashes::HScanx(const Slice& key,
+                           const std::string start_field,
+                           const std::string& pattern,
+                           int64_t count, std::vector<FieldValue>* field_values,
+                           std::string* next_field) {
   next_field->clear();
   field_values->clear();
 
@@ -800,7 +813,8 @@ Status RedisHashes::HScanx(const Slice& key, const std::string start_field, cons
            iter->Next()) {
         ParsedHashesDataKey parsed_hashes_data_key(iter->key());
         std::string field = parsed_hashes_data_key.field().ToString();
-        if (StringMatch(pattern.data(), pattern.size(), field.data(), field.size(), 0)) {
+        if (StringMatch(pattern.data(),
+              pattern.size(), field.data(), field.size(), 0)) {
           field_values->push_back({field, iter->value().ToString()});
         }
         rest--;
@@ -822,9 +836,12 @@ Status RedisHashes::HScanx(const Slice& key, const std::string start_field, cons
 }
 
 Status RedisHashes::PKHScanRange(const Slice& key,
-                                 const Slice& field_start, const std::string& field_end,
-                                 const Slice& pattern, int32_t limit,
-                                 std::vector<FieldValue>* field_values, std::string* next_field) {
+                                 const Slice& field_start,
+                                 const std::string& field_end,
+                                 const Slice& pattern,
+                                 int32_t limit,
+                                 std::vector<FieldValue>* field_values,
+                                 std::string* next_field) {
   next_field->clear();
   field_values->clear();
 
@@ -865,7 +882,8 @@ Status RedisHashes::PKHScanRange(const Slice& key,
         if (!end_no_limit && field.compare(field_end) > 0) {
           break;
         }
-        if (StringMatch(pattern.data(), pattern.size(), field.data(), field.size(), 0)) {
+        if (StringMatch(pattern.data(),
+              pattern.size(), field.data(), field.size(), 0)) {
           field_values->push_back({field, iter->value().ToString()});
         }
         remain--;
@@ -887,10 +905,12 @@ Status RedisHashes::PKHScanRange(const Slice& key,
 }
 
 Status RedisHashes::PKHRScanRange(const Slice& key,
-                                  const Slice& field_start, const std::string& field_end,
-                                  const Slice& pattern, int32_t limit,
-                                  std::vector<FieldValue>* field_values, std::string* next_field) {
-
+                                  const Slice& field_start,
+                                  const std::string& field_end,
+                                  const Slice& pattern,
+                                  int32_t limit,
+                                  std::vector<FieldValue>* field_values,
+                                  std::string* next_field) {
   next_field->clear();
   field_values->clear();
 
@@ -920,9 +940,11 @@ Status RedisHashes::PKHRScanRange(const Slice& key,
     } else {
       int32_t version = parsed_hashes_meta_value.version();
       int32_t start_key_version = start_no_limit ? version + 1 : version;
-      std::string start_key_field = start_no_limit ? "" : field_start.ToString();
+      std::string start_key_field = start_no_limit ?
+        "" : field_start.ToString();
       HashesDataKey hashes_data_prefix(key, version, Slice());
-      HashesDataKey hashes_start_data_key(key, start_key_version, start_key_field);
+      HashesDataKey hashes_start_data_key(
+          key, start_key_version, start_key_field);
       std::string prefix = hashes_data_prefix.Encode().ToString();
       rocksdb::Iterator* iter = db_->NewIterator(read_options, handles_[1]);
       for (iter->SeekForPrev(hashes_start_data_key.Encode().ToString());
@@ -933,7 +955,8 @@ Status RedisHashes::PKHRScanRange(const Slice& key,
         if (!end_no_limit && field.compare(field_end) < 0) {
           break;
         }
-        if (StringMatch(pattern.data(), pattern.size(), field.data(), field.size(), 0)) {
+        if (StringMatch(pattern.data(),
+              pattern.size(), field.data(), field.size(), 0)) {
           field_values->push_back({field, iter->value().ToString()});
         }
         remain--;
@@ -954,9 +977,12 @@ Status RedisHashes::PKHRScanRange(const Slice& key,
   return Status::OK();
 }
 
-Status RedisHashes::PKScanRange(const Slice& key_start, const Slice& key_end,
-                                const Slice& pattern, int32_t limit,
-                                std::vector<std::string>* keys, std::string* next_key) {
+Status RedisHashes::PKScanRange(const Slice& key_start,
+                                const Slice& key_end,
+                                const Slice& pattern,
+                                int32_t limit,
+                                std::vector<std::string>* keys,
+                                std::string* next_key) {
   std::string key;
   int32_t remain = limit;
   rocksdb::ReadOptions iterator_options;
@@ -1007,9 +1033,12 @@ Status RedisHashes::PKScanRange(const Slice& key_start, const Slice& key_end,
   return Status::OK();
 }
 
-Status RedisHashes::PKRScanRange(const Slice& key_start, const Slice& key_end,
-                                 const Slice& pattern, int32_t limit,
-                                 std::vector<std::string>* keys, std::string* next_key) {
+Status RedisHashes::PKRScanRange(const Slice& key_start,
+                                 const Slice& key_end,
+                                 const Slice& pattern,
+                                 int32_t limit,
+                                 std::vector<std::string>* keys,
+                                 std::string* next_key) {
   std::string key;
   int32_t remain = limit;
   rocksdb::ReadOptions iterator_options;
@@ -1209,7 +1238,6 @@ Status RedisHashes::TTL(const Slice& key, int64_t* timestamp) {
 }
 
 void RedisHashes::ScanDatabase() {
-
   rocksdb::ReadOptions iterator_options;
   const rocksdb::Snapshot* snapshot;
   ScopeSnapshot ss(db_, &snapshot);

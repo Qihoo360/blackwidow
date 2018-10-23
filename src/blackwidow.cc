@@ -27,19 +27,18 @@ BlackWidow::BlackWidow() :
   current_task_type_(0),
   bg_tasks_should_exit_(false),
   scan_keynum_exit_(false) {
-
   cursors_store_.max_size_ = 5000;
   cursors_mutex_ = mutex_factory_->AllocateMutex();
 
   Status s = StartBGThread();
   if (!s.ok()) {
-    fprintf (stderr, "[FATAL] start bg thread failed, %s\n", s.ToString().c_str());
+    fprintf(stderr,
+        "[FATAL] start bg thread failed, %s\n", s.ToString().c_str());
     exit(-1);
   }
 }
 
 BlackWidow::~BlackWidow() {
-
   bg_tasks_should_exit_ = true;
   bg_tasks_cond_var_.Signal();
 
@@ -51,7 +50,7 @@ BlackWidow::~BlackWidow() {
 
   int ret = 0;
   if ((ret = pthread_join(bg_tasks_thread_id_, NULL)) != 0) {
-    fprintf (stderr, "pthread_join failed with bgtask thread error %d\n", ret);
+    fprintf(stderr, "pthread_join failed with bgtask thread error %d\n", ret);
   }
 
   delete strings_db_;
@@ -78,41 +77,48 @@ Status BlackWidow::Open(BlackwidowOptions& bw_options,
   if (bw_options.block_cache_size == 0) {
     bw_options.table_options.no_block_cache = true;
   } else if (bw_options.share_block_cache) {
-    bw_options.table_options.block_cache = rocksdb::NewLRUCache(bw_options.block_cache_size);
+    bw_options.table_options.block_cache =
+      rocksdb::NewLRUCache(bw_options.block_cache_size);
   }
 
   strings_db_ = new RedisStrings();
-  Status s = strings_db_->Open(bw_options, AppendSubDirectory(db_path, "strings"));
+  Status s = strings_db_->Open(
+      bw_options, AppendSubDirectory(db_path, "strings"));
   if (!s.ok()) {
-    fprintf (stderr, "[FATAL] open kv db failed, %s\n", s.ToString().c_str());
+    fprintf(stderr,
+        "[FATAL] open kv db failed, %s\n", s.ToString().c_str());
     exit(-1);
   }
 
   hashes_db_ = new RedisHashes();
   s = hashes_db_->Open(bw_options, AppendSubDirectory(db_path, "hashes"));
   if (!s.ok()) {
-    fprintf (stderr, "[FATAL] open hashes db failed, %s\n", s.ToString().c_str());
+    fprintf(stderr,
+        "[FATAL] open hashes db failed, %s\n", s.ToString().c_str());
     exit(-1);
   }
 
   sets_db_ = new RedisSets();
   s = sets_db_->Open(bw_options, AppendSubDirectory(db_path, "sets"));
   if (!s.ok()) {
-    fprintf (stderr, "[FATAL] open set db failed, %s\n", s.ToString().c_str());
+    fprintf(stderr,
+        "[FATAL] open set db failed, %s\n", s.ToString().c_str());
     exit(-1);
   }
 
   lists_db_ = new RedisLists();
   s = lists_db_->Open(bw_options, AppendSubDirectory(db_path, "lists"));
   if (!s.ok()) {
-    fprintf (stderr, "[FATAL] open list db failed, %s\n", s.ToString().c_str());
+    fprintf(stderr,
+        "[FATAL] open list db failed, %s\n", s.ToString().c_str());
     exit(-1);
   }
 
   zsets_db_ = new RedisZSets();
   s = zsets_db_->Open(bw_options, AppendSubDirectory(db_path, "zsets"));
   if (!s.ok()) {
-    fprintf (stderr, "[FATAL] open zset db failed, %s\n", s.ToString().c_str());
+    fprintf(stderr,
+        "[FATAL] open zset db failed, %s\n", s.ToString().c_str());
     exit(-1);
   }
   return Status::OK();
@@ -150,11 +156,16 @@ int64_t BlackWidow::StoreAndGetCursor(int64_t cursor,
 }
 
 // Strings Commands
-Status BlackWidow::Set(const Slice& key, const Slice& value, const int32_t ttl) {
+Status BlackWidow::Set(const Slice& key,
+                       const Slice& value,
+                       const int32_t ttl) {
   return strings_db_->Set(key, value, ttl);
 }
 
-Status BlackWidow::Setxx(const Slice& key, const Slice& value, int32_t* ret, const int32_t ttl) {
+Status BlackWidow::Setxx(const Slice& key,
+                         const Slice& value,
+                         int32_t* ret,
+                         const int32_t ttl) {
   return strings_db_->Setxx(key, value, ret, ttl);
 }
 
@@ -196,7 +207,8 @@ Status BlackWidow::MSetnx(const std::vector<KeyValue>& kvs,
 }
 
 Status BlackWidow::Setvx(const Slice& key, const Slice& value,
-                         const Slice& new_value, int32_t* ret, const int32_t ttl) {
+                         const Slice& new_value, int32_t* ret,
+                         const int32_t ttl) {
   return strings_db_->Setvx(key, value, new_value, ret, ttl);
 }
 
@@ -336,28 +348,38 @@ Status BlackWidow::HDel(const Slice& key,
   return hashes_db_->HDel(key, fields, ret);
 }
 
-Status BlackWidow::HScan(const Slice& key, int64_t cursor, const std::string& pattern,
-                         int64_t count, std::vector<FieldValue>* field_values, int64_t* next_cursor) {
-  return hashes_db_->HScan(key, cursor, pattern, count, field_values, next_cursor);
+Status BlackWidow::HScan(const Slice& key, int64_t cursor,
+                         const std::string& pattern, int64_t count,
+                         std::vector<FieldValue>* field_values,
+                         int64_t* next_cursor) {
+  return hashes_db_->HScan(key, cursor,
+      pattern, count, field_values, next_cursor);
 }
 
-Status BlackWidow::HScanx(const Slice& key, const std::string start_field, const std::string& pattern,
-                          int64_t count, std::vector<FieldValue>* field_values, std::string* next_field) {
-  return hashes_db_->HScanx(key, start_field, pattern, count, field_values, next_field);
+Status BlackWidow::HScanx(const Slice& key, const std::string start_field,
+                          const std::string& pattern, int64_t count,
+                          std::vector<FieldValue>* field_values,
+                          std::string* next_field) {
+  return hashes_db_->HScanx(key, start_field,
+      pattern, count, field_values, next_field);
 }
 
-Status BlackWidow::PKHScanRange(const Slice& key,
-                                const Slice& field_start, const std::string& field_end,
+Status BlackWidow::PKHScanRange(const Slice& key, const Slice& field_start,
+                                const std::string& field_end,
                                 const Slice& pattern, int32_t limit,
-                                std::vector<FieldValue>* field_values, std::string* next_field) {
-  return hashes_db_->PKHScanRange(key, field_start, field_end, pattern, limit, field_values, next_field);
+                                std::vector<FieldValue>* field_values,
+                                std::string* next_field) {
+  return hashes_db_->PKHScanRange(key, field_start,
+      field_end, pattern, limit, field_values, next_field);
 }
 
-Status BlackWidow::PKHRScanRange(const Slice& key,
-                                 const Slice& field_start, const std::string& field_end,
+Status BlackWidow::PKHRScanRange(const Slice& key, const Slice& field_start,
+                                 const std::string& field_end,
                                  const Slice& pattern, int32_t limit,
-                                 std::vector<FieldValue>* field_values, std::string* next_field) {
-  return hashes_db_->PKHRScanRange(key, field_start, field_end, pattern, limit, field_values, next_field);
+                                 std::vector<FieldValue>* field_values,
+                                 std::string* next_field) {
+  return hashes_db_->PKHRScanRange(key, field_start,
+      field_end, pattern, limit, field_values, next_field);
 }
 
 // Sets Commands
@@ -440,8 +462,10 @@ Status BlackWidow::SUnionstore(const Slice& destination,
   return sets_db_->SUnionstore(destination, keys, ret);
 }
 
-Status BlackWidow::SScan(const Slice& key, int64_t cursor, const std::string& pattern,
-                         int64_t count, std::vector<std::string>* members, int64_t* next_cursor) {
+Status BlackWidow::SScan(const Slice& key, int64_t cursor,
+                         const std::string& pattern, int64_t count,
+                         std::vector<std::string>* members,
+                         int64_t* next_cursor) {
   return sets_db_->SScan(key, cursor, pattern, count, members, next_cursor);
 }
 
@@ -500,7 +524,8 @@ Status BlackWidow::RPushx(const Slice& key, const Slice& value, uint64_t* len) {
   return lists_db_->RPushx(key, value, len);
 }
 
-Status BlackWidow::LRem(const Slice& key, int64_t count, const Slice& value, uint64_t* ret) {
+Status BlackWidow::LRem(const Slice& key, int64_t count,
+                        const Slice& value, uint64_t* ret) {
   return lists_db_->LRem(key, count, value, ret);
 }
 
@@ -554,7 +579,8 @@ Status BlackWidow::ZRangebyscore(const Slice& key,
                                  bool left_close,
                                  bool right_close,
                                  std::vector<ScoreMember>* score_members) {
-  return zsets_db_->ZRangebyscore(key, min, max, left_close, right_close, score_members);
+  return zsets_db_->ZRangebyscore(key, min, max,
+      left_close, right_close, score_members);
 }
 
 Status BlackWidow::ZRank(const Slice& key,
@@ -582,7 +608,8 @@ Status BlackWidow::ZRemrangebyscore(const Slice& key,
                                     bool left_close,
                                     bool right_close,
                                     int32_t* ret) {
-  return zsets_db_->ZRemrangebyscore(key, min, max, left_close, right_close, ret);
+  return zsets_db_->ZRemrangebyscore(key, min, max,
+      left_close, right_close, ret);
 }
 
 Status BlackWidow::ZRevrange(const Slice& key,
@@ -598,7 +625,8 @@ Status BlackWidow::ZRevrangebyscore(const Slice& key,
                                     bool left_close,
                                     bool right_close,
                                     std::vector<ScoreMember>* score_members) {
-  return zsets_db_->ZRevrangebyscore(key, min, max, left_close, right_close, score_members);
+  return zsets_db_->ZRevrangebyscore(key, min, max,
+      left_close, right_close, score_members);
 }
 
 Status BlackWidow::ZRevrank(const Slice& key,
@@ -635,7 +663,8 @@ Status BlackWidow::ZRangebylex(const Slice& key,
                                bool left_close,
                                bool right_close,
                                std::vector<std::string>* members) {
-  return zsets_db_->ZRangebylex(key, min, max, left_close, right_close, members);
+  return zsets_db_->ZRangebylex(key, min, max,
+      left_close, right_close, members);
 }
 
 Status BlackWidow::ZLexcount(const Slice& key,
@@ -656,9 +685,12 @@ Status BlackWidow::ZRemrangebylex(const Slice& key,
   return zsets_db_->ZRemrangebylex(key, min, max, left_close, right_close, ret);
 }
 
-Status BlackWidow::ZScan(const Slice& key, int64_t cursor, const std::string& pattern,
-                         int64_t count, std::vector<ScoreMember>* score_members, int64_t* next_cursor) {
-  return zsets_db_->ZScan(key, cursor, pattern, count, score_members, next_cursor);
+Status BlackWidow::ZScan(const Slice& key, int64_t cursor,
+                         const std::string& pattern, int64_t count,
+                         std::vector<ScoreMember>* score_members,
+                         int64_t* next_cursor) {
+  return zsets_db_->ZScan(key, cursor,
+      pattern, count, score_members, next_cursor);
 }
 
 
@@ -699,7 +731,7 @@ int32_t BlackWidow::Expire(const Slice& key, int32_t ttl,
   s = lists_db_->Expire(key, ttl);
   if (s.ok()) {
     ret++;
-  } else if(!s.IsNotFound()) {
+  } else if (!s.IsNotFound()) {
     is_corruption = true;
     (*type_status)[DataType::kLists] = s;
   }
@@ -944,10 +976,12 @@ int64_t BlackWidow::Scan(int64_t cursor, const std::string& pattern,
       is_finish = strings_db_->Scan(start_key, pattern, keys,
                                     &count, &next_key);
       if (count == 0 && is_finish) {
-        cursor_ret = StoreAndGetCursor(cursor + step_length, std::string("h") + prefix);
+        cursor_ret = StoreAndGetCursor(cursor + step_length,
+            std::string("h") + prefix);
         break;
       } else if (count == 0 && !is_finish) {
-        cursor_ret = StoreAndGetCursor(cursor + step_length, std::string("k") + next_key);
+        cursor_ret = StoreAndGetCursor(cursor + step_length,
+            std::string("k") + next_key);
         break;
       }
       start_key = prefix;
@@ -955,10 +989,12 @@ int64_t BlackWidow::Scan(int64_t cursor, const std::string& pattern,
       is_finish = hashes_db_->Scan(start_key, pattern, keys,
                                    &count, &next_key);
       if (count == 0 && is_finish) {
-        cursor_ret = StoreAndGetCursor(cursor + step_length, std::string("s") + prefix);
+        cursor_ret = StoreAndGetCursor(cursor + step_length,
+            std::string("s") + prefix);
         break;
       } else if (count == 0 && !is_finish) {
-        cursor_ret = StoreAndGetCursor(cursor + step_length, std::string("h") + next_key);
+        cursor_ret = StoreAndGetCursor(cursor + step_length,
+            std::string("h") + next_key);
         break;
       }
       start_key = prefix;
@@ -966,10 +1002,12 @@ int64_t BlackWidow::Scan(int64_t cursor, const std::string& pattern,
       is_finish = sets_db_->Scan(start_key, pattern, keys,
                                    &count, &next_key);
       if (count == 0 && is_finish) {
-        cursor_ret = StoreAndGetCursor(cursor + step_length, std::string("l") + prefix);
+        cursor_ret = StoreAndGetCursor(cursor + step_length,
+            std::string("l") + prefix);
         break;
       } else if (count == 0 && !is_finish) {
-        cursor_ret = StoreAndGetCursor(cursor + step_length, std::string("s") + next_key);
+        cursor_ret = StoreAndGetCursor(cursor + step_length,
+            std::string("s") + next_key);
         break;
       }
       start_key = prefix;
@@ -977,10 +1015,12 @@ int64_t BlackWidow::Scan(int64_t cursor, const std::string& pattern,
       is_finish = lists_db_->Scan(start_key, pattern, keys,
                                     &count, &next_key);
       if (count == 0 && is_finish) {
-        cursor_ret = StoreAndGetCursor(cursor + step_length, std::string("z") + prefix);
+        cursor_ret = StoreAndGetCursor(cursor + step_length,
+            std::string("z") + prefix);
         break;
       } else if (count == 0 && !is_finish) {
-        cursor_ret = StoreAndGetCursor(cursor + step_length, std::string("l") + next_key);
+        cursor_ret = StoreAndGetCursor(cursor + step_length,
+            std::string("l") + next_key);
         break;
       }
       start_key = prefix;
@@ -991,7 +1031,8 @@ int64_t BlackWidow::Scan(int64_t cursor, const std::string& pattern,
         cursor_ret = 0;
         break;
       } else if (count == 0 && !is_finish) {
-        cursor_ret = StoreAndGetCursor(cursor + step_length, std::string("z") + next_key);
+        cursor_ret = StoreAndGetCursor(cursor + step_length,
+            std::string("z") + next_key);
         break;
       }
   }
@@ -1001,26 +1042,32 @@ int64_t BlackWidow::Scan(int64_t cursor, const std::string& pattern,
 Status BlackWidow::PKScanRange(const DataType& data_type,
                                const Slice& key_start, const Slice& key_end,
                                const Slice& pattern, int32_t limit,
-                               std::vector<std::string>* keys, std::vector<KeyValue>* kvs,
+                               std::vector<std::string>* keys,
+                               std::vector<KeyValue>* kvs,
                                std::string* next_key) {
   Status s;
   keys->clear();
   next_key->clear();
   switch (data_type) {
     case DataType::kStrings:
-      s = strings_db_->PKScanRange(key_start, key_end, pattern, limit, kvs, next_key);
+      s = strings_db_->PKScanRange(key_start, key_end,
+          pattern, limit, kvs, next_key);
       break;
     case DataType::kHashes:
-      s = hashes_db_->PKScanRange(key_start, key_end, pattern, limit, keys, next_key);
+      s = hashes_db_->PKScanRange(key_start, key_end,
+          pattern, limit, keys, next_key);
       break;
     case DataType::kLists:
-      s = lists_db_->PKScanRange(key_start, key_end, pattern, limit, keys, next_key);
+      s = lists_db_->PKScanRange(key_start, key_end,
+          pattern, limit, keys, next_key);
       break;
     case DataType::kZSets:
-      s = zsets_db_->PKScanRange(key_start, key_end, pattern, limit, keys, next_key);
+      s = zsets_db_->PKScanRange(key_start, key_end,
+          pattern, limit, keys, next_key);
       break;
     case DataType::kSets:
-      s = sets_db_->PKScanRange(key_start, key_end, pattern, limit, keys, next_key);
+      s = sets_db_->PKScanRange(key_start, key_end,
+          pattern, limit, keys, next_key);
       break;
     default:
       s = Status::Corruption("Unsupported data types");
@@ -1032,26 +1079,32 @@ Status BlackWidow::PKScanRange(const DataType& data_type,
 Status BlackWidow::PKRScanRange(const DataType& data_type,
                                 const Slice& key_start, const Slice& key_end,
                                 const Slice& pattern, int32_t limit,
-                                std::vector<std::string>* keys, std::vector<KeyValue>* kvs,
+                                std::vector<std::string>* keys,
+                                std::vector<KeyValue>* kvs,
                                 std::string* next_key) {
   Status s;
   keys->clear();
   next_key->clear();
   switch (data_type) {
     case DataType::kStrings:
-      s = strings_db_->PKRScanRange(key_start, key_end, pattern, limit, kvs, next_key);
+      s = strings_db_->PKRScanRange(key_start, key_end,
+          pattern, limit, kvs, next_key);
       break;
     case DataType::kHashes:
-      s = hashes_db_->PKRScanRange(key_start, key_end, pattern, limit, keys, next_key);
+      s = hashes_db_->PKRScanRange(key_start, key_end,
+          pattern, limit, keys, next_key);
       break;
     case DataType::kLists:
-      s = lists_db_->PKRScanRange(key_start, key_end, pattern, limit, keys, next_key);
+      s = lists_db_->PKRScanRange(key_start, key_end,
+          pattern, limit, keys, next_key);
       break;
     case DataType::kZSets:
-      s = zsets_db_->PKRScanRange(key_start, key_end, pattern, limit, keys, next_key);
+      s = zsets_db_->PKRScanRange(key_start, key_end,
+          pattern, limit, keys, next_key);
       break;
     case DataType::kSets:
-      s = sets_db_->PKRScanRange(key_start, key_end, pattern, limit, keys, next_key);
+      s = sets_db_->PKRScanRange(key_start, key_end,
+          pattern, limit, keys, next_key);
       break;
     default:
       s = Status::Corruption("Unsupported data types");
@@ -1246,7 +1299,7 @@ std::map<DataType, int64_t> BlackWidow::TTL(const Slice& key,
   return ret;
 }
 
-//the sequence is kv, hash, list, zset, set
+// the sequence is kv, hash, list, zset, set
 Status BlackWidow::Type(const std::string &key, std::string* type) {
   type->clear();
 
@@ -1335,7 +1388,6 @@ Status BlackWidow::Keys(const std::string& type,
 }
 
 void BlackWidow::ScanDatabase(const DataType& type) {
-
   switch (type) {
     case kStrings:
         strings_db_->ScanDatabase();
@@ -1364,7 +1416,8 @@ void BlackWidow::ScanDatabase(const DataType& type) {
 
 // HyperLogLog
 Status BlackWidow::PfAdd(const Slice& key,
-                         const std::vector<std::string>& values, bool* update) {
+                         const std::vector<std::string>& values,
+                         bool* update) {
   *update = false;
   if (values.size() >= kMaxKeys) {
     return Status::InvalidArgument("Invalid the number of key");
@@ -1465,10 +1518,11 @@ static void* StartBGThreadWrapper(void* arg) {
 }
 
 Status BlackWidow::StartBGThread() {
-  int result = pthread_create(&bg_tasks_thread_id_, NULL, StartBGThreadWrapper, this);
+  int result = pthread_create(&bg_tasks_thread_id_,
+      NULL, StartBGThreadWrapper, this);
   if (result != 0) {
     char msg[128];
-    snprintf (msg, 128, "pthread create: %s", strerror(result));
+    snprintf(msg, sizeof(msg), "pthread create: %s", strerror(result));
     return Status::Corruption(msg);
   }
   return Status::OK();
@@ -1485,7 +1539,6 @@ Status BlackWidow::AddBGTask(const BGTask& bg_task) {
 Status BlackWidow::RunBGTask() {
   BGTask task;
   while (!bg_tasks_should_exit_) {
-
     bg_tasks_mutex_.Lock();
     while (bg_tasks_queue_.empty() && !bg_tasks_should_exit_) {
       bg_tasks_cond_var_.Wait();
@@ -1498,7 +1551,7 @@ Status BlackWidow::RunBGTask() {
     bg_tasks_mutex_.Unlock();
 
     if (bg_tasks_should_exit_) {
-      return Status::Incomplete("bgtask return with bg_tasks_should_exit_ true");
+      return Status::Incomplete("bgtask return with bg_tasks_should_exit true");
     }
 
     if (task.operation == kCleanAll) {
@@ -1558,7 +1611,6 @@ Status BlackWidow::DoCompact(const DataType& type) {
 }
 
 Status BlackWidow::CompactKey(const DataType& type, const std::string& key) {
-
   Status s;
   std::string start_key, end_key;
   CalculateStartAndEndKey(key, &start_key, &end_key);
@@ -1593,10 +1645,14 @@ std::string BlackWidow::GetCurrentTaskType() {
 
 Status BlackWidow::GetUsage(const std::string& type, uint64_t *result) {
   *result = 0;
-  if (type == USAGE_TYPE_ALL || type == USAGE_TYPE_ROCKSDB || type == USAGE_TYPE_ROCKSDB_MEMTABLE) {
+  if (type == USAGE_TYPE_ALL
+    || type == USAGE_TYPE_ROCKSDB
+    || type == USAGE_TYPE_ROCKSDB_MEMTABLE) {
     *result += GetProperty("rocksdb.cur-size-all-mem-tables");
   }
-  if (type == USAGE_TYPE_ALL || type == USAGE_TYPE_ROCKSDB || type == USAGE_TYPE_ROCKSDB_TABLE_READER) {
+  if (type == USAGE_TYPE_ALL
+    || type == USAGE_TYPE_ROCKSDB
+    || type == USAGE_TYPE_ROCKSDB_TABLE_READER) {
     *result += GetProperty("rocksdb.estimate-table-readers-mem");
   }
   return Status::OK();
@@ -1606,7 +1662,8 @@ uint64_t BlackWidow::GetProperty(const std::string &property) {
   uint64_t out = 0;
   uint64_t result = 0;
 
-  std::vector<Redis*> dbs = {strings_db_, hashes_db_, lists_db_, zsets_db_, sets_db_};
+  std::vector<Redis*> dbs = {strings_db_, hashes_db_,
+    lists_db_, zsets_db_, sets_db_};
   for (const auto& db : dbs) {
     db->GetProperty(property, &out);
     result += out;
@@ -1617,7 +1674,8 @@ uint64_t BlackWidow::GetProperty(const std::string &property) {
 Status BlackWidow::GetKeyNum(std::vector<uint64_t>* nums) {
   uint64_t num = 0;
   // NOTE: keep the db order with string, hash, list, zset, set
-  std::vector<Redis*> dbs = {strings_db_, hashes_db_, lists_db_, zsets_db_, sets_db_};
+  std::vector<Redis*> dbs = {strings_db_, hashes_db_,
+    lists_db_, zsets_db_, sets_db_};
   for (const auto& db : dbs) {
     // check the scanner was stopped or not, before scanning the next db
     if (scan_keynum_exit_) {

@@ -20,10 +20,15 @@ Redis::~Redis() {
   delete lock_mgr_;
 }
 
-Status Redis::GetScanStartPoint(const Slice& key, const Slice& pattern, int64_t cursor, std::string* start_point) {
+Status Redis::GetScanStartPoint(const Slice& key,
+                                const Slice& pattern,
+                                int64_t cursor,
+                                std::string* start_point) {
   slash::MutexLock l(&scan_cursors_mutex_);
-  std::string index_key = key.ToString() + "_" + pattern.ToString() + "_" + std::to_string(cursor);
-  if (scan_cursors_store_.map_.find(index_key) == scan_cursors_store_.map_.end()) {
+  std::string index_key =
+    key.ToString() + "_" + pattern.ToString() + "_" + std::to_string(cursor);
+  if (scan_cursors_store_.map_.find(index_key)
+    == scan_cursors_store_.map_.end()) {
     return Status::NotFound();
   } else {
     *start_point = scan_cursors_store_.map_[index_key];
@@ -31,9 +36,13 @@ Status Redis::GetScanStartPoint(const Slice& key, const Slice& pattern, int64_t 
   return Status::OK();
 }
 
-Status Redis::StoreScanNextPoint(const Slice& key, const Slice& pattern, int64_t cursor, const std::string& next_point) {
+Status Redis::StoreScanNextPoint(const Slice& key,
+                                 const Slice& pattern,
+                                 int64_t cursor,
+                                 const std::string& next_point) {
   slash::MutexLock l(&scan_cursors_mutex_);
-  std::string index_key = key.ToString() + "_" + pattern.ToString() +  "_" + std::to_string(cursor);
+  std::string index_key =
+    key.ToString() + "_" + pattern.ToString() +  "_" + std::to_string(cursor);
   if (scan_cursors_store_.list_.size() > scan_cursors_store_.max_size_) {
     std::string tail = scan_cursors_store_.list_.back();
     scan_cursors_store_.map_.erase(tail);
@@ -46,4 +55,4 @@ Status Redis::StoreScanNextPoint(const Slice& key, const Slice& pattern, int64_t
   return Status::OK();
 }
 
-}
+}  // namespace blackwidow

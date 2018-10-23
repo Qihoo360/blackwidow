@@ -6,6 +6,10 @@
 #ifndef SRC_ZSETS_FILTER_H_
 #define SRC_ZSETS_FILTER_H_
 
+#include <string>
+#include <vector>
+#include <memory>
+
 #include "rocksdb/compaction_filter.h"
 
 #include "base_filter.h"
@@ -21,9 +25,10 @@ class ZSetsScoreFilter : public rocksdb::CompactionFilter {
                    std::vector<rocksdb::ColumnFamilyHandle*>* handles_ptr) :
     db_(db), cf_handles_ptr_(handles_ptr), meta_not_found_(false) {}
 
-  virtual bool Filter(int level, const rocksdb::Slice& key,
-                      const rocksdb::Slice& value,
-                      std::string* new_value, bool* value_changed) const override {
+  bool Filter(int level, const rocksdb::Slice& key,
+              const rocksdb::Slice& value,
+              std::string* new_value,
+              bool* value_changed) const override {
     ParsedZSetsScoreKey parsed_zsets_score_key(key);
     Trace("==========================START==========================");
     Trace("[ScoreFilter], key: %s, score = %lf, member = %s, version = %d",
@@ -39,7 +44,8 @@ class ZSetsScoreFilter : public rocksdb::CompactionFilter {
       if (cf_handles_ptr_->size() == 0) {
         return false;
       }
-      Status s = db_->Get(default_read_options_, (*cf_handles_ptr_)[0], cur_key_, &meta_value);
+      Status s = db_->Get(default_read_options_,
+              (*cf_handles_ptr_)[0], cur_key_, &meta_value);
       if (s.ok()) {
         meta_not_found_ = false;
         ParsedZSetsMetaValue parsed_zsets_meta_value(&meta_value);
@@ -75,7 +81,7 @@ class ZSetsScoreFilter : public rocksdb::CompactionFilter {
     }
   }
 
-  virtual const char* Name() const override { return "ZSetsScoreFilter";}
+  const char* Name() const override { return "ZSetsScoreFilter";}
 
  private:
   rocksdb::DB* db_;
@@ -91,22 +97,21 @@ class ZSetsScoreFilterFactory : public rocksdb::CompactionFilterFactory {
  public:
   ZSetsScoreFilterFactory(rocksdb::DB** db_ptr,
       std::vector<rocksdb::ColumnFamilyHandle*>* handles_ptr)
-    : db_ptr_(db_ptr), cf_handles_ptr_(handles_ptr) {
- }
+    : db_ptr_(db_ptr), cf_handles_ptr_(handles_ptr) {}
 
-  virtual std::unique_ptr<rocksdb::CompactionFilter> CreateCompactionFilter(
+  std::unique_ptr<rocksdb::CompactionFilter> CreateCompactionFilter(
       const rocksdb::CompactionFilter::Context& context) override {
     return std::unique_ptr<rocksdb::CompactionFilter>(
         new ZSetsScoreFilter(*db_ptr_, cf_handles_ptr_));
   }
 
-  virtual const char* Name() const override {
+  const char* Name() const override {
     return "ZSetsScoreFilterFactory";
   }
 
  private:
-   rocksdb::DB** db_ptr_;
-   std::vector<rocksdb::ColumnFamilyHandle*>* cf_handles_ptr_;
+  rocksdb::DB** db_ptr_;
+  std::vector<rocksdb::ColumnFamilyHandle*>* cf_handles_ptr_;
 };
 
 }  //  namespace blackwidow

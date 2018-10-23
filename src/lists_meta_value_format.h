@@ -23,7 +23,7 @@ class ListsMetaValue : public InternalValue {
     right_index_(InitalRightIndex) {
   }
 
-  virtual size_t AppendTimestampAndVersion() override {
+  size_t AppendTimestampAndVersion() override {
     size_t usize = user_value_.size();
     char* dst = start_;
     memcpy(dst, user_value_.data(), usize);
@@ -46,7 +46,7 @@ class ListsMetaValue : public InternalValue {
   static const size_t kDefaultValueSuffixLength = sizeof(int32_t) * 2 +
     sizeof(int64_t) * 2;
 
-  virtual const Slice Encode() override {
+  const Slice Encode() override {
     size_t usize = user_value_.size();
     size_t needed = usize + kDefaultValueSuffixLength;
     char* dst;
@@ -96,7 +96,10 @@ class ParsedListsMetaValue : public ParsedInternalValue {
  public:
   // Use this constructor after rocksdb::DB::Get();
   explicit ParsedListsMetaValue(std::string* internal_value_str) :
-    ParsedInternalValue(internal_value_str), count_(0), left_index_(0), right_index_(0) {
+    ParsedInternalValue(internal_value_str),
+    count_(0),
+    left_index_(0),
+    right_index_(0) {
     assert(internal_value_str->size() >= kListsMetaValueSuffixLength);
     if (internal_value_str->size() >= kListsMetaValueSuffixLength) {
       user_value_ = Slice(internal_value_str->data(),
@@ -117,7 +120,10 @@ class ParsedListsMetaValue : public ParsedInternalValue {
 
   // Use this constructor in rocksdb::CompactionFilter::Filter();
   explicit ParsedListsMetaValue(const Slice& internal_value_slice) :
-    ParsedInternalValue(internal_value_slice), count_(0), left_index_(0), right_index_(0) {
+    ParsedInternalValue(internal_value_slice),
+    count_(0),
+    left_index_(0),
+    right_index_(0) {
     assert(internal_value_slice.size() >= kListsMetaValueSuffixLength);
     if (internal_value_slice.size() >= kListsMetaValueSuffixLength) {
       user_value_ = Slice(internal_value_slice.data(),
@@ -136,14 +142,14 @@ class ParsedListsMetaValue : public ParsedInternalValue {
     count_ = DecodeFixed64(internal_value_slice.data());
   }
 
-  virtual void StripSuffix() override {
+  void StripSuffix() override {
     if (value_ != nullptr) {
       value_->erase(value_->size() - kListsMetaValueSuffixLength,
           kListsMetaValueSuffixLength);
     }
   }
 
-  virtual void SetVersionToValue() override {
+  void SetVersionToValue() override {
     if (value_ != nullptr) {
       char* dst = const_cast<char*>(value_->data()) + value_->size() -
         kListsMetaValueSuffixLength;
@@ -151,7 +157,7 @@ class ParsedListsMetaValue : public ParsedInternalValue {
     }
   }
 
-  virtual void SetTimestampToValue() override {
+  void SetTimestampToValue() override {
     if (value_ != nullptr) {
       char* dst = const_cast<char*>(value_->data()) + value_->size() -
         sizeof(int32_t) - 2 * sizeof(int64_t);

@@ -55,17 +55,21 @@ Status RedisSets::Open(const BlackwidowOptions& bw_options,
   member_cf_ops.compaction_filter_factory =
       std::make_shared<SetsMemberFilterFactory>(&db_, &handles_);
 
-  //use the bloom filter policy to reduce disk reads
+  // use the bloom filter policy to reduce disk reads
   rocksdb::BlockBasedTableOptions table_ops(bw_options.table_options);
   table_ops.filter_policy.reset(rocksdb::NewBloomFilterPolicy(10, true));
   rocksdb::BlockBasedTableOptions meta_cf_table_ops(table_ops);
   rocksdb::BlockBasedTableOptions member_cf_table_ops(table_ops);
   if (!bw_options.share_block_cache && bw_options.block_cache_size > 0) {
-    meta_cf_table_ops.block_cache = rocksdb::NewLRUCache(bw_options.block_cache_size);
-    member_cf_table_ops.block_cache = rocksdb::NewLRUCache(bw_options.block_cache_size);
+    meta_cf_table_ops.block_cache =
+      rocksdb::NewLRUCache(bw_options.block_cache_size);
+    member_cf_table_ops.block_cache =
+      rocksdb::NewLRUCache(bw_options.block_cache_size);
   }
-  meta_cf_ops.table_factory.reset(rocksdb::NewBlockBasedTableFactory(meta_cf_table_ops));
-  member_cf_ops.table_factory.reset(rocksdb::NewBlockBasedTableFactory(member_cf_table_ops));
+  meta_cf_ops.table_factory.reset(
+      rocksdb::NewBlockBasedTableFactory(meta_cf_table_ops));
+  member_cf_ops.table_factory.reset(
+      rocksdb::NewBlockBasedTableFactory(member_cf_table_ops));
 
   std::vector<rocksdb::ColumnFamilyDescriptor> column_families;
   // Meta CF
@@ -98,7 +102,6 @@ Status RedisSets::GetProperty(const std::string& property, uint64_t* out) {
 }
 
 Status RedisSets::ScanKeyNum(uint64_t* num) {
-
   uint64_t count = 0;
   rocksdb::ReadOptions iterator_options;
   const rocksdb::Snapshot* snapshot;
@@ -123,7 +126,6 @@ Status RedisSets::ScanKeyNum(uint64_t* num) {
 
 Status RedisSets::ScanKeys(const std::string& pattern,
                              std::vector<std::string>* keys) {
-
   std::string key;
   rocksdb::ReadOptions iterator_options;
   const rocksdb::Snapshot* snapshot;
@@ -139,7 +141,8 @@ Status RedisSets::ScanKeys(const std::string& pattern,
     if (!parsed_sets_meta_value.IsStale()
       && parsed_sets_meta_value.count() != 0) {
       key = iter->key().ToString();
-      if (StringMatch(pattern.data(), pattern.size(), key.data(), key.size(), 0)) {
+      if (StringMatch(pattern.data(),
+            pattern.size(), key.data(), key.size(), 0)) {
         keys->push_back(key);
       }
     }
@@ -655,7 +658,6 @@ Status RedisSets::SMembers(const Slice& key,
 
 Status RedisSets::SMove(const Slice& source, const Slice& destination,
                         const Slice& member, int32_t* ret) {
-
   rocksdb::WriteBatch batch;
   rocksdb::ReadOptions read_options;
 
@@ -737,8 +739,9 @@ Status RedisSets::SMove(const Slice& source, const Slice& destination,
   return db_->Write(default_write_options_, &batch);
 }
 
-Status RedisSets::SPop(const Slice& key, std::string* member, bool* need_compact) {
-
+Status RedisSets::SPop(const Slice& key,
+                       std::string* member,
+                       bool* need_compact) {
   std::default_random_engine engine;
 
   std::string meta_value;
@@ -765,7 +768,6 @@ Status RedisSets::SPop(const Slice& key, std::string* member, bool* need_compact
       for (iter->Seek(sets_member_key.Encode());
            iter->Valid() && cur_index < size;
            iter->Next(), cur_index++) {
-
         if (cur_index == target_index) {
           batch.Delete(handles_[1], iter->key());
           ParsedSetsMemberKey parsed_sets_member_key(iter->key());
@@ -966,7 +968,8 @@ Status RedisSets::SUnion(const std::vector<std::string>& keys,
   Slice prefix;
   std::map<std::string, bool> result_flag;
   for (const auto& key_version : vaild_sets) {
-    SetsMemberKey sets_member_key(key_version.key, key_version.version, Slice());
+    SetsMemberKey sets_member_key(key_version.key,
+        key_version.version, Slice());
     prefix = sets_member_key.Encode();
     auto iter = db_->NewIterator(read_options, handles_[1]);
     for (iter->Seek(prefix);
@@ -1020,7 +1023,8 @@ Status RedisSets::SUnionstore(const Slice& destination,
   std::vector<std::string> members;
   std::map<std::string, bool> result_flag;
   for (const auto& key_version : vaild_sets) {
-    SetsMemberKey sets_member_key(key_version.key, key_version.version, Slice());
+    SetsMemberKey sets_member_key(key_version.key,
+        key_version.version, Slice());
     prefix = sets_member_key.Encode();
     auto iter = db_->NewIterator(read_options, handles_[1]);
     for (iter->Seek(prefix);
@@ -1059,8 +1063,12 @@ Status RedisSets::SUnionstore(const Slice& destination,
   return db_->Write(default_write_options_, &batch);
 }
 
-Status RedisSets::SScan(const Slice& key, int64_t cursor, const std::string& pattern,
-                        int64_t count, std::vector<std::string>* members, int64_t* next_cursor) {
+Status RedisSets::SScan(const Slice& key,
+                        int64_t cursor,
+                        const std::string& pattern,
+                        int64_t count,
+                        std::vector<std::string>* members,
+                        int64_t* next_cursor) {
   *next_cursor = 0;
   members->clear();
   if (cursor < 0) {
@@ -1107,14 +1115,16 @@ Status RedisSets::SScan(const Slice& key, int64_t cursor, const std::string& pat
            iter->Next()) {
         ParsedSetsMemberKey parsed_sets_member_key(iter->key());
         std::string member = parsed_sets_member_key.member().ToString();
-        if (StringMatch(pattern.data(), pattern.size(), member.data(), member.size(), 0)) {
+        if (StringMatch(pattern.data(),
+              pattern.size(), member.data(), member.size(), 0)) {
           members->push_back(member);
         }
         rest--;
       }
 
       if (iter->Valid()
-        && (iter->key().compare(prefix) <= 0 || iter->key().starts_with(prefix))) {
+        && (iter->key().compare(prefix) <= 0
+          || iter->key().starts_with(prefix))) {
         *next_cursor = cursor + step_length;
         ParsedSetsMemberKey parsed_sets_member_key(iter->key());
         std::string next_member = parsed_sets_member_key.member().ToString();
@@ -1131,9 +1141,12 @@ Status RedisSets::SScan(const Slice& key, int64_t cursor, const std::string& pat
   return Status::OK();
 }
 
-Status RedisSets::PKScanRange(const Slice& key_start, const Slice& key_end,
-                              const Slice& pattern, int32_t limit,
-                              std::vector<std::string>* keys, std::string* next_key) {
+Status RedisSets::PKScanRange(const Slice& key_start,
+                              const Slice& key_end,
+                              const Slice& pattern,
+                              int32_t limit,
+                              std::vector<std::string>* keys,
+                              std::string* next_key) {
   std::string key;
   int32_t remain = limit;
   rocksdb::ReadOptions iterator_options;
@@ -1184,9 +1197,12 @@ Status RedisSets::PKScanRange(const Slice& key_start, const Slice& key_end,
   return Status::OK();
 }
 
-Status RedisSets::PKRScanRange(const Slice& key_start, const Slice& key_end,
-                               const Slice& pattern, int32_t limit,
-                               std::vector<std::string>* keys, std::string* next_key) {
+Status RedisSets::PKRScanRange(const Slice& key_start,
+                               const Slice& key_end,
+                               const Slice& pattern,
+                               int32_t limit,
+                               std::vector<std::string>* keys,
+                               std::string* next_key) {
   std::string key;
   int32_t remain = limit;
   rocksdb::ReadOptions iterator_options;
@@ -1385,7 +1401,6 @@ Status RedisSets::TTL(const Slice& key, int64_t* timestamp) {
 }
 
 void RedisSets::ScanDatabase() {
-
   rocksdb::ReadOptions iterator_options;
   const rocksdb::Snapshot* snapshot;
   ScopeSnapshot ss(db_, &snapshot);

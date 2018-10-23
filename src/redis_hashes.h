@@ -15,80 +15,86 @@
 namespace blackwidow {
 
 class RedisHashes : public Redis {
-  public:
-    RedisHashes() = default;
-    ~RedisHashes();
+ public:
+  RedisHashes() = default;
+  ~RedisHashes();
 
-    // Common Commands
-    virtual Status Open(const BlackwidowOptions& bw_options,
-                        const std::string& db_path) override;
-    virtual Status CompactRange(const rocksdb::Slice* begin,
-                                const rocksdb::Slice* end) override;
-    virtual Status GetProperty(const std::string& property, uint64_t* out) override;
-    virtual Status ScanKeyNum(uint64_t* num) override;
-    virtual Status ScanKeys(const std::string& pattern,
-                            std::vector<std::string>* keys) override;
+  // Common Commands
+  Status Open(const BlackwidowOptions& bw_options,
+              const std::string& db_path) override;
+  Status CompactRange(const rocksdb::Slice* begin,
+                      const rocksdb::Slice* end) override;
+  Status GetProperty(const std::string& property, uint64_t* out) override;
+  Status ScanKeyNum(uint64_t* num) override;
+  Status ScanKeys(const std::string& pattern,
+                  std::vector<std::string>* keys) override;
 
-    // Hashes Commands
-    Status HDel(const Slice& key, const std::vector<std::string>& fields,
+  // Hashes Commands
+  Status HDel(const Slice& key, const std::vector<std::string>& fields,
+              int32_t* ret);
+  Status HExists(const Slice& key, const Slice& field);
+  Status HGet(const Slice& key, const Slice& field, std::string* value);
+  Status HGetall(const Slice& key,
+                 std::vector<FieldValue>* fvs);
+  Status HIncrby(const Slice& key, const Slice& field, int64_t value,
+                 int64_t* ret);
+  Status HIncrbyfloat(const Slice& key, const Slice& field,
+                      const Slice& by, std::string* new_value);
+  Status HKeys(const Slice& key,
+               std::vector<std::string>* fields);
+  Status HLen(const Slice& key, int32_t* ret);
+  Status HMGet(const Slice& key, const std::vector<std::string>& fields,
+               std::vector<std::string>* values);
+  Status HMSet(const Slice& key,
+               const std::vector<FieldValue>& fvs);
+  Status HSet(const Slice& key, const Slice& field, const Slice& value,
+              int32_t* ret);
+  Status HSetnx(const Slice& key, const Slice& field, const Slice& value,
                 int32_t* ret);
-    Status HExists(const Slice& key, const Slice& field);
-    Status HGet(const Slice& key, const Slice& field, std::string* value);
-    Status HGetall(const Slice& key,
-                   std::vector<FieldValue>* fvs);
-    Status HIncrby(const Slice& key, const Slice& field, int64_t value,
-                   int64_t* ret);
-    Status HIncrbyfloat(const Slice& key, const Slice& field,
-                        const Slice& by, std::string* new_value);
-    Status HKeys(const Slice& key,
-                 std::vector<std::string>* fields);
-    Status HLen(const Slice& key, int32_t* ret);
-    Status HMGet(const Slice& key, const std::vector<std::string>& fields,
-                 std::vector<std::string>* values);
-    Status HMSet(const Slice& key,
-                 const std::vector<FieldValue>& fvs);
-    Status HSet(const Slice& key, const Slice& field, const Slice& value,
-                int32_t* ret);
-    Status HSetnx(const Slice& key, const Slice& field, const Slice& value,
-                  int32_t* ret);
-    Status HVals(const Slice& key,
-                 std::vector<std::string>* values);
-    Status HStrlen(const Slice& key, const Slice& field, int32_t* len);
-    Status HScan(const Slice& key, int64_t cursor, const std::string& pattern,
-                 int64_t count, std::vector<FieldValue>* field_values, int64_t* next_cursor);
-    Status HScanx(const Slice& key, const std::string start_field, const std::string& pattern,
-                  int64_t count, std::vector<FieldValue>* field_values, std::string* next_field);
-    Status PKHScanRange(const Slice& key,
-                        const Slice& field_start, const std::string& field_end,
-                        const Slice& pattern, int32_t limit,
-                        std::vector<FieldValue>* field_values, std::string* next_field);
-    Status PKHRScanRange(const Slice& key,
-                         const Slice& field_start, const std::string& field_end,
-                         const Slice& pattern, int32_t limit,
-                         std::vector<FieldValue>* field_values, std::string* next_field);
-    Status PKScanRange(const Slice& key_start, const Slice& key_end,
+  Status HVals(const Slice& key,
+               std::vector<std::string>* values);
+  Status HStrlen(const Slice& key, const Slice& field, int32_t* len);
+  Status HScan(const Slice& key, int64_t cursor,
+               const std::string& pattern, int64_t count,
+               std::vector<FieldValue>* field_values, int64_t* next_cursor);
+  Status HScanx(const Slice& key, const std::string start_field,
+                const std::string& pattern, int64_t count,
+                std::vector<FieldValue>* field_values,
+                std::string* next_field);
+  Status PKHScanRange(const Slice& key,
+                      const Slice& field_start,
+                      const std::string& field_end,
+                      const Slice& pattern, int32_t limit,
+                      std::vector<FieldValue>* field_values,
+                      std::string* next_field);
+  Status PKHRScanRange(const Slice& key,
+                       const Slice& field_start, const std::string& field_end,
                        const Slice& pattern, int32_t limit,
-                       std::vector<std::string>* keys, std::string* next_key);
-    Status PKRScanRange(const Slice& key_start, const Slice& key_end,
-                        const Slice& pattern, int32_t limit,
-                        std::vector<std::string>* keys, std::string* next_key);
+                       std::vector<FieldValue>* field_values,
+                       std::string* next_field);
+  Status PKScanRange(const Slice& key_start, const Slice& key_end,
+                     const Slice& pattern, int32_t limit,
+                     std::vector<std::string>* keys, std::string* next_key);
+  Status PKRScanRange(const Slice& key_start, const Slice& key_end,
+                      const Slice& pattern, int32_t limit,
+                      std::vector<std::string>* keys, std::string* next_key);
 
 
-    // Keys Commands
-    virtual Status Expire(const Slice& key, int32_t ttl) override;
-    virtual Status Del(const Slice& key) override;
-    virtual bool Scan(const std::string& start_key, const std::string& pattern,
-                      std::vector<std::string>* keys,
-                      int64_t* count, std::string* next_key) override;
-    virtual Status Expireat(const Slice& key, int32_t timestamp) override;
-    virtual Status Persist(const Slice& key) override;
-    virtual Status TTL(const Slice& key, int64_t* timestamp) override;
+  // Keys Commands
+  Status Expire(const Slice& key, int32_t ttl) override;
+  Status Del(const Slice& key) override;
+  bool Scan(const std::string& start_key, const std::string& pattern,
+            std::vector<std::string>* keys,
+            int64_t* count, std::string* next_key) override;
+  Status Expireat(const Slice& key, int32_t timestamp) override;
+  Status Persist(const Slice& key) override;
+  Status TTL(const Slice& key, int64_t* timestamp) override;
 
-    // Iterate all data
-    void ScanDatabase();
+  // Iterate all data
+  void ScanDatabase();
 
-  private:
-    std::vector<rocksdb::ColumnFamilyHandle*> handles_;
+ private:
+  std::vector<rocksdb::ColumnFamilyHandle*> handles_;
 };
 
 }  //  namespace blackwidow

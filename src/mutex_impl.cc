@@ -3,12 +3,12 @@
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 
-#include "src/mutex_impl.h"
 
 #include <condition_variable>
 #include <memory>
 
 #include "src/mutex.h"
+#include "src/mutex_impl.h"
 
 namespace blackwidow {
 

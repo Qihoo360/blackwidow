@@ -8,16 +8,15 @@
 
 namespace blackwidow {
 class BaseDataKey {
-  public:
-    BaseDataKey(const Slice& key, int32_t version, const Slice& data) :
-      start_(nullptr), key_(key), version_(version), data_(data) {
-    }
+ public:
+  BaseDataKey(const Slice& key, int32_t version, const Slice& data) :
+    start_(nullptr), key_(key), version_(version), data_(data) {}
 
-    ~BaseDataKey() {
-      if (start_ != space_) {
-        delete[] start_;
-      }
+  ~BaseDataKey() {
+    if (start_ != space_) {
+      delete[] start_;
     }
+  }
 
   const Slice Encode() {
     size_t usize = key_.size() + data_.size();
@@ -45,89 +44,89 @@ class BaseDataKey {
     return Slice(start_, needed);
   }
 
-  private:
-    char space_[200];
-    char* start_;
-    Slice key_;
-    int32_t version_;
-    Slice data_;
+ private:
+  char space_[200];
+  char* start_;
+  Slice key_;
+  int32_t version_;
+  Slice data_;
 };
 
 class ParsedBaseDataKey {
-  public:
-    explicit ParsedBaseDataKey(const std::string* key) {
-      const char* ptr = key->data();
-      int32_t key_len = DecodeFixed32(ptr);
-      ptr += sizeof(int32_t);
-      key_ = Slice(ptr, key_len);
-      ptr += key_len;
-      version_ = DecodeFixed32(ptr);
-      ptr += sizeof(int32_t);
-      data_ = Slice(ptr, key->size() - key_len - sizeof(int32_t) * 2);
-    }
+ public:
+  explicit ParsedBaseDataKey(const std::string* key) {
+    const char* ptr = key->data();
+    int32_t key_len = DecodeFixed32(ptr);
+    ptr += sizeof(int32_t);
+    key_ = Slice(ptr, key_len);
+    ptr += key_len;
+    version_ = DecodeFixed32(ptr);
+    ptr += sizeof(int32_t);
+    data_ = Slice(ptr, key->size() - key_len - sizeof(int32_t) * 2);
+  }
 
-    explicit ParsedBaseDataKey(const Slice& key) {
-      const char* ptr = key.data();
-      int32_t key_len = DecodeFixed32(ptr);
-      ptr += sizeof(int32_t);
-      key_ = Slice(ptr, key_len);
-      ptr += key_len;
-      version_ = DecodeFixed32(ptr);
-      ptr += sizeof(int32_t);
-      data_ = Slice(ptr, key.size() - key_len - sizeof(int32_t) * 2);
-    }
+  explicit ParsedBaseDataKey(const Slice& key) {
+    const char* ptr = key.data();
+    int32_t key_len = DecodeFixed32(ptr);
+    ptr += sizeof(int32_t);
+    key_ = Slice(ptr, key_len);
+    ptr += key_len;
+    version_ = DecodeFixed32(ptr);
+    ptr += sizeof(int32_t);
+    data_ = Slice(ptr, key.size() - key_len - sizeof(int32_t) * 2);
+  }
 
-    virtual ~ParsedBaseDataKey() = default;
+  virtual ~ParsedBaseDataKey() = default;
 
-    Slice key() {
-      return key_;
-    }
+  Slice key() {
+    return key_;
+  }
 
-    int32_t version() {
-      return version_;
-    }
+  int32_t version() {
+    return version_;
+  }
 
-    Slice data() {
-      return data_;
-    }
+  Slice data() {
+    return data_;
+  }
 
-  protected:
-    Slice key_;
-    int32_t version_;
-    Slice data_;
+ protected:
+  Slice key_;
+  int32_t version_;
+  Slice data_;
 };
 
 class ParsedHashesDataKey : public ParsedBaseDataKey {
-  public:
-    explicit ParsedHashesDataKey(const std::string* key)
+ public:
+  explicit ParsedHashesDataKey(const std::string* key)
               : ParsedBaseDataKey(key) {}
-    explicit ParsedHashesDataKey(const Slice& key)
+  explicit ParsedHashesDataKey(const Slice& key)
               : ParsedBaseDataKey(key) {}
-    Slice field() {
-      return data_;
-    }
+  Slice field() {
+    return data_;
+  }
 };
 
 class ParsedSetsMemberKey : public ParsedBaseDataKey {
-  public:
-    explicit ParsedSetsMemberKey(const std::string* key)
+ public:
+  explicit ParsedSetsMemberKey(const std::string* key)
               : ParsedBaseDataKey(key) {}
-    explicit ParsedSetsMemberKey(const Slice& key)
+  explicit ParsedSetsMemberKey(const Slice& key)
               : ParsedBaseDataKey(key) {}
-    Slice member() {
-      return data_;
-    }
+  Slice member() {
+    return data_;
+  }
 };
 
 class ParsedZSetsMemberKey : public ParsedBaseDataKey {
-  public:
-    explicit ParsedZSetsMemberKey(const std::string* key)
+ public:
+  explicit ParsedZSetsMemberKey(const std::string* key)
               : ParsedBaseDataKey(key) {}
-    explicit ParsedZSetsMemberKey(const Slice& key)
+  explicit ParsedZSetsMemberKey(const Slice& key)
               : ParsedBaseDataKey(key) {}
-    Slice member() {
-      return data_;
-    }
+  Slice member() {
+    return data_;
+  }
 };
 
 typedef BaseDataKey HashesDataKey;

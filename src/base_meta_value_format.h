@@ -17,7 +17,7 @@ class BaseMetaValue : public InternalValue {
   explicit BaseMetaValue(const Slice& user_value) :
     InternalValue(user_value) {
   }
-  virtual size_t AppendTimestampAndVersion() override {
+  size_t AppendTimestampAndVersion() override {
     size_t usize = user_value_.size();
     char* dst = start_;
     memcpy(dst, user_value_.data(), usize);
@@ -70,14 +70,14 @@ class ParsedBaseMetaValue : public ParsedInternalValue {
     count_ = DecodeFixed32(internal_value_slice.data());
   }
 
-  virtual void StripSuffix() override {
+  void StripSuffix() override {
     if (value_ != nullptr) {
       value_->erase(value_->size() - kBaseMetaValueSuffixLength,
           kBaseMetaValueSuffixLength);
     }
   }
 
-  virtual void SetVersionToValue() override {
+  void SetVersionToValue() override {
     if (value_ != nullptr) {
       char* dst = const_cast<char*>(value_->data()) + value_->size() -
         kBaseMetaValueSuffixLength;
@@ -85,7 +85,7 @@ class ParsedBaseMetaValue : public ParsedInternalValue {
     }
   }
 
-  virtual void SetTimestampToValue() override {
+  void SetTimestampToValue() override {
     if (value_ != nullptr) {
       char* dst = const_cast<char*>(value_->data()) + value_->size() -
         sizeof(int32_t);

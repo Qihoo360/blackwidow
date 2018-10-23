@@ -22,7 +22,7 @@ Status RedisStrings::Open(const BlackwidowOptions& bw_options,
   rocksdb::Options ops(bw_options.options);
   ops.compaction_filter_factory = std::make_shared<StringsFilterFactory>();
 
-  //use the bloom filter policy to reduce disk reads
+  // use the bloom filter policy to reduce disk reads
   rocksdb::BlockBasedTableOptions table_ops(bw_options.table_options);
   if (!bw_options.share_block_cache && bw_options.block_cache_size > 0) {
     table_ops.block_cache = rocksdb::NewLRUCache(bw_options.block_cache_size);
@@ -46,7 +46,6 @@ Status RedisStrings::GetProperty(const std::string& property, uint64_t* out) {
 }
 
 Status RedisStrings::ScanKeyNum(uint64_t* num) {
-
   uint64_t count = 0;
   rocksdb::ReadOptions iterator_options;
   const rocksdb::Snapshot* snapshot;
@@ -88,7 +87,8 @@ Status RedisStrings::ScanKeys(const std::string& pattern,
     ParsedStringsValue parsed_strings_value(iter->value());
     if (!parsed_strings_value.IsStale()) {
       key = iter->key().ToString();
-      if (StringMatch(pattern.data(), pattern.size(), key.data(), key.size(), 0)) {
+      if (StringMatch(pattern.data(),
+            pattern.size(), key.data(), key.size(), 0)) {
         keys->push_back(key);
       }
     }
@@ -357,7 +357,7 @@ Status RedisStrings::GetBit(const Slice& key, int64_t offset, int32_t* ret) {
     if (byte + 1 > data_value.length()) {
       *ret = 0;
     } else {
-      *ret = (data_value[byte] & 1<<bit) >> bit;
+      *ret = ((data_value[byte] & (1 << bit)) >> bit);
     }
   } else {
     return s;
@@ -568,7 +568,9 @@ Status RedisStrings::MSetnx(const std::vector<KeyValue>& kvs,
   return s;
 }
 
-Status RedisStrings::Set(const Slice& key, const Slice& value, const int32_t ttl) {
+Status RedisStrings::Set(const Slice& key,
+                         const Slice& value,
+                         const int32_t ttl) {
   StringsValue strings_value(value);
   ScopeRecordLock l(lock_mgr_, key);
   if (ttl > 0) {
@@ -577,7 +579,10 @@ Status RedisStrings::Set(const Slice& key, const Slice& value, const int32_t ttl
   return db_->Put(default_write_options_, key, strings_value.Encode());
 }
 
-Status RedisStrings::Setxx(const Slice& key, const Slice& value, int32_t* ret, const int32_t ttl) {
+Status RedisStrings::Setxx(const Slice& key,
+                           const Slice& value,
+                           int32_t* ret,
+                           const int32_t ttl) {
   bool not_found = true;
   std::string old_value;
   StringsValue strings_value(value);
@@ -629,14 +634,14 @@ Status RedisStrings::SetBit(const Slice& key, int64_t offset,
       *ret = 0;
       byte_val = 0;
     } else {
-      *ret = (data_value[byte] & 1<<bit) >> bit;
+      *ret = ((data_value[byte] & (1 << bit)) >> bit);
       byte_val = data_value[byte];
     }
     if (*ret == on) {
       return Status::OK();
     }
-    byte_val &= (char) ~(1 << bit);
-    byte_val |= (char) ((on & 0x1) << bit);
+    byte_val &= static_cast<char>(~(1 << bit));
+    byte_val |= static_cast<char>((on & 0x1) << bit);
     if (byte + 1 <= value_lenth) {
       data_value.replace(byte, 1, &byte_val, 1);
     } else {
@@ -660,7 +665,10 @@ Status RedisStrings::Setex(const Slice& key, const Slice& value, int32_t ttl) {
   return db_->Put(default_write_options_, key, strings_value.Encode());
 }
 
-Status RedisStrings::Setnx(const Slice& key, const Slice& value, int32_t* ret, const int32_t ttl) {
+Status RedisStrings::Setnx(const Slice& key,
+                           const Slice& value,
+                           int32_t* ret,
+                           const int32_t ttl) {
   *ret = 0;
   std::string old_value;
   ScopeRecordLock l(lock_mgr_, key);
@@ -690,8 +698,11 @@ Status RedisStrings::Setnx(const Slice& key, const Slice& value, int32_t* ret, c
   return s;
 }
 
-Status RedisStrings::Setvx(const Slice& key, const Slice& value,
-                           const Slice& new_value, int32_t* ret, const int32_t ttl) {
+Status RedisStrings::Setvx(const Slice& key,
+                           const Slice& value,
+                           const Slice& new_value,
+                           int32_t* ret,
+                           const int32_t ttl) {
   *ret = 0;
   std::string old_value;
   ScopeRecordLock l(lock_mgr_, key);
@@ -994,9 +1005,12 @@ Status RedisStrings::BitPos(const Slice& key, int32_t bit,
   return Status::OK();
 }
 
-Status RedisStrings::PKScanRange(const Slice& key_start, const Slice& key_end,
-                                 const Slice& pattern, int32_t limit,
-                                 std::vector<KeyValue>* kvs, std::string* next_key) {
+Status RedisStrings::PKScanRange(const Slice& key_start,
+                                 const Slice& key_end,
+                                 const Slice& pattern,
+                                 int32_t limit,
+                                 std::vector<KeyValue>* kvs,
+                                 std::string* next_key) {
   std::string key, value;
   int32_t remain = limit;
   rocksdb::ReadOptions iterator_options;
@@ -1049,9 +1063,12 @@ Status RedisStrings::PKScanRange(const Slice& key_start, const Slice& key_end,
   return Status::OK();
 }
 
-Status RedisStrings::PKRScanRange(const Slice& key_start, const Slice& key_end,
-                                  const Slice& pattern, int32_t limit,
-                                  std::vector<KeyValue>* kvs, std::string* next_key) {
+Status RedisStrings::PKRScanRange(const Slice& key_start,
+                                  const Slice& key_end,
+                                  const Slice& pattern,
+                                  int32_t limit,
+                                  std::vector<KeyValue>* kvs,
+                                  std::string* next_key) {
   std::string key, value;
   int32_t remain = limit;
   rocksdb::ReadOptions iterator_options;
@@ -1248,7 +1265,6 @@ Status RedisStrings::TTL(const Slice& key, int64_t* timestamp) {
 }
 
 void RedisStrings::ScanDatabase() {
-
   rocksdb::ReadOptions iterator_options;
   const rocksdb::Snapshot* snapshot;
   ScopeSnapshot ss(db_, &snapshot);

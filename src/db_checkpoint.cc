@@ -41,17 +41,20 @@ class DBCheckpointImpl : public DBCheckpoint {
   // The directory should not already exist and will be created by this API.
   // The directory will be an absolute path
   using DBCheckpoint::CreateCheckpoint;
-  virtual Status CreateCheckpoint(const std::string& checkpoint_dir) override;
+  Status CreateCheckpoint(const std::string& checkpoint_dir) override;
 
   using DBCheckpoint::GetCheckpointFiles;
-  virtual Status GetCheckpointFiles(std::vector<std::string> &live_files,
-      VectorLogPtr &live_wal_files, uint64_t &manifest_file_size,
-      uint64_t &sequence_number) override;
+  Status GetCheckpointFiles(std::vector<std::string> &live_files,
+                            VectorLogPtr &live_wal_files,
+                            uint64_t &manifest_file_size,
+                            uint64_t &sequence_number) override;
 
   using DBCheckpoint::CreateCheckpointWithFiles;
-  virtual Status CreateCheckpointWithFiles(const std::string& checkpoint_dir,
-      std::vector<std::string> &live_files, VectorLogPtr &live_wal_files,
-      uint64_t manifest_file_size, uint64_t sequence_number) override;
+  Status CreateCheckpointWithFiles(const std::string& checkpoint_dir,
+                                   std::vector<std::string> &live_files,
+                                   VectorLogPtr &live_wal_files,
+                                   uint64_t manifest_file_size,
+                                   uint64_t sequence_number) override;
 
  private:
   DB* db_;
@@ -71,15 +74,19 @@ Status DBCheckpointImpl::CreateCheckpoint(const std::string& checkpoint_dir) {
   std::vector<std::string> live_files;
   VectorLogPtr live_wal_files;
   uint64_t manifest_file_size, sequence_number;
-  Status s = GetCheckpointFiles(live_files, live_wal_files, manifest_file_size, sequence_number);
+  Status s = GetCheckpointFiles(live_files,
+      live_wal_files, manifest_file_size, sequence_number);
   if (s.ok()) {
-    s = CreateCheckpointWithFiles(checkpoint_dir, live_files, live_wal_files, manifest_file_size, sequence_number);
+    s = CreateCheckpointWithFiles(checkpoint_dir,
+        live_files, live_wal_files, manifest_file_size, sequence_number);
   }
   return s;
 }
 
-Status DBCheckpointImpl::GetCheckpointFiles(std::vector<std::string> &live_files,
-    VectorLogPtr &live_wal_files, uint64_t &manifest_file_size,
+Status DBCheckpointImpl::GetCheckpointFiles(
+    std::vector<std::string> &live_files,
+    VectorLogPtr &live_wal_files,
+    uint64_t &manifest_file_size,
     uint64_t &sequence_number) {
 
   Status s;
@@ -103,9 +110,12 @@ Status DBCheckpointImpl::GetCheckpointFiles(std::vector<std::string> &live_files
   return s;
 }
 
-Status DBCheckpointImpl::CreateCheckpointWithFiles(const std::string& checkpoint_dir,
-    std::vector<std::string> &live_files, VectorLogPtr &live_wal_files,
-    uint64_t manifest_file_size, uint64_t sequence_number) {
+Status DBCheckpointImpl::CreateCheckpointWithFiles(
+    const std::string& checkpoint_dir,
+    std::vector<std::string> &live_files,
+    VectorLogPtr &live_wal_files,
+    uint64_t manifest_file_size,
+    uint64_t sequence_number) {
   bool same_fs = true;
 
   Status s = db_->GetEnv()->FileExists(checkpoint_dir);
@@ -181,7 +191,8 @@ Status DBCheckpointImpl::CreateCheckpointWithFiles(const std::string& checkpoint
     s = CreateFile(db_->GetEnv(), full_private_path + current_fname,
                    manifest_fname.substr(1) + "\n");
   }
-  //Log(db_->GetOptions().info_log, "Number of log files %" ROCKSDB_PRIszt, live_wal_files.size());
+  // Log(db_->GetOptions().info_log,
+  //    "Number of log files %" ROCKSDB_PRIszt, live_wal_files.size());
 
   // Link WAL files. Copy exact size of last one because it is the only one
   // that has changes after the last flush.
@@ -226,7 +237,8 @@ Status DBCheckpointImpl::CreateCheckpointWithFiles(const std::string& checkpoint
 #else
         s = CopyFile(db_->GetEnv(),
                      db_->GetOptions().wal_dir + live_wal_files[i]->PathName(),
-                     full_private_path + live_wal_files[i]->PathName(), 0, false);
+                     full_private_path + live_wal_files[i]->PathName(),
+                     0, false);
 #endif
       }
     }
