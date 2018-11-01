@@ -16,7 +16,7 @@
 #include "src/custom_comparator.h"
 
 #define SPOP_COMPACT_THRESHOLD_COUNT     500
-#define SPOP_COMPACT_THRESHOLD_DURATION  1000         // 1000us
+#define SPOP_COMPACT_THRESHOLD_DURATION  1000 * 1000      // 1000ms
 
 namespace blackwidow {
 
