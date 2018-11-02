@@ -866,7 +866,6 @@ Status RedisHashes::PKHScanRange(const Slice& key,
     ParsedHashesMetaValue parsed_hashes_meta_value(&meta_value);
     if (parsed_hashes_meta_value.IsStale()
       || parsed_hashes_meta_value.count() == 0) {
-      *next_field = "";
       return Status::NotFound();
     } else {
       int32_t version = parsed_hashes_meta_value.version();
@@ -891,14 +890,13 @@ Status RedisHashes::PKHScanRange(const Slice& key,
 
       if (iter->Valid() && iter->key().starts_with(prefix)) {
         ParsedHashesDataKey parsed_hashes_data_key(iter->key());
-        *next_field = parsed_hashes_data_key.field().ToString();
-      } else {
-        *next_field = "";
+        if (end_no_limit || parsed_hashes_data_key.field().compare(field_end) <= 0) {
+          *next_field = parsed_hashes_data_key.field().ToString();
+        }
       }
       delete iter;
     }
   } else {
-    *next_field = "";
     return s;
   }
   return Status::OK();
@@ -935,7 +933,6 @@ Status RedisHashes::PKHRScanRange(const Slice& key,
     ParsedHashesMetaValue parsed_hashes_meta_value(&meta_value);
     if (parsed_hashes_meta_value.IsStale()
       || parsed_hashes_meta_value.count() == 0) {
-      *next_field = "";
       return Status::NotFound();
     } else {
       int32_t version = parsed_hashes_meta_value.version();
@@ -964,14 +961,13 @@ Status RedisHashes::PKHRScanRange(const Slice& key,
 
       if (iter->Valid() && iter->key().starts_with(prefix)) {
         ParsedHashesDataKey parsed_hashes_data_key(iter->key());
-        *next_field = parsed_hashes_data_key.field().ToString();
-      } else {
-        *next_field = "";
+        if (end_no_limit || parsed_hashes_data_key.field().compare(field_end) >= 0) {
+          *next_field = parsed_hashes_data_key.field().ToString();
+        }
       }
       delete iter;
     }
   } else {
-    *next_field = "";
     return s;
   }
   return Status::OK();
@@ -1024,7 +1020,8 @@ Status RedisHashes::PKScanRange(const Slice& key_start,
     }
   }
 
-  if (it->Valid()) {
+  if (it->Valid()
+    && (end_no_limit || it->key().compare(key_end) <= 0)) {
     *next_key = it->key().ToString();
   } else {
     *next_key = "";
@@ -1080,7 +1077,8 @@ Status RedisHashes::PKRScanRange(const Slice& key_start,
     }
   }
 
-  if (it->Valid()) {
+  if (it->Valid()
+    && (end_no_limit || it->key().compare(key_end) >= 0)) {
     *next_key = it->key().ToString();
   } else {
     *next_key = "";

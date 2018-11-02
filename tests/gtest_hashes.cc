@@ -1815,8 +1815,8 @@ TEST_F(HashesTest, PKHScanRangeTest) {
   // ************************** Group 3 Test **************************
   //        0     1     2     3     4     5     6     7     8     9
   //        a     c     e     g     i     k     m     o     q     s
-  //      ^                                                    ^  ^
-  // field_start                                       field_end  next_field
+  //      ^                                                    ^
+  // field_start                                          field_end
   std::vector<FieldValue> gp3_field_value {{"a", "v"}, {"c", "v"}, {"e", "v"},
                                            {"g", "v"}, {"i", "v"}, {"k", "v"},
                                            {"m", "v"}, {"o", "v"}, {"q", "v"},
@@ -1833,14 +1833,14 @@ TEST_F(HashesTest, PKHScanRangeTest) {
     expect_field_value.push_back(gp3_field_value[idx]);
   }
   ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
-  ASSERT_EQ(next_field, "s");
+  ASSERT_EQ(next_field, "");
 
 
   // ************************** Group 4 Test **************************
   //      0     1     2     3     4     5     6     7     8     9
   //      a     c     e     g     i     k     m     o     q     s
-  //               ^                                   ^  ^
-  //          field_start                      field_end  next_field
+  //               ^                                   ^
+  //          field_start                         field_end
   std::vector<FieldValue> gp4_field_value {{"a", "v"}, {"c", "v"}, {"e", "v"},
                                            {"g", "v"}, {"i", "v"}, {"k", "v"},
                                            {"m", "v"}, {"o", "v"}, {"q", "v"},
@@ -1857,14 +1857,14 @@ TEST_F(HashesTest, PKHScanRangeTest) {
     expect_field_value.push_back(gp4_field_value[idx]);
   }
   ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
-  ASSERT_EQ(next_field, "q");
+  ASSERT_EQ(next_field, "");
 
 
   // ************************** Group 5 Test **************************
   //      0     1     2     3     4     5     6     7     8     9
   //      a     c     e     g     i     k     m     o     q     s
-  //            ^                                         ^     ^
-  //       field_start                            field_end     next_field
+  //            ^                                         ^
+  //       field_start                               field_end
   std::vector<FieldValue> gp5_field_value {{"a", "v"}, {"c", "v"}, {"e", "v"},
                                            {"g", "v"}, {"i", "v"}, {"k", "v"},
                                            {"m", "v"}, {"o", "v"}, {"q", "v"},
@@ -1881,14 +1881,14 @@ TEST_F(HashesTest, PKHScanRangeTest) {
     expect_field_value.push_back(gp5_field_value[idx]);
   }
   ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
-  ASSERT_EQ(next_field, "s");
+  ASSERT_EQ(next_field, "");
 
 
   // ************************** Group 6 Test **************************
   //      0     1     2     3     4       5     6     7     8     9
   //      a     c     e     g     i       k     m     o     q     s
-  //                              ^       ^     ^
-  //                    field_start  field_end  next_field
+  //                              ^       ^
+  //                    field_start  field_end
   std::vector<FieldValue> gp6_field_value {{"a", "v"}, {"c", "v"}, {"e", "v"},
                                            {"g", "v"}, {"i", "v"}, {"k", "v"},
                                            {"m", "v"}, {"o", "v"}, {"q", "v"},
@@ -1905,14 +1905,14 @@ TEST_F(HashesTest, PKHScanRangeTest) {
     expect_field_value.push_back(gp6_field_value[idx]);
   }
   ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
-  ASSERT_EQ(next_field, "m");
+  ASSERT_EQ(next_field, "");
 
 
   // ************************** Group 7 Test **************************
-  //      0     1     2     3     4          5     6     7     8     9
-  //      a     c     e     g     i          k     m     o     q     s
-  //                              ^          ^
-  //                   field_start/field_end next_field
+  //      0     1     2     3     4     5     6     7     8     9
+  //      a     c     e     g     i     k     m     o     q     s
+  //                              ^
+  //                   field_start/field_end
   std::vector<FieldValue> gp7_field_value {{"a", "v"}, {"c", "v"}, {"e", "v"},
                                            {"g", "v"}, {"i", "v"}, {"k", "v"},
                                            {"m", "v"}, {"o", "v"}, {"q", "v"},
@@ -1929,7 +1929,7 @@ TEST_F(HashesTest, PKHScanRangeTest) {
     expect_field_value.push_back(gp7_field_value[idx]);
   }
   ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
-  ASSERT_EQ(next_field, "k");
+  ASSERT_EQ(next_field, "");
 
 
   // ************************** Group 8 Test **************************
@@ -2168,8 +2168,8 @@ TEST_F(HashesTest, PKHRScanRangeTest) {
   // ************************** Group 2 Test **************************
   //         0     1     2     3     4     5     6     7     8     9
   //         a     c     e     g     i     k     m     o     q     s
-  //         ^  ^                                                    ^
-  //next_field  field_end                                       field_start
+  //            ^                                                    ^
+  //       field_end                                            field_start
   std::vector<FieldValue> gp2_field_value {{"a", "v"}, {"c", "v"}, {"e", "v"},
                                            {"g", "v"}, {"i", "v"}, {"k", "v"},
                                            {"m", "v"}, {"o", "v"}, {"q", "v"},
@@ -2186,7 +2186,7 @@ TEST_F(HashesTest, PKHRScanRangeTest) {
     expect_field_value.push_back(gp2_field_value[idx]);
   }
   ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
-  ASSERT_EQ(next_field, "a");
+  ASSERT_EQ(next_field, "");
 
 
   // ************************** Group 3 Test **************************
@@ -2216,8 +2216,8 @@ TEST_F(HashesTest, PKHRScanRangeTest) {
   // ************************** Group 4 Test **************************
   //      0     1     2     3     4     5     6     7     8     9
   //      a     c     e     g     i     k     m     o     q     s
-  //            ^  ^                                   ^
-  //   next_field  field_end                      field_start
+  //               ^                                   ^
+  //          field_end                           field_start
   std::vector<FieldValue> gp4_field_value {{"a", "v"}, {"c", "v"}, {"e", "v"},
                                            {"g", "v"}, {"i", "v"}, {"k", "v"},
                                            {"m", "v"}, {"o", "v"}, {"q", "v"},
@@ -2234,14 +2234,14 @@ TEST_F(HashesTest, PKHRScanRangeTest) {
     expect_field_value.push_back(gp4_field_value[idx]);
   }
   ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
-  ASSERT_EQ(next_field, "c");
+  ASSERT_EQ(next_field, "");
 
 
   // ************************** Group 5 Test **************************
   //         0     1     2     3     4     5     6     7     8     9
   //         a     c     e     g     i     k     m     o     q     s
-  //         ^     ^                                         ^
-  //next_field     field_end                            field_start
+  //               ^                                         ^
+  //          field_end                                 field_start
   std::vector<FieldValue> gp5_field_value {{"a", "v"}, {"c", "v"}, {"e", "v"},
                                            {"g", "v"}, {"i", "v"}, {"k", "v"},
                                            {"m", "v"}, {"o", "v"}, {"q", "v"},
@@ -2258,14 +2258,14 @@ TEST_F(HashesTest, PKHRScanRangeTest) {
     expect_field_value.push_back(gp5_field_value[idx]);
   }
   ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
-  ASSERT_EQ(next_field, "a");
+  ASSERT_EQ(next_field, "");
 
 
   // ************************** Group 6 Test **************************
   //      0     1     2     3      4     5     6     7     8     9
   //      a     c     e     g      i     k     m     o     q     s
-  //                        ^      ^     ^
-  //               next_field field_end  field_start
+  //                               ^     ^
+  //                       field_end     field_start
   std::vector<FieldValue> gp6_field_value {{"a", "v"}, {"c", "v"}, {"e", "v"},
                                            {"g", "v"}, {"i", "v"}, {"k", "v"},
                                            {"m", "v"}, {"o", "v"}, {"q", "v"},
@@ -2282,14 +2282,14 @@ TEST_F(HashesTest, PKHRScanRangeTest) {
     expect_field_value.push_back(gp6_field_value[idx]);
   }
   ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
-  ASSERT_EQ(next_field, "g");
+  ASSERT_EQ(next_field, "");
 
 
   // ************************** Group 7 Test **************************
-  //      0     1     2     3            4     5     6     7     8     9
-  //      a     c     e     g            i     k     m     o     q     s
-  //                        ^            ^
-  //               next_field field_start/field_end
+  //      0     1     2     3     4     5     6     7     8     9
+  //      a     c     e     g     i     k     m     o     q     s
+  //                              ^
+  //                  field_start/field_end
   std::vector<FieldValue> gp7_field_value {{"a", "v"}, {"c", "v"}, {"e", "v"},
                                            {"g", "v"}, {"i", "v"}, {"k", "v"},
                                            {"m", "v"}, {"o", "v"}, {"q", "v"},
@@ -2306,7 +2306,7 @@ TEST_F(HashesTest, PKHRScanRangeTest) {
     expect_field_value.push_back(gp7_field_value[idx]);
   }
   ASSERT_TRUE(field_value_match(field_value_out, expect_field_value));
-  ASSERT_EQ(next_field, "g");
+  ASSERT_EQ(next_field, "");
 
 
   // ************************** Group 8 Test **************************
