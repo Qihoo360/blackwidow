@@ -27,7 +27,7 @@ class Redis {
   Redis();
   virtual ~Redis();
 
-  rocksdb::DB* get_db() {
+  rocksdb::DB* GetDB() {
     return db_;
   }
 

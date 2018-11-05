@@ -72,6 +72,14 @@ struct KeyValue {
   }
 };
 
+struct ValueStatus {
+  std::string value;
+  Status status;
+  bool operator == (const ValueStatus& vs) const {
+    return (vs.value == value && vs.status == status);
+  }
+};
+
 struct FieldValue {
   std::string field;
   std::string value;
@@ -195,7 +203,7 @@ class BlackWidow {
   // that does not hold a string value or does not exist, the
   // special value nil is returned
   Status MGet(const std::vector<std::string>& keys,
-              std::vector<std::string>* values);
+              std::vector<ValueStatus>* vss);
 
   // Set key to hold string value if key does not exist
   // return 1 if the key was set
@@ -303,7 +311,7 @@ class BlackWidow {
   // against a non-existing key will return a list of nil values.
   Status HMGet(const Slice& key,
                const std::vector<std::string>& fields,
-               std::vector<std::string>* values);
+               std::vector<ValueStatus>* vss);
 
   // Returns all fields and values of the hash stored at key. In the returned
   // value, every field name is followed by its value, so the length of the

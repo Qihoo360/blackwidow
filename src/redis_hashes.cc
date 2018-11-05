@@ -456,7 +456,9 @@ Status RedisHashes::HLen(const Slice& key, int32_t* ret) {
 
 Status RedisHashes::HMGet(const Slice& key,
                           const std::vector<std::string>& fields,
-                          std::vector<std::string>* values) {
+                          std::vector<ValueStatus>* vss) {
+  vss->clear();
+
   int32_t version = 0;
   std::string value;
   std::string meta_value;
@@ -476,21 +478,22 @@ Status RedisHashes::HMGet(const Slice& key,
         s = db_->Get(read_options, handles_[1],
                 hashes_data_key.Encode(), &value);
         if (s.ok()) {
-          values->push_back(value);
+          vss->push_back({value, Status::OK()});
         } else if (s.IsNotFound()) {
-          values->push_back("");
+          vss->push_back({std::string(), Status::NotFound()});
         } else {
+          vss->clear();
           return s;
         }
       }
     }
+    return Status::OK();
   } else if (s.IsNotFound()) {
     for (size_t idx = 0; idx < fields.size(); ++idx) {
-      values->push_back("");
+      vss->push_back({std::string(), Status::NotFound()});
     }
-    return Status::NotFound();
   }
-  return Status::OK();
+  return s;
 }
 
 Status RedisHashes::HMSet(const Slice& key,

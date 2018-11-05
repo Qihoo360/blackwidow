@@ -292,25 +292,59 @@ TEST_F(StringsTest, IncrbyfloatTest) {
 
 // MGet
 TEST_F(StringsTest, MGetTest) {
-  std::vector<blackwidow::KeyValue> kvs {{"MGET_KEY1", "VALUE1"},
-                                         {"MGET_KEY2", "VALUE2"},
-                                         {"MGET_KEY3", "VALUE3"}};
-  s = db.MSet(kvs);
+  std::vector<blackwidow::ValueStatus> vss;
+
+  // ***************** Group 1 Test *****************
+  std::vector<blackwidow::KeyValue> kvs1 {{"GP1_MGET_KEY1", "VALUE1"},
+                                          {"GP1_MGET_KEY2", "VALUE2"},
+                                          {"GP1_MGET_KEY3", "VALUE3"}};
+  s = db.MSet(kvs1);
   ASSERT_TRUE(s.ok());
-  std::vector<std::string> values;
-  std::vector<std::string> keys {"",
-                                 "MGET_KEY1",
-                                 "MGET_KEY2",
-                                 "MGET_KEY3",
-                                 "MGET_NOT_EXIST_KEY"};
-  s = db.MGet(keys, &values);
+  std::vector<std::string> keys1 {"",
+                                  "GP1_MGET_KEY1",
+                                  "GP1_MGET_KEY2",
+                                  "GP1_MGET_KEY3",
+                                  "GP1_MGET_NOT_EXIST_KEY"};
+  vss.clear();
+  s = db.MGet(keys1, &vss);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(values.size(), 5);
-  ASSERT_EQ(values[0], "");
-  ASSERT_EQ(values[1], "VALUE1");
-  ASSERT_EQ(values[2], "VALUE2");
-  ASSERT_EQ(values[3], "VALUE3");
-  ASSERT_EQ(values[4], "");
+  ASSERT_EQ(vss.size(), 5);
+  ASSERT_TRUE(vss[0].status.IsNotFound());
+  ASSERT_EQ(vss[0].value, "");
+  ASSERT_TRUE(vss[1].status.ok());
+  ASSERT_EQ(vss[1].value, "VALUE1");
+  ASSERT_TRUE(vss[2].status.ok());
+  ASSERT_EQ(vss[2].value, "VALUE2");
+  ASSERT_TRUE(vss[3].status.ok());
+  ASSERT_EQ(vss[3].value, "VALUE3");
+  ASSERT_TRUE(vss[4].status.IsNotFound());
+  ASSERT_EQ(vss[4].value, "");
+
+
+  // ***************** Group 2 Test *****************
+  std::vector<blackwidow::KeyValue> kvs2 {{"GP2_MGET_KEY1", "VALUE1"},
+                                          {"GP2_MGET_KEY2", "VALUE2"},
+                                          {"GP2_MGET_KEY3", ""}};
+  s = db.MSet(kvs2);
+  ASSERT_TRUE(s.ok());
+  std::vector<std::string> keys2 {"GP2_MGET_KEY1",
+                                  "GP2_MGET_KEY2",
+                                  "GP2_MGET_KEY3",
+                                  "GP2_MGET_NOT_EXIST_KEY"};
+  ASSERT_TRUE(make_expired(&db, "GP2_MGET_KEY2"));
+
+  vss.clear();
+  s = db.MGet(keys2, &vss);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(vss.size(), 4);
+  ASSERT_TRUE(vss[0].status.ok());
+  ASSERT_EQ(vss[0].value, "VALUE1");
+  ASSERT_TRUE(vss[1].status.IsNotFound());
+  ASSERT_EQ(vss[1].value, "");
+  ASSERT_TRUE(vss[2].status.ok());
+  ASSERT_EQ(vss[2].value, "");
+  ASSERT_TRUE(vss[3].status.IsNotFound());
+  ASSERT_EQ(vss[3].value, "");
 }
 
 // MSet

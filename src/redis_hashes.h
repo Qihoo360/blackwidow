@@ -44,7 +44,7 @@ class RedisHashes : public Redis {
                std::vector<std::string>* fields);
   Status HLen(const Slice& key, int32_t* ret);
   Status HMGet(const Slice& key, const std::vector<std::string>& fields,
-               std::vector<std::string>* values);
+               std::vector<ValueStatus>* vss);
   Status HMSet(const Slice& key,
                const std::vector<FieldValue>& fvs);
   Status HSet(const Slice& key, const Slice& field, const Slice& value,

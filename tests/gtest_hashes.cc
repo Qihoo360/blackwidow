@@ -651,29 +651,76 @@ TEST_F(HashesTest, HLenTest) {
 // HMGet
 TEST_F(HashesTest, HMGetTest) {
   int32_t ret = 0;
-  std::vector<blackwidow::FieldValue> fvs;
-  fvs.push_back({"TEST_FIELD1", "TEST_VALUE1"});
-  fvs.push_back({"TEST_FIELD2", "TEST_VALUE2"});
-  fvs.push_back({"TEST_FIELD3", "TEST_VALUE3"});
-  fvs.push_back({"TEST_FIELD2", "TEST_VALUE4"});
-  s = db.HMSet("HMGET_KEY", fvs);
+  std::vector<blackwidow::ValueStatus> vss;
+
+  // ***************** Group 1 Test *****************
+  std::vector<blackwidow::FieldValue> fvs1;
+  fvs1.push_back({"TEST_FIELD1", "TEST_VALUE1"});
+  fvs1.push_back({"TEST_FIELD2", "TEST_VALUE2"});
+  fvs1.push_back({"TEST_FIELD3", "TEST_VALUE3"});
+  s = db.HMSet("GP1_HMGET_KEY", fvs1);
   ASSERT_TRUE(s.ok());
 
-  s = db.HLen("HMGET_KEY", &ret);
+  s = db.HLen("GP1_HMGET_KEY", &ret);
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 3);
 
-  std::vector<std::string> values;
-  std::vector<std::string> fields {"TEST_FIELD1",
+  std::vector<std::string> fields1 {"TEST_FIELD1",
       "TEST_FIELD2", "TEST_FIELD3", "TEST_NOT_EXIST_FIELD"};
-  s = db.HMGet("HMGET_KEY", fields, &values);
+  s = db.HMGet("GP1_HMGET_KEY", fields1, &vss);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(values.size(), 4);
+  ASSERT_EQ(vss.size(), 4);
 
-  ASSERT_EQ(values[0], "TEST_VALUE1");
-  ASSERT_EQ(values[1], "TEST_VALUE4");
-  ASSERT_EQ(values[2], "TEST_VALUE3");
-  ASSERT_EQ(values[3], "");
+  ASSERT_TRUE(vss[0].status.ok());
+  ASSERT_EQ(vss[0].value, "TEST_VALUE1");
+  ASSERT_TRUE(vss[1].status.ok());
+  ASSERT_EQ(vss[1].value, "TEST_VALUE2");
+  ASSERT_TRUE(vss[2].status.ok());
+  ASSERT_EQ(vss[2].value, "TEST_VALUE3");
+  ASSERT_TRUE(vss[3].status.IsNotFound());
+  ASSERT_EQ(vss[3].value, "");
+
+
+  // ***************** Group 2 Test *****************
+  std::vector<blackwidow::FieldValue> fvs2;
+  fvs2.push_back({"TEST_FIELD1", "TEST_VALUE1"});
+  fvs2.push_back({"TEST_FIELD2", ""});
+  s = db.HMSet("GP2_HMGET_KEY", fvs2);
+  ASSERT_TRUE(s.ok());
+
+  s = db.HLen("GP2_HMGET_KEY", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(ret, 2);
+
+  vss.clear();
+  std::vector<std::string> fields2 {"TEST_FIELD1",
+      "TEST_FIELD2", "TEST_NOT_EXIST_FIELD"};
+  s = db.HMGet("GP2_HMGET_KEY", fields2, &vss);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(vss.size(), 3);
+
+  ASSERT_TRUE(vss[0].status.ok());
+  ASSERT_EQ(vss[0].value, "TEST_VALUE1");
+  ASSERT_TRUE(vss[1].status.ok());
+  ASSERT_EQ(vss[1].value, "");
+  ASSERT_TRUE(vss[2].status.IsNotFound());
+  ASSERT_EQ(vss[2].value, "");
+
+
+  // ***************** Group 3 Test *****************
+  vss.clear();
+  std::vector<std::string> fields3 {"TEST_FIELD1",
+      "TEST_FIELD2", "TEST_FIELD3"};
+  s = db.HMGet("GP3_HMGET_KEY", fields3, &vss);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(vss.size(), 3);
+
+  ASSERT_TRUE(vss[0].status.IsNotFound());
+  ASSERT_EQ(vss[0].value, "");
+  ASSERT_TRUE(vss[1].status.IsNotFound());
+  ASSERT_EQ(vss[1].value, "");
+  ASSERT_TRUE(vss[2].status.IsNotFound());
+  ASSERT_EQ(vss[2].value, "");
 }
 
 // HMSet
@@ -703,17 +750,17 @@ TEST_F(HashesTest, HMSetTest) {
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 4);
 
-  std::vector<std::string> values1;
+  std::vector<blackwidow::ValueStatus> vss1;
   std::vector<std::string> fields1 {"TEST_FIELD1",
       "TEST_FIELD2", "TEST_FIELD3", "TEST_FIELD4"};
-  s = db.HMGet("HMSET_KEY", fields1, &values1);
+  s = db.HMGet("HMSET_KEY", fields1, &vss1);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(values1.size(),  4);
+  ASSERT_EQ(vss1.size(),  4);
 
-  ASSERT_EQ(values1[0], "TEST_VALUE1");
-  ASSERT_EQ(values1[1], "TEST_VALUE2");
-  ASSERT_EQ(values1[2], "TEST_VALUE5");
-  ASSERT_EQ(values1[3], "TEST_VALUE4");
+  ASSERT_EQ(vss1[0].value, "TEST_VALUE1");
+  ASSERT_EQ(vss1[1].value, "TEST_VALUE2");
+  ASSERT_EQ(vss1[2].value, "TEST_VALUE5");
+  ASSERT_EQ(vss1[3].value, "TEST_VALUE4");
 
   std::map<blackwidow::DataType, rocksdb::Status> type_status;
   db.Expire("HMSET_KEY", 1, &type_status);
@@ -732,16 +779,16 @@ TEST_F(HashesTest, HMSetTest) {
   ASSERT_TRUE(s.ok());
   ASSERT_EQ(ret, 3);
 
-  std::vector<std::string> values2;
+  std::vector<blackwidow::ValueStatus> vss2;
   std::vector<std::string> fields2 {"TEST_FIELD3",
       "TEST_FIELD4", "TEST_FIELD5"};
-  s = db.HMGet("HMSET_KEY", fields2, &values2);
+  s = db.HMGet("HMSET_KEY", fields2, &vss2);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(values2.size(),  3);
+  ASSERT_EQ(vss2.size(),  3);
 
-  ASSERT_EQ(values2[0], "TEST_VALUE3");
-  ASSERT_EQ(values2[1], "TEST_VALUE4");
-  ASSERT_EQ(values2[2], "TEST_VALUE5");
+  ASSERT_EQ(vss2[0].value, "TEST_VALUE3");
+  ASSERT_EQ(vss2[1].value, "TEST_VALUE4");
+  ASSERT_EQ(vss2[2].value, "TEST_VALUE5");
 }
 
 // HSet

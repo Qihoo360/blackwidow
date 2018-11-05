@@ -504,7 +504,9 @@ Status RedisStrings::Incrbyfloat(const Slice& key, const Slice& value,
 }
 
 Status RedisStrings::MGet(const std::vector<std::string>& keys,
-                          std::vector<std::string>* values) {
+                          std::vector<ValueStatus>* vss) {
+  vss->clear();
+
   Status s;
   std::string value;
   rocksdb::ReadOptions read_options;
@@ -516,14 +518,17 @@ Status RedisStrings::MGet(const std::vector<std::string>& keys,
     if (s.ok()) {
       ParsedStringsValue parsed_strings_value(&value);
       if (parsed_strings_value.IsStale()) {
-        value.clear();
+        vss->push_back({std::string(), Status::NotFound("Stale")});
       } else {
-        parsed_strings_value.StripSuffix();
+        vss->push_back(
+            {parsed_strings_value.user_value().ToString(), Status::OK()});
       }
+    } else if (s.IsNotFound()) {
+      vss->push_back({std::string(), Status::NotFound()});
     } else {
-      value.clear();
+      vss->clear();
+      return s;
     }
-    values->push_back(value);
   }
   return Status::OK();
 }
