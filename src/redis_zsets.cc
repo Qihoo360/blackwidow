@@ -1466,6 +1466,8 @@ Status RedisZSets::PKScanRange(const Slice& key_start,
                                int32_t limit,
                                std::vector<std::string>* keys,
                                std::string* next_key) {
+  next_key->clear();
+
   std::string key;
   int32_t remain = limit;
   rocksdb::ReadOptions iterator_options;
@@ -1491,7 +1493,7 @@ Status RedisZSets::PKScanRange(const Slice& key_start,
   }
 
   while (it->Valid() && remain > 0
-       && (end_no_limit || it->key().compare(key_end) <= 0)) {
+    && (end_no_limit || it->key().compare(key_end) <= 0)) {
     ParsedZSetsMetaValue parsed_zsets_meta_value(it->value());
     if (parsed_zsets_meta_value.IsStale()
       || parsed_zsets_meta_value.count() == 0) {
@@ -1507,11 +1509,16 @@ Status RedisZSets::PKScanRange(const Slice& key_start,
     }
   }
 
-  if (it->Valid()
+  while (it->Valid()
     && (end_no_limit || it->key().compare(key_end) <= 0)) {
-    *next_key = it->key().ToString();
-  } else {
-    *next_key = "";
+    ParsedZSetsMetaValue parsed_zsets_meta_value(it->value());
+    if (parsed_zsets_meta_value.IsStale()
+      || parsed_zsets_meta_value.count() == 0) {
+      it->Next();
+    } else {
+      *next_key = it->key().ToString();
+      break;
+    }
   }
   delete it;
   return Status::OK();
@@ -1523,6 +1530,8 @@ Status RedisZSets::PKRScanRange(const Slice& key_start,
                                 int32_t limit,
                                 std::vector<std::string>* keys,
                                 std::string* next_key) {
+  next_key->clear();
+
   std::string key;
   int32_t remain = limit;
   rocksdb::ReadOptions iterator_options;
@@ -1564,11 +1573,16 @@ Status RedisZSets::PKRScanRange(const Slice& key_start,
     }
   }
 
-  if (it->Valid()
+  while (it->Valid()
     && (end_no_limit || it->key().compare(key_end) >= 0)) {
-    *next_key = it->key().ToString();
-  } else {
-    *next_key = "";
+    ParsedZSetsMetaValue parsed_zsets_meta_value(it->value());
+    if (parsed_zsets_meta_value.IsStale()
+      || parsed_zsets_meta_value.count() == 0) {
+      it->Prev();
+    } else {
+      *next_key = it->key().ToString();
+      break;
+    }
   }
   delete it;
   return Status::OK();

@@ -1016,6 +1016,8 @@ Status RedisStrings::PKScanRange(const Slice& key_start,
                                  int32_t limit,
                                  std::vector<KeyValue>* kvs,
                                  std::string* next_key) {
+  next_key->clear();
+
   std::string key, value;
   int32_t remain = limit;
   rocksdb::ReadOptions iterator_options;
@@ -1043,7 +1045,7 @@ Status RedisStrings::PKScanRange(const Slice& key_start,
   }
 
   while (it->Valid() && remain > 0
-       && (end_no_limit || it->key().compare(key_end) <= 0)) {
+    && (end_no_limit || it->key().compare(key_end) <= 0)) {
     ParsedStringsValue parsed_strings_value(it->value());
     if (parsed_strings_value.IsStale()) {
       it->Next();
@@ -1059,11 +1061,15 @@ Status RedisStrings::PKScanRange(const Slice& key_start,
     }
   }
 
-  if (it->Valid()
+  while (it->Valid()
     && (end_no_limit || it->key().compare(key_end) <= 0)) {
-    *next_key = it->key().ToString();
-  } else {
-    *next_key = "";
+    ParsedStringsValue parsed_strings_value(it->value());
+    if (parsed_strings_value.IsStale()) {
+      it->Next();
+    } else {
+      *next_key = it->key().ToString();
+      break;
+    }
   }
   delete it;
   return Status::OK();
@@ -1102,7 +1108,7 @@ Status RedisStrings::PKRScanRange(const Slice& key_start,
   }
 
   while (it->Valid() && remain > 0
-       && (end_no_limit || it->key().compare(key_end) >= 0)) {
+    && (end_no_limit || it->key().compare(key_end) >= 0)) {
     ParsedStringsValue parsed_strings_value(it->value());
     if (parsed_strings_value.IsStale()) {
       it->Prev();
@@ -1118,11 +1124,15 @@ Status RedisStrings::PKRScanRange(const Slice& key_start,
     }
   }
 
-  if (it->Valid()
+  while (it->Valid()
     && (end_no_limit || it->key().compare(key_end) >= 0)) {
-    *next_key = it->key().ToString();
-  } else {
-    *next_key = "";
+    ParsedStringsValue parsed_strings_value(it->value());
+    if (parsed_strings_value.IsStale()) {
+      it->Prev();
+    } else {
+      *next_key = it->key().ToString();
+      break;
+    }
   }
   delete it;
   return Status::OK();

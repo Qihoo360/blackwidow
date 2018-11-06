@@ -936,6 +936,8 @@ Status RedisLists::PKScanRange(const Slice& key_start,
                                int32_t limit,
                                std::vector<std::string>* keys,
                                std::string* next_key) {
+  next_key->clear();
+
   std::string key;
   int32_t remain = limit;
   rocksdb::ReadOptions iterator_options;
@@ -961,7 +963,7 @@ Status RedisLists::PKScanRange(const Slice& key_start,
   }
 
   while (it->Valid() && remain > 0
-       && (end_no_limit || it->key().compare(key_end) <= 0)) {
+    && (end_no_limit || it->key().compare(key_end) <= 0)) {
     ParsedListsMetaValue parsed_lists_meta_value(it->value());
     if (parsed_lists_meta_value.IsStale()
       || parsed_lists_meta_value.count() == 0) {
@@ -977,11 +979,16 @@ Status RedisLists::PKScanRange(const Slice& key_start,
     }
   }
 
-  if (it->Valid()
+  while (it->Valid()
     && (end_no_limit || it->key().compare(key_end) <= 0)) {
-    *next_key = it->key().ToString();
-  } else {
-    *next_key = "";
+    ParsedListsMetaValue parsed_lists_meta_value(it->value());
+    if (parsed_lists_meta_value.IsStale()
+      || parsed_lists_meta_value.count() == 0) {
+      it->Next();
+    } else {
+      *next_key = it->key().ToString();
+      break;
+    }
   }
   delete it;
   return Status::OK();
@@ -993,6 +1000,8 @@ Status RedisLists::PKRScanRange(const Slice& key_start,
                                 int32_t limit,
                                 std::vector<std::string>* keys,
                                 std::string* next_key) {
+  next_key->clear();
+
   std::string key;
   int32_t remain = limit;
   rocksdb::ReadOptions iterator_options;
@@ -1018,7 +1027,7 @@ Status RedisLists::PKRScanRange(const Slice& key_start,
   }
 
   while (it->Valid() && remain > 0
-       && (end_no_limit || it->key().compare(key_end) >= 0)) {
+    && (end_no_limit || it->key().compare(key_end) >= 0)) {
     ParsedListsMetaValue parsed_lists_meta_value(it->value());
     if (parsed_lists_meta_value.IsStale()
       || parsed_lists_meta_value.count() == 0) {
@@ -1034,11 +1043,16 @@ Status RedisLists::PKRScanRange(const Slice& key_start,
     }
   }
 
-  if (it->Valid()
+  while (it->Valid()
     && (end_no_limit || it->key().compare(key_end) >= 0)) {
-    *next_key = it->key().ToString();
-  } else {
-    *next_key = "";
+    ParsedListsMetaValue parsed_lists_meta_value(it->value());
+    if (parsed_lists_meta_value.IsStale()
+      || parsed_lists_meta_value.count() == 0) {
+      it->Prev();
+    } else {
+      *next_key = it->key().ToString();
+      break;
+    }
   }
   delete it;
   return Status::OK();
