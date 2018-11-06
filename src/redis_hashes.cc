@@ -1236,6 +1236,9 @@ Status RedisHashes::TTL(const Slice& key, int64_t* timestamp) {
     if (parsed_hashes_meta_value.IsStale()) {
       *timestamp = -2;
       return Status::NotFound("Stale");
+    } else if (parsed_hashes_meta_value.count() == 0) {
+      *timestamp = -2;
+      return Status::NotFound();
     } else {
       *timestamp = parsed_hashes_meta_value.timestamp();
       if (*timestamp == 0) {
@@ -1243,7 +1246,7 @@ Status RedisHashes::TTL(const Slice& key, int64_t* timestamp) {
       } else {
         int64_t curtime;
         rocksdb::Env::Default()->GetCurrentTime(&curtime);
-        *timestamp = *timestamp - curtime > 0 ? *timestamp - curtime : -1;
+        *timestamp = *timestamp - curtime >= 0 ? *timestamp - curtime : -2;
       }
     }
   } else if (s.IsNotFound()) {

@@ -1272,7 +1272,7 @@ Status RedisStrings::TTL(const Slice& key, int64_t* timestamp) {
       } else {
         int64_t curtime;
         rocksdb::Env::Default()->GetCurrentTime(&curtime);
-        *timestamp = *timestamp - curtime > 0 ? *timestamp - curtime : -1;
+        *timestamp = *timestamp - curtime >= 0 ? *timestamp - curtime : -2;
       }
     }
   } else if (s.IsNotFound()) {
