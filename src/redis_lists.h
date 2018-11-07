@@ -17,7 +17,7 @@ namespace blackwidow {
 
 class RedisLists : public Redis {
  public:
-  RedisLists() = default;
+  RedisLists(BlackWidow* const bw, const DataType& type);
   ~RedisLists();
 
   // Common commands

@@ -17,7 +17,8 @@
 
 namespace blackwidow {
 
-RedisSets::RedisSets() {
+RedisSets::RedisSets(BlackWidow* const bw, const DataType& type)
+    : Redis(bw, type) {
   spop_counts_store_.max_size_ = 1000;
 }
 

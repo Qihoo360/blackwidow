@@ -19,6 +19,10 @@ const rocksdb::Comparator* ListsDataKeyComparator() {
   return &ldkc;
 }
 
+RedisLists::RedisLists(BlackWidow* const bw, const DataType& type)
+    : Redis(bw, type) {
+}
+
 RedisLists::~RedisLists() {
   std::vector<rocksdb::ColumnFamilyHandle*> tmp_handles = handles_;
   handles_.clear();

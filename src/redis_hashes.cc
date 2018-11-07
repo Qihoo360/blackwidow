@@ -14,6 +14,10 @@
 
 namespace blackwidow {
 
+RedisHashes::RedisHashes(BlackWidow* const bw, const DataType& type)
+    : Redis(bw, type) {
+}
+
 RedisHashes::~RedisHashes() {
   std::vector<rocksdb::ColumnFamilyHandle*> tmp_handles = handles_;
   handles_.clear();

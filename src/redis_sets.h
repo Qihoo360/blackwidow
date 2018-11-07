@@ -22,7 +22,7 @@ namespace blackwidow {
 
 class RedisSets : public Redis {
  public:
-  RedisSets();
+  RedisSets(BlackWidow* const bw, const DataType& type);
   ~RedisSets();
 
   // Common Commands

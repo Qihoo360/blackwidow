@@ -17,7 +17,7 @@ namespace blackwidow {
 
 class RedisZSets : public Redis {
  public:
-  RedisZSets() = default;
+  RedisZSets(BlackWidow* const bw, const DataType& type);
   ~RedisZSets();
 
   // Common Commands

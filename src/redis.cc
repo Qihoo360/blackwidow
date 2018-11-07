@@ -7,10 +7,13 @@
 
 namespace blackwidow {
 
-Redis::Redis()
-    : lock_mgr_(new LockMgr(1000, 0, std::make_shared<MutexFactoryImpl>())),
+Redis::Redis(BlackWidow* const bw, const DataType& type)
+    : bw_(bw),
+      type_(type),
+      lock_mgr_(new LockMgr(1000, 0, std::make_shared<MutexFactoryImpl>())),
       db_(nullptr) {
     scan_cursors_store_.max_size_ = 5000;
+    statistics_store_.max_size_ = 5000;
     default_compact_range_options_.exclusive_manual_compaction = false;
     default_compact_range_options_.change_level = true;
 }
@@ -52,6 +55,41 @@ Status Redis::StoreScanNextPoint(const Slice& key,
   scan_cursors_store_.map_[index_key] = next_point;
   scan_cursors_store_.list_.remove(index_key);
   scan_cursors_store_.list_.push_front(index_key);
+  return Status::OK();
+}
+
+Status Redis::UpdateSpecificKeyStatistics(const std::string& key,
+                                          uint32_t count) {
+  uint32_t total = 0;
+  slash::MutexLock l(&statistics_mutex_);
+  if (statistics_store_.map_.find(key) == statistics_store_.map_.end()) {
+    statistics_store_.map_[key] = count;
+    statistics_store_.list_.push_front(key);
+  } else {
+    statistics_store_.map_[key] += count;
+    statistics_store_.list_.remove(key);
+    statistics_store_.list_.push_front(key);
+  }
+  total = statistics_store_.map_[key];
+
+  if (statistics_store_.list_.size() > statistics_store_.max_size_) {
+    std::string tail = statistics_store_.list_.back();
+    statistics_store_.map_.erase(tail);
+    statistics_store_.list_.pop_back();
+  }
+  AddCompactKeyTaskIfNeeded(key, total);
+  return Status::OK();
+}
+
+Status Redis::AddCompactKeyTaskIfNeeded(const std::string& key,
+                                        uint32_t total) {
+  if (total < COMPACT_THRESHOLD_COUNT) {
+    return Status::OK();
+  } else {
+    bw_->AddBGTask({type_, kCompactKey, key});
+    statistics_store_.map_.erase(key);
+    statistics_store_.list_.remove(key);
+  }
   return Status::OK();
 }
 

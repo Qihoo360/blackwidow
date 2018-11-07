@@ -16,7 +16,7 @@ namespace blackwidow {
 
 class RedisHashes : public Redis {
  public:
-  RedisHashes() = default;
+  RedisHashes(BlackWidow* const bw, const DataType& type);
   ~RedisHashes();
 
   // Common Commands

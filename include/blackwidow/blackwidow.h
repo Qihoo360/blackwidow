@@ -40,6 +40,8 @@ const std::string LISTS_DB = "lists";
 const std::string ZSETS_DB = "zsets";
 const std::string SETS_DB = "sets";
 
+const uint32_t COMPACT_THRESHOLD_COUNT = 5000;
+
 using Options = rocksdb::Options;
 using BlockBasedTableOptions = rocksdb::BlockBasedTableOptions;
 using Status = rocksdb::Status;

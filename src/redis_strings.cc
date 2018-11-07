@@ -17,6 +17,10 @@
 
 namespace blackwidow {
 
+RedisStrings::RedisStrings(BlackWidow* const bw, const DataType& type)
+    : Redis(bw, type) {
+}
+
 Status RedisStrings::Open(const BlackwidowOptions& bw_options,
     const std::string& db_path) {
   rocksdb::Options ops(bw_options.options);

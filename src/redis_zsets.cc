@@ -23,6 +23,10 @@ rocksdb::Comparator* ZSetsScoreKeyComparator() {
   return &zsets_score_key_compare;
 }
 
+RedisZSets::RedisZSets(BlackWidow* const bw, const DataType& type)
+    : Redis(bw, type) {
+}
+
 RedisZSets::~RedisZSets() {
   std::vector<rocksdb::ColumnFamilyHandle*> tmp_handles = handles_;
   handles_.clear();
