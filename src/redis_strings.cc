@@ -38,7 +38,8 @@ Status RedisStrings::Open(const BlackwidowOptions& bw_options,
 }
 
 Status RedisStrings::CompactRange(const rocksdb::Slice* begin,
-    const rocksdb::Slice* end) {
+                                  const rocksdb::Slice* end,
+                                  const ColumnFamilyType& type) {
   return db_->CompactRange(default_compact_range_options_, begin, end);
 }
 

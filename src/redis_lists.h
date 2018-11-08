@@ -24,7 +24,8 @@ class RedisLists : public Redis {
   Status Open(const BlackwidowOptions& bw_options,
               const std::string& db_path) override;
   Status CompactRange(const rocksdb::Slice* begin,
-                      const rocksdb::Slice* end) override;
+                      const rocksdb::Slice* end,
+                      const ColumnFamilyType& type = kMetaAndData) override;
   Status GetProperty(const std::string& property, uint64_t* out) override;
   Status ScanKeyNum(uint64_t* num) override;
   Status ScanKeys(const std::string& pattern,

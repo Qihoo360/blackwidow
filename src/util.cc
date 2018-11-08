@@ -452,9 +452,24 @@ int is_dir(const char* filename) {
     return -1;
 }
 
-int CalculateStartAndEndKey(const std::string& key,
-                            std::string* start_key,
-                            std::string* end_key) {
+int CalculateMetaStartAndEndKey(const std::string& key,
+                                std::string* meta_start_key,
+                                std::string* meta_end_key) {
+  size_t needed = key.size() + 1;
+  char* dst = new char[needed];
+  const char* start = dst;
+  memcpy(dst, key.data(), key.size());
+  dst += key.size();
+  meta_start_key->assign(start, key.size());
+  *dst = static_cast<uint8_t>(0xff);
+  meta_end_key->assign(start, key.size() + 1);
+  delete[] start;
+  return 0;
+}
+
+int CalculateDataStartAndEndKey(const std::string& key,
+                                std::string* data_start_key,
+                                std::string* data_end_key) {
   size_t needed = sizeof(int32_t) + key.size() + 1;
   char* dst = new char[needed];
   const char* start = dst;
@@ -462,9 +477,9 @@ int CalculateStartAndEndKey(const std::string& key,
   dst += sizeof(int32_t);
   memcpy(dst, key.data(), key.size());
   dst += key.size();
-  start_key->assign(start, sizeof(int32_t) + key.size());
+  data_start_key->assign(start, sizeof(int32_t) + key.size());
   *dst = static_cast<uint8_t>(0xff);
-  end_key->assign(start, sizeof(int32_t) + key.size() + 1);
+  data_end_key->assign(start, sizeof(int32_t) + key.size() + 1);
   delete[] start;
   return 0;
 }

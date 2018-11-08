@@ -79,14 +79,15 @@ Status RedisHashes::Open(const BlackwidowOptions& bw_options,
 }
 
 Status RedisHashes::CompactRange(const rocksdb::Slice* begin,
-                                 const rocksdb::Slice* end) {
-  Status s = db_->CompactRange(default_compact_range_options_,
-      handles_[0], begin, end);
-  if (!s.ok()) {
-    return s;
+                                 const rocksdb::Slice* end,
+                                 const ColumnFamilyType& type) {
+  if (type == kMeta || type == kMetaAndData) {
+    db_->CompactRange(default_compact_range_options_, handles_[0], begin, end);
   }
-  return db_->CompactRange(default_compact_range_options_,
-      handles_[1], begin, end);
+  if (type == kData || type == kMetaAndData) {
+    db_->CompactRange(default_compact_range_options_, handles_[1], begin, end);
+  }
+  return Status::OK();
 }
 
 Status RedisHashes::GetProperty(const std::string& property, uint64_t* out) {
@@ -914,7 +915,8 @@ Status RedisHashes::PKHScanRange(const Slice& key,
 
       if (iter->Valid() && iter->key().starts_with(prefix)) {
         ParsedHashesDataKey parsed_hashes_data_key(iter->key());
-        if (end_no_limit || parsed_hashes_data_key.field().compare(field_end) <= 0) {
+        if (end_no_limit
+          || parsed_hashes_data_key.field().compare(field_end) <= 0) {
           *next_field = parsed_hashes_data_key.field().ToString();
         }
       }
@@ -985,7 +987,8 @@ Status RedisHashes::PKHRScanRange(const Slice& key,
 
       if (iter->Valid() && iter->key().starts_with(prefix)) {
         ParsedHashesDataKey parsed_hashes_data_key(iter->key());
-        if (end_no_limit || parsed_hashes_data_key.field().compare(field_end) >= 0) {
+        if (end_no_limit
+          || parsed_hashes_data_key.field().compare(field_end) >= 0) {
           *next_field = parsed_hashes_data_key.field().ToString();
         }
       }

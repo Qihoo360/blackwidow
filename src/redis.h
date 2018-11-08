@@ -35,7 +35,8 @@ class Redis {
   virtual Status Open(const BlackwidowOptions& bw_options,
                       const std::string& db_path) = 0;
   virtual Status CompactRange(const rocksdb::Slice* begin,
-                              const rocksdb::Slice* end) = 0;
+                              const rocksdb::Slice* end,
+                              const ColumnFamilyType& type = kMetaAndData) = 0;
   virtual Status GetProperty(const std::string& property, uint64_t* out) = 0;
   virtual Status ScanKeyNum(uint64_t* num) = 0;
   virtual Status ScanKeys(const std::string& pattern,

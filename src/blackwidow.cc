@@ -1617,21 +1617,28 @@ Status BlackWidow::DoCompact(const DataType& type) {
 }
 
 Status BlackWidow::CompactKey(const DataType& type, const std::string& key) {
-  Status s;
-  std::string start_key, end_key;
-  CalculateStartAndEndKey(key, &start_key, &end_key);
-  Slice slice_begin(start_key);
-  Slice slice_end(end_key);
+  std::string meta_start_key, meta_end_key;
+  std::string data_start_key, data_end_key;
+  CalculateMetaStartAndEndKey(key, &meta_start_key, &meta_end_key);
+  CalculateDataStartAndEndKey(key, &data_start_key, &data_end_key);
+  Slice slice_meta_begin(meta_start_key);
+  Slice slice_meta_end(meta_end_key);
+  Slice slice_data_begin(data_start_key);
+  Slice slice_data_end(data_end_key);
   if (type == kSets) {
-    s = sets_db_->CompactRange(&slice_begin, &slice_end);
+    sets_db_->CompactRange(&slice_meta_begin, &slice_meta_end, kMeta);
+    sets_db_->CompactRange(&slice_data_begin, &slice_data_end, kData);
   } else if (type == kZSets) {
-    s = zsets_db_->CompactRange(&slice_begin, &slice_end);
+    zsets_db_->CompactRange(&slice_meta_begin, &slice_meta_end, kMeta);
+    zsets_db_->CompactRange(&slice_data_begin, &slice_data_end, kData);
   } else if (type == kHashes) {
-    s = hashes_db_->CompactRange(&slice_begin, &slice_end);
+    hashes_db_->CompactRange(&slice_meta_begin, &slice_meta_end, kMeta);
+    hashes_db_->CompactRange(&slice_data_begin, &slice_data_end, kData);
   } else if (type == kLists) {
-    s = lists_db_->CompactRange(&slice_begin, &slice_end);
+    lists_db_->CompactRange(&slice_meta_begin, &slice_meta_end, kMeta);
+    lists_db_->CompactRange(&slice_data_begin, &slice_data_end, kData);
   }
-  return s;
+  return Status::OK();
 }
 
 std::string BlackWidow::GetCurrentTaskType() {

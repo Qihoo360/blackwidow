@@ -26,7 +26,8 @@ namespace blackwidow {
   int mkpath(const char *path, mode_t mode);
   int delete_dir(const char* dirname);
   int is_dir(const char* filename);
-  int CalculateStartAndEndKey(const std::string& key, std::string* start_key, std::string* end_key);
+  int CalculateMetaStartAndEndKey(const std::string& key, std::string* meta_start_key, std::string* meta_end_key);
+  int CalculateDataStartAndEndKey(const std::string& key, std::string* data_start_key, std::string* data_end_key);
   bool isTailWildcard(const std::string& pattern);
 }
 
