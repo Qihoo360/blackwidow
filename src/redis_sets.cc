@@ -19,7 +19,6 @@ namespace blackwidow {
 
 RedisSets::RedisSets(BlackWidow* const bw, const DataType& type)
     : Redis(bw, type) {
-  spop_counts_store_.max_size_ = 1000;
 }
 
 RedisSets::~RedisSets() {
@@ -381,9 +380,11 @@ Status RedisSets::SDiffstore(const Slice& destination,
     return s;
   }
 
+  uint32_t statistic = 0;
   s = db_->Get(read_options, handles_[0], destination, &meta_value);
   if (s.ok()) {
     ParsedSetsMetaValue parsed_sets_meta_value(&meta_value);
+    statistic = parsed_sets_meta_value.count();
     version = parsed_sets_meta_value.InitialMetaValue();
     parsed_sets_meta_value.set_count(members.size());
     batch.Put(handles_[0], destination, meta_value);
@@ -401,7 +402,9 @@ Status RedisSets::SDiffstore(const Slice& destination,
     batch.Put(handles_[1], sets_member_key.Encode(), Slice());
   }
   *ret = members.size();
-  return db_->Write(default_write_options_, &batch);
+  s = db_->Write(default_write_options_, &batch);
+  UpdateSpecificKeyStatistics(destination.ToString(), statistic);
+  return s;
 }
 
 Status RedisSets::SInter(const std::vector<std::string>& keys,
@@ -574,9 +577,11 @@ Status RedisSets::SInterstore(const Slice& destination,
     }
   }
 
+  uint32_t statistic = 0;
   s = db_->Get(read_options, handles_[0], destination, &meta_value);
   if (s.ok()) {
     ParsedSetsMetaValue parsed_sets_meta_value(&meta_value);
+    statistic = parsed_sets_meta_value.count();
     version = parsed_sets_meta_value.InitialMetaValue();
     parsed_sets_meta_value.set_count(members.size());
     batch.Put(handles_[0], destination, meta_value);
@@ -594,7 +599,9 @@ Status RedisSets::SInterstore(const Slice& destination,
     batch.Put(handles_[1], sets_member_key.Encode(), Slice());
   }
   *ret = members.size();
-  return db_->Write(default_write_options_, &batch);
+  s = db_->Write(default_write_options_, &batch);
+  UpdateSpecificKeyStatistics(destination.ToString(), statistic);
+  return s;
 }
 
 Status RedisSets::SIsmember(const Slice& key, const Slice& member,
@@ -663,6 +670,7 @@ Status RedisSets::SMove(const Slice& source, const Slice& destination,
   rocksdb::ReadOptions read_options;
 
   int32_t version = 0;
+  uint32_t statistic = 0;
   std::string meta_value;
   std::vector<std::string> keys {source.ToString(), destination.ToString()};
   MultiScopeRecordLock ml(lock_mgr_, keys);
@@ -689,6 +697,7 @@ Status RedisSets::SMove(const Slice& source, const Slice& destination,
         parsed_sets_meta_value.ModifyCount(-1);
         batch.Put(handles_[0], source, meta_value);
         batch.Delete(handles_[1], sets_member_key.Encode());
+        statistic++;
       } else if (s.IsNotFound()) {
         *ret = 0;
         return Status::NotFound();
@@ -737,7 +746,9 @@ Status RedisSets::SMove(const Slice& source, const Slice& destination,
   } else {
     return s;
   }
-  return db_->Write(default_write_options_, &batch);
+  s = db_->Write(default_write_options_, &batch);
+  UpdateSpecificKeyStatistics(source.ToString(), 1);
+  return s;
 }
 
 Status RedisSets::SPop(const Slice& key,
@@ -749,7 +760,6 @@ Status RedisSets::SPop(const Slice& key,
   rocksdb::WriteBatch batch;
   ScopeRecordLock l(lock_mgr_, key);
 
-  uint64_t start_us = slash::NowMicros();
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
     ParsedSetsMetaValue parsed_sets_meta_value(&meta_value);
@@ -784,45 +794,9 @@ Status RedisSets::SPop(const Slice& key,
   } else {
     return s;
   }
-
-  uint64_t count = 0;
-  uint64_t duration = slash::NowMicros() - start_us;
-  AddAndGetSpopCount(key.ToString(), &count);
-  if (duration >= SPOP_COMPACT_THRESHOLD_DURATION
-    || count >= SPOP_COMPACT_THRESHOLD_COUNT) {
-    *need_compact = true;
-    ResetSpopCount(key.ToString());
-  }
+  // Spop needs compact more frequently, so we multiply count by a weight
+  UpdateSpecificKeyStatistics(key.ToString(), 1 * 5);
   return db_->Write(default_write_options_, &batch);
-}
-
-Status RedisSets::ResetSpopCount(const std::string& key) {
-  slash::MutexLock l(&spop_counts_mutex_);
-  if (spop_counts_store_.map_.find(key) == spop_counts_store_.map_.end()) {
-    return Status::NotFound();
-  }
-  spop_counts_store_.map_.erase(key);
-  spop_counts_store_.list_.remove(key);
-  return Status::OK();
-}
-
-Status RedisSets::AddAndGetSpopCount(const std::string& key, uint64_t* count) {
-  slash::MutexLock l(&spop_counts_mutex_);
-  if (spop_counts_store_.map_.find(key) == spop_counts_store_.map_.end()) {
-    *count = ++spop_counts_store_.map_[key];
-    spop_counts_store_.list_.push_front(key);
-  } else {
-    *count = ++spop_counts_store_.map_[key];
-    spop_counts_store_.list_.remove(key);
-    spop_counts_store_.list_.push_front(key);
-  }
-
-  if (spop_counts_store_.list_.size() > spop_counts_store_.max_size_) {
-    std::string tail = spop_counts_store_.list_.back();
-    spop_counts_store_.map_.erase(tail);
-    spop_counts_store_.list_.pop_back();
-  }
-  return Status::OK();
 }
 
 Status RedisSets::SRandmember(const Slice& key, int32_t count,
@@ -902,6 +876,7 @@ Status RedisSets::SRem(const Slice& key,
   ScopeRecordLock l(lock_mgr_, key);
 
   int32_t version = 0;
+  uint32_t statistic = 0;
   std::string meta_value;
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
@@ -919,6 +894,7 @@ Status RedisSets::SRem(const Slice& key,
                 sets_member_key.Encode(), &member_value);
         if (s.ok()) {
           cnt++;
+          statistic++;
           batch.Delete(handles_[1], sets_member_key.Encode());
         } else if (s.IsNotFound()) {
         } else {
@@ -935,7 +911,9 @@ Status RedisSets::SRem(const Slice& key,
   } else {
     return s;
   }
-  return db_->Write(default_write_options_, &batch);
+  s = db_->Write(default_write_options_, &batch);
+  UpdateSpecificKeyStatistics(key.ToString(), statistic);
+  return s;
 }
 
 Status RedisSets::SUnion(const std::vector<std::string>& keys,
@@ -1041,9 +1019,11 @@ Status RedisSets::SUnionstore(const Slice& destination,
     delete iter;
   }
 
+  uint32_t statistic = 0;
   s = db_->Get(read_options, handles_[0], destination, &meta_value);
   if (s.ok()) {
     ParsedSetsMetaValue parsed_sets_meta_value(&meta_value);
+    statistic = parsed_sets_meta_value.count();
     version = parsed_sets_meta_value.InitialMetaValue();
     parsed_sets_meta_value.set_count(members.size());
     batch.Put(handles_[0], destination, meta_value);
@@ -1061,7 +1041,9 @@ Status RedisSets::SUnionstore(const Slice& destination,
     batch.Put(handles_[1], sets_member_key.Encode(), Slice());
   }
   *ret = members.size();
-  return db_->Write(default_write_options_, &batch);
+  s = db_->Write(default_write_options_, &batch);
+  UpdateSpecificKeyStatistics(destination.ToString(), statistic);
+  return s;
 }
 
 Status RedisSets::SScan(const Slice& key,
@@ -1303,8 +1285,10 @@ Status RedisSets::Del(const Slice& key) {
     } else if (parsed_sets_meta_value.count() == 0) {
       return Status::NotFound();
     } else {
+      uint32_t statistic = parsed_sets_meta_value.count();
       parsed_sets_meta_value.InitialMetaValue();
       s = db_->Put(default_write_options_, handles_[0], key, meta_value);
+      UpdateSpecificKeyStatistics(key.ToString(), statistic);
     }
   }
   return s;

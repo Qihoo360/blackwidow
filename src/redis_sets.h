@@ -15,9 +15,6 @@
 #include "src/redis.h"
 #include "src/custom_comparator.h"
 
-#define SPOP_COMPACT_THRESHOLD_COUNT     500
-#define SPOP_COMPACT_THRESHOLD_DURATION  1000 * 1000      // 1000ms
-
 namespace blackwidow {
 
 class RedisSets : public Redis {
@@ -90,12 +87,6 @@ class RedisSets : public Redis {
 
  private:
   std::vector<rocksdb::ColumnFamilyHandle*> handles_;
-
-  // For compact in time after multiple spop
-  slash::Mutex spop_counts_mutex_;
-  BlackWidow::LRU<std::string, uint64_t> spop_counts_store_;
-  Status ResetSpopCount(const std::string& key);
-  Status AddAndGetSpopCount(const std::string& key, uint64_t* count);
 };
 
 }  //  namespace blackwidow

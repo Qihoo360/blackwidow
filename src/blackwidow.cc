@@ -1530,6 +1530,12 @@ Status BlackWidow::StartBGThread() {
 
 Status BlackWidow::AddBGTask(const BGTask& bg_task) {
   bg_tasks_mutex_.Lock();
+  if (bg_task.type == kAll) {
+    // if current task it is global compact,
+    // clear the bg_tasks_queue_;
+    std::queue<BGTask> empty_queue;
+    bg_tasks_queue_.swap(empty_queue);
+  }
   bg_tasks_queue_.push(bg_task);
   bg_tasks_cond_var_.Signal();
   bg_tasks_mutex_.Unlock();

@@ -151,6 +151,7 @@ Status RedisHashes::ScanKeys(const std::string& pattern,
 Status RedisHashes::HDel(const Slice& key,
                          const std::vector<std::string>& fields,
                          int32_t* ret) {
+  uint32_t statistic = 0;
   std::vector<std::string> filtered_fields;
   std::unordered_set<std::string> field_set;
   for (auto iter = fields.begin(); iter != fields.end(); ++iter) {
@@ -180,13 +181,13 @@ Status RedisHashes::HDel(const Slice& key,
     } else {
       std::string data_value;
       version = parsed_hashes_meta_value.version();
-      int32_t hlen = parsed_hashes_meta_value.count();
       for (const auto& field : filtered_fields) {
         HashesDataKey hashes_data_key(key, version, field);
         s = db_->Get(read_options, handles_[1],
                 hashes_data_key.Encode(), &data_value);
         if (s.ok()) {
           del_cnt++;
+          statistic++;
           batch.Delete(handles_[1], hashes_data_key.Encode());
         } else if (s.IsNotFound()) {
           continue;
@@ -195,8 +196,7 @@ Status RedisHashes::HDel(const Slice& key,
         }
       }
       *ret = del_cnt;
-      hlen -= del_cnt;
-      parsed_hashes_meta_value.set_count(hlen);
+      parsed_hashes_meta_value.ModifyCount(-del_cnt);
       batch.Put(handles_[0], key, meta_value);
     }
   } else if (s.IsNotFound()) {
@@ -205,7 +205,9 @@ Status RedisHashes::HDel(const Slice& key,
   } else {
     return s;
   }
-  return db_->Write(default_write_options_, &batch);
+  s = db_->Write(default_write_options_, &batch);
+  UpdateSpecificKeyStatistics(key.ToString(), statistic);
+  return s;
 }
 
 Status RedisHashes::HExists(const Slice& key, const Slice& field) {
@@ -274,6 +276,7 @@ Status RedisHashes::HIncrby(const Slice& key, const Slice& field, int64_t value,
   ScopeRecordLock l(lock_mgr_, key);
 
   int32_t version = 0;
+  uint32_t statistic = 0;
   std::string old_value;
   std::string meta_value;
 
@@ -308,6 +311,7 @@ Status RedisHashes::HIncrby(const Slice& key, const Slice& field, int64_t value,
         char buf[32];
         Int64ToStr(buf, 32, *ret);
         batch.Put(handles_[1], hashes_data_key.Encode(), buf);
+        statistic++;
       } else if (s.IsNotFound()) {
         char buf[32];
         Int64ToStr(buf, 32, value);
@@ -334,7 +338,9 @@ Status RedisHashes::HIncrby(const Slice& key, const Slice& field, int64_t value,
   } else {
     return s;
   }
-  return db_->Write(default_write_options_, &batch);
+  s = db_->Write(default_write_options_, &batch);
+  UpdateSpecificKeyStatistics(key.ToString(), statistic);
+  return s;
 }
 
 Status RedisHashes::HIncrbyfloat(const Slice& key, const Slice& field,
@@ -344,6 +350,7 @@ Status RedisHashes::HIncrbyfloat(const Slice& key, const Slice& field,
   ScopeRecordLock l(lock_mgr_, key);
 
   int32_t version = 0;
+  uint32_t statistic = 0;
   std::string meta_value;
   std::string old_value_str;
   long double long_double_by;
@@ -382,6 +389,7 @@ Status RedisHashes::HIncrbyfloat(const Slice& key, const Slice& field,
           return Status::InvalidArgument("Overflow");
         }
         batch.Put(handles_[1], hashes_data_key.Encode(), *new_value);
+        statistic++;
       } else if (s.IsNotFound()) {
         LongDoubleToStr(long_double_by, new_value);
         parsed_hashes_meta_value.ModifyCount(1);
@@ -404,7 +412,9 @@ Status RedisHashes::HIncrbyfloat(const Slice& key, const Slice& field,
   } else {
     return s;
   }
-  return db_->Write(default_write_options_, &batch);
+  s = db_->Write(default_write_options_, &batch);
+  UpdateSpecificKeyStatistics(key.ToString(), statistic);
+  return s;
 }
 
 Status RedisHashes::HKeys(const Slice& key,
@@ -502,6 +512,7 @@ Status RedisHashes::HMGet(const Slice& key,
 
 Status RedisHashes::HMSet(const Slice& key,
                           const std::vector<FieldValue>& fvs) {
+  uint32_t statistic = 0;
   std::unordered_set<std::string> fields;
   std::vector<FieldValue> filtered_fvs;
   for (auto iter = fvs.rbegin(); iter != fvs.rend(); ++iter) {
@@ -538,6 +549,7 @@ Status RedisHashes::HMSet(const Slice& key,
         s = db_->Get(default_read_options_, handles_[1],
                 hashes_data_key.Encode(), &data_value);
         if (s.ok()) {
+          statistic++;
           batch.Put(handles_[1], hashes_data_key.Encode(), fv.value);
         } else if (s.IsNotFound()) {
           count++;
@@ -560,7 +572,9 @@ Status RedisHashes::HMSet(const Slice& key,
       batch.Put(handles_[1], hashes_data_key.Encode(), fv.value);
     }
   }
-  return db_->Write(default_write_options_, &batch);
+  s = db_->Write(default_write_options_, &batch);
+  UpdateSpecificKeyStatistics(key.ToString(), statistic);
+  return s;
 }
 
 Status RedisHashes::HSet(const Slice& key, const Slice& field,
@@ -569,6 +583,7 @@ Status RedisHashes::HSet(const Slice& key, const Slice& field,
   ScopeRecordLock l(lock_mgr_, key);
 
   int32_t version = 0;
+  uint32_t statistic = 0;
   std::string meta_value;
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
@@ -592,6 +607,7 @@ Status RedisHashes::HSet(const Slice& key, const Slice& field,
           return Status::OK();
         } else {
           batch.Put(handles_[1], hashes_data_key.Encode(), value);
+          statistic++;
         }
       } else if (s.IsNotFound()) {
         parsed_hashes_meta_value.ModifyCount(1);
@@ -614,8 +630,9 @@ Status RedisHashes::HSet(const Slice& key, const Slice& field,
   } else {
     return s;
   }
-
-  return db_->Write(default_write_options_, &batch);
+  s = db_->Write(default_write_options_, &batch);
+  UpdateSpecificKeyStatistics(key.ToString(), statistic);
+  return s;
 }
 
 Status RedisHashes::HSetnx(const Slice& key, const Slice& field,
@@ -1142,8 +1159,10 @@ Status RedisHashes::Del(const Slice& key) {
     } else if (parsed_hashes_meta_value.count() == 0) {
       return Status::NotFound();
     } else {
+      uint32_t statistic = parsed_hashes_meta_value.count();
       parsed_hashes_meta_value.InitialMetaValue();
       s = db_->Put(default_write_options_, handles_[0], key, meta_value);
+      UpdateSpecificKeyStatistics(key.ToString(), statistic);
     }
   }
   return s;
