@@ -50,8 +50,9 @@ Status RedisStrings::GetProperty(const std::string& property, uint64_t* out) {
   return Status::OK();
 }
 
-Status RedisStrings::ScanKeyNum(uint64_t* num) {
-  uint64_t count = 0;
+Status RedisStrings::ScanKeyNum(VaildAndInVaildKeyNum* vaild_and_invaild_key_num) {
+  uint64_t vaild = 0;
+  uint64_t invaild = 0;
   rocksdb::ReadOptions iterator_options;
   const rocksdb::Snapshot* snapshot;
   ScopeSnapshot ss(db_, &snapshot);
@@ -65,11 +66,14 @@ Status RedisStrings::ScanKeyNum(uint64_t* num) {
        iter->Valid();
        iter->Next()) {
     ParsedStringsValue parsed_strings_value(iter->value());
-    if (!parsed_strings_value.IsStale()) {
-      count++;
+    if (parsed_strings_value.IsStale()) {
+      invaild++;
+    } else {
+      vaild++;
     }
   }
-  *num = count;
+  vaild_and_invaild_key_num->vaild_key_num = vaild;
+  vaild_and_invaild_key_num->invaild_key_num = invaild;
   delete iter;
   return Status::OK();
 }

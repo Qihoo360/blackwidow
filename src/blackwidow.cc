@@ -1690,8 +1690,8 @@ uint64_t BlackWidow::GetProperty(const std::string &property) {
   return result;
 }
 
-Status BlackWidow::GetKeyNum(std::vector<uint64_t>* nums) {
-  uint64_t num = 0;
+Status BlackWidow::GetKeyNum(std::vector<VaildAndInVaildKeyNum>* vaild_and_invaild_key_nums) {
+  VaildAndInVaildKeyNum vaild_and_invaild_key_num;
   // NOTE: keep the db order with string, hash, list, zset, set
   std::vector<Redis*> dbs = {strings_db_, hashes_db_,
     lists_db_, zsets_db_, sets_db_};
@@ -1700,8 +1700,8 @@ Status BlackWidow::GetKeyNum(std::vector<uint64_t>* nums) {
     if (scan_keynum_exit_) {
       break;
     }
-    db->ScanKeyNum(&num);
-    nums->push_back(num);
+    db->ScanKeyNum(&vaild_and_invaild_key_num);
+    vaild_and_invaild_key_nums->push_back(vaild_and_invaild_key_num);
   }
   if (scan_keynum_exit_) {
     scan_keynum_exit_ = false;
