@@ -211,10 +211,8 @@ Status RedisLists::LInsert(const Slice& key,
   if (s.ok()) {
     ParsedListsMetaValue parsed_lists_meta_value(&meta_value);
     if (parsed_lists_meta_value.IsStale()) {
-      *ret = 0;
       return Status::NotFound("Stale");
     } else if (parsed_lists_meta_value.count() == 0) {
-      *ret = 0;
       return Status::NotFound();
     } else {
       bool find_pivot = false;
@@ -317,10 +315,8 @@ Status RedisLists::LLen(const Slice& key, uint64_t* len) {
   if (s.ok()) {
     ParsedListsMetaValue parsed_lists_meta_value(&meta_value);
     if (parsed_lists_meta_value.IsStale()) {
-      *len = 0;
       return Status::NotFound("Stale");
     } else if (parsed_lists_meta_value.count() == 0) {
-      *len = 0;
       return Status::NotFound();
     } else {
       *len = parsed_lists_meta_value.count();
@@ -505,10 +501,8 @@ Status RedisLists::LRem(const Slice& key, int64_t count,
   if (s.ok()) {
     ParsedListsMetaValue parsed_lists_meta_value(&meta_value);
     if (parsed_lists_meta_value.IsStale()) {
-      *ret = 0;
       return Status::NotFound("Stale");
     } else if (parsed_lists_meta_value.count() == 0) {
-      *ret = 0;
       return Status::NotFound();
     } else {
       uint64_t current_index;
@@ -1206,6 +1200,8 @@ Status RedisLists::Persist(const Slice& key) {
     ParsedListsMetaValue parsed_lists_meta_value(&meta_value);
     if (parsed_lists_meta_value.IsStale()) {
       return Status::NotFound("Stale");
+    } else if (parsed_lists_meta_value.count() == 0) {
+      return Status::NotFound();
     } else {
       int32_t timestamp = parsed_lists_meta_value.timestamp();
       if (timestamp == 0) {

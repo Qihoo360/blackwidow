@@ -1644,6 +1644,8 @@ Status RedisZSets::Persist(const Slice& key) {
     ParsedZSetsMetaValue parsed_zsets_meta_value(&meta_value);
     if (parsed_zsets_meta_value.IsStale()) {
       return Status::NotFound("Stale");
+    } else if (parsed_zsets_meta_value.count() == 0) {
+      return Status::NotFound();
     } else {
       int32_t timestamp = parsed_zsets_meta_value.timestamp();
       if (timestamp == 0) {

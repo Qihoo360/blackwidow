@@ -687,7 +687,7 @@ TEST_F(SetsTest, SInterTest) {
   ASSERT_EQ(ret, 0);
   std::vector<std::string> gp3_members_out;
   s = db.SMembers("GP3_SINTER_KEY3", &gp3_members_out);
-  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(s.IsNotFound());
   ASSERT_TRUE(members_match(gp3_members_out, {}));
 
   gp3_members_out.clear();
@@ -724,7 +724,7 @@ TEST_F(SetsTest, SInterTest) {
   ASSERT_EQ(ret, 0);
   std::vector<std::string> gp4_members_out;
   s = db.SMembers("GP4_SINTER_KEY1", &gp4_members_out);
-  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(s.IsNotFound());
   ASSERT_EQ(gp4_members_out.size(), 0);
 
   gp4_members_out.clear();
@@ -1733,7 +1733,7 @@ TEST_F(SetsTest, SUnionTest) {
   ASSERT_EQ(ret, 0);
   std::vector<std::string> gp3_members_out;
   s = db.SMembers("GP3_SUNION_KEY3", &gp3_members_out);
-  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(s.IsNotFound());
   ASSERT_EQ(gp3_members_out.size(), 0);
 
   std::vector<std::string> gp3_keys {"GP3_SUNION_KEY1",

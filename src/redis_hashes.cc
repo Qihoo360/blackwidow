@@ -180,7 +180,8 @@ Status RedisHashes::HDel(const Slice& key,
   Status s = db_->Get(read_options, handles_[0], key, &meta_value);
   if (s.ok()) {
     ParsedHashesMetaValue parsed_hashes_meta_value(&meta_value);
-    if (parsed_hashes_meta_value.IsStale()) {
+    if (parsed_hashes_meta_value.IsStale()
+      || parsed_hashes_meta_value.count() == 0) {
       *ret = 0;
       return Status::OK();
     } else {
@@ -233,6 +234,8 @@ Status RedisHashes::HGet(const Slice& key, const Slice& field,
     ParsedHashesMetaValue parsed_hashes_meta_value(&meta_value);
     if (parsed_hashes_meta_value.IsStale()) {
       return Status::NotFound("Stale");
+    } else if (parsed_hashes_meta_value.count() == 0) {
+      return Status::NotFound();
     } else {
       version = parsed_hashes_meta_value.version();
       HashesDataKey data_key(key, version, field);
@@ -256,6 +259,8 @@ Status RedisHashes::HGetall(const Slice& key,
     ParsedHashesMetaValue parsed_hashes_meta_value(&meta_value);
     if (parsed_hashes_meta_value.IsStale()) {
       return Status::NotFound("Stale");
+    } else if (parsed_hashes_meta_value.count() == 0) {
+      return Status::NotFound();
     } else {
       version = parsed_hashes_meta_value.version();
       HashesDataKey hashes_data_key(key, version, "");
@@ -288,7 +293,8 @@ Status RedisHashes::HIncrby(const Slice& key, const Slice& field, int64_t value,
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
     ParsedHashesMetaValue parsed_hashes_meta_value(&meta_value);
-    if (parsed_hashes_meta_value.IsStale()) {
+    if (parsed_hashes_meta_value.IsStale()
+      || parsed_hashes_meta_value.count() == 0) {
       version = parsed_hashes_meta_value.UpdateVersion();
       parsed_hashes_meta_value.set_count(1);
       parsed_hashes_meta_value.set_timestamp(0);
@@ -367,7 +373,8 @@ Status RedisHashes::HIncrbyfloat(const Slice& key, const Slice& field,
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
     ParsedHashesMetaValue parsed_hashes_meta_value(&meta_value);
-    if (parsed_hashes_meta_value.IsStale()) {
+    if (parsed_hashes_meta_value.IsStale()
+      || parsed_hashes_meta_value.count() == 0) {
       version = parsed_hashes_meta_value.UpdateVersion();
       parsed_hashes_meta_value.set_count(1);
       parsed_hashes_meta_value.set_timestamp(0);
@@ -436,6 +443,8 @@ Status RedisHashes::HKeys(const Slice& key,
     ParsedHashesMetaValue parsed_hashes_meta_value(&meta_value);
     if (parsed_hashes_meta_value.IsStale()) {
       return Status::NotFound("Stale");
+    } else if (parsed_hashes_meta_value.count() == 0) {
+      return Status::NotFound();
     } else {
       version = parsed_hashes_meta_value.version();
       HashesDataKey hashes_data_key(key, version, "");
@@ -490,6 +499,8 @@ Status RedisHashes::HMGet(const Slice& key,
     ParsedHashesMetaValue parsed_hashes_meta_value(&meta_value);
     if (parsed_hashes_meta_value.IsStale()) {
       return Status::NotFound("Stale");
+    } else if (parsed_hashes_meta_value.count() == 0) {
+      return Status::NotFound();
     } else {
       version = parsed_hashes_meta_value.version();
       for (const auto& field : fields) {
@@ -536,10 +547,10 @@ Status RedisHashes::HMSet(const Slice& key,
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
     ParsedHashesMetaValue parsed_hashes_meta_value(&meta_value);
-    if (parsed_hashes_meta_value.IsStale()) {
-      version = parsed_hashes_meta_value.UpdateVersion();
+    if (parsed_hashes_meta_value.IsStale()
+      || parsed_hashes_meta_value.count() == 0) {
+      version = parsed_hashes_meta_value.InitialMetaValue();
       parsed_hashes_meta_value.set_count(filtered_fvs.size());
-      parsed_hashes_meta_value.set_timestamp(0);
       batch.Put(handles_[0], key, meta_value);
       for (const auto& fv : filtered_fvs) {
         HashesDataKey hashes_data_key(key, version, fv.field);
@@ -593,9 +604,10 @@ Status RedisHashes::HSet(const Slice& key, const Slice& field,
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
     ParsedHashesMetaValue parsed_hashes_meta_value(&meta_value);
-    if (parsed_hashes_meta_value.IsStale()) {
+    if (parsed_hashes_meta_value.IsStale()
+      || parsed_hashes_meta_value.count() == 0) {
       version = parsed_hashes_meta_value.InitialMetaValue();
-      parsed_hashes_meta_value.ModifyCount(1);
+      parsed_hashes_meta_value.set_count(1);
       batch.Put(handles_[0], key, meta_value);
       HashesDataKey data_key(key, version, field);
       batch.Put(handles_[1], data_key.Encode(), value);
@@ -650,10 +662,10 @@ Status RedisHashes::HSetnx(const Slice& key, const Slice& field,
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
     ParsedHashesMetaValue parsed_hashes_meta_value(&meta_value);
-    if (parsed_hashes_meta_value.IsStale()) {
-      version = parsed_hashes_meta_value.UpdateVersion();
+    if (parsed_hashes_meta_value.IsStale()
+      || parsed_hashes_meta_value.count() == 0) {
+      version = parsed_hashes_meta_value.InitialMetaValue();
       parsed_hashes_meta_value.set_count(1);
-      parsed_hashes_meta_value.set_timestamp(0);
       batch.Put(handles_[0], key, meta_value);
       HashesDataKey hashes_data_key(key, version, field);
       batch.Put(handles_[1], hashes_data_key.Encode(), value);
@@ -704,6 +716,8 @@ Status RedisHashes::HVals(const Slice& key,
     ParsedHashesMetaValue parsed_hashes_meta_value(&meta_value);
     if (parsed_hashes_meta_value.IsStale()) {
       return Status::NotFound("Stale");
+    } else if (parsed_hashes_meta_value.count() == 0) {
+      return Status::NotFound();
     } else {
       version = parsed_hashes_meta_value.version();
       HashesDataKey hashes_data_key(key, version, "");
@@ -1248,6 +1262,8 @@ Status RedisHashes::Persist(const Slice& key) {
     ParsedHashesMetaValue parsed_hashes_meta_value(&meta_value);
     if (parsed_hashes_meta_value.IsStale()) {
       return Status::NotFound("Stale");
+    } else if (parsed_hashes_meta_value.count() == 0) {
+      return Status::NotFound();
     } else {
       int32_t timestamp = parsed_hashes_meta_value.timestamp();
       if (timestamp == 0) {
