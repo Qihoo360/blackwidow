@@ -1141,7 +1141,10 @@ Status RedisHashes::Expire(const Slice& key, int32_t ttl) {
     ParsedHashesMetaValue parsed_hashes_meta_value(&meta_value);
     if (parsed_hashes_meta_value.IsStale()) {
       return Status::NotFound("Stale");
+    } else if (parsed_hashes_meta_value.count() == 0) {
+      return Status::NotFound();
     }
+
     if (ttl > 0) {
       parsed_hashes_meta_value.SetRelativeTimestamp(ttl);
       s = db_->Put(default_write_options_, handles_[0], key, meta_value);
@@ -1227,6 +1230,8 @@ Status RedisHashes::Expireat(const Slice& key, int32_t timestamp) {
     ParsedHashesMetaValue parsed_hashes_meta_value(&meta_value);
     if (parsed_hashes_meta_value.IsStale()) {
       return Status::NotFound("Stale");
+    } else if (parsed_hashes_meta_value.count() == 0) {
+      return Status::NotFound();
     } else {
       parsed_hashes_meta_value.set_timestamp(timestamp);
       s = db_->Put(default_write_options_, handles_[0], key, meta_value);

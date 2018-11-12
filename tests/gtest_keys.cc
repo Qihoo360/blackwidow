@@ -3210,49 +3210,151 @@ TEST_F(KeysTest, ExpireTest) {
   std::map<blackwidow::DataType, Status> type_status;
   int32_t ret;
 
+  // ***************** Group 1 Test *****************
   // Strings
-  s = db.Set("EXPIRE_KEY", "VALUE");
+  s = db.Set("GP1_EXPIRE_KEY", "VALUE");
   ASSERT_TRUE(s.ok());
 
   // Hashes
-  s = db.HSet("EXPIRE_KEY", "FIELD", "VALUE", &ret);
+  s = db.HSet("GP1_EXPIRE_KEY", "FIELD", "VALUE", &ret);
   ASSERT_TRUE(s.ok());
 
   // Sets
-  s = db.SAdd("EXPIRE_KEY", {"MEMBER"}, &ret);
+  s = db.SAdd("GP1_EXPIRE_KEY", {"MEMBER"}, &ret);
   ASSERT_TRUE(s.ok());
 
   // Lists
   uint64_t llen;
-  s = db.RPush("EXPIRE_KEY", {"NODE"}, &llen);
+  s = db.RPush("GP1_EXPIRE_KEY", {"NODE"}, &llen);
   ASSERT_TRUE(s.ok());
 
-  s = db.ZAdd("EXPIRE_KEY", {{1, "MEMBER"}}, &ret);
+  // Zsets
+  s = db.ZAdd("GP1_EXPIRE_KEY", {{1, "MEMBER"}}, &ret);
   ASSERT_TRUE(s.ok());
 
-  ret = db.Expire("EXPIRE_KEY", 1, &type_status);
+  ret = db.Expire("GP1_EXPIRE_KEY", 1, &type_status);
   ASSERT_EQ(ret, 5);
   std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
   // Strings
-  s = db.Get("EXPIRE_KEY", &value);
+  s = db.Get("GP1_EXPIRE_KEY", &value);
   ASSERT_TRUE(s.IsNotFound());
 
   // Hashes
-  s = db.HGet("EXPIRE_KEY", "EXPIRE_FIELD", &value);
+  s = db.HGet("GP1_EXPIRE_KEY", "EXPIRE_FIELD", &value);
   ASSERT_TRUE(s.IsNotFound());
 
   // Sets
-  s = db.SCard("EXPIRE_KEY", &ret);
+  s = db.SCard("GP1_EXPIRE_KEY", &ret);
   ASSERT_TRUE(s.IsNotFound());
 
   // Lists
-  s = db.LLen("EXPIRE_KEY", &llen);
+  s = db.LLen("GP1_EXPIRE_KEY", &llen);
   ASSERT_TRUE(s.IsNotFound());
 
   // ZSets
-  s = db.ZCard("EXPIRE_KEY", &ret);
+  s = db.ZCard("GP1_EXPIRE_KEY", &ret);
   ASSERT_TRUE(s.IsNotFound());
+
+
+  // ***************** Group 2 Test *****************
+  // Strings
+  s = db.Set("GP2_EXPIRE_STRING_KEY", "VALUE");
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(make_expired(&db, "GP2_EXPIRE_STRING_KEY"));
+
+  type_status.clear();
+  ret = db.Expire("GP2_EXPIRE_STRING_KEY", 1, &type_status);
+  ASSERT_EQ(ret, 0);
+
+  // Hashes
+  s = db.HSet("GP2_EXPIRE_HASHES_KEY", "FIELD", "VALUE", &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(make_expired(&db, "GP2_EXPIRE_HASHES_KEY"));
+
+  type_status.clear();
+  ret = db.Expire("GP2_EXPIRE_HASHES_KEY", 1, &type_status);
+  ASSERT_EQ(ret, 0);
+
+  // Sets
+  s = db.SAdd("GP2_EXPIRE_SETS_KEY", {"MEMBER"}, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(make_expired(&db, "GP2_EXPIRE_SETS_KEY"));
+
+  type_status.clear();
+  ret = db.Expire("GP2_EXPIRE_SETS_KEY", 1, &type_status);
+  ASSERT_EQ(ret, 0);
+
+  // Lists
+  s = db.RPush("GP2_EXPIRE_LISTS_KEY", {"NODE"}, &llen);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(make_expired(&db, "GP2_EXPIRE_LISTS_KEY"));
+
+  type_status.clear();
+  ret = db.Expire("GP2_EXPIRE_LISTS_KEY", 1, &type_status);
+  ASSERT_EQ(ret, 0);
+
+  // Zsets
+  s = db.ZAdd("GP2_EXPIRE_ZSETS_KEY", {{1, "MEMBER"}}, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(make_expired(&db, "GP2_EXPIRE_ZSETS_KEY"));
+
+  type_status.clear();
+  ret = db.Expire("GP2_EXPIRE_ZSETS_KEY", 1, &type_status);
+  ASSERT_EQ(ret, 0);
+
+
+  // ***************** Group 3 Test *****************
+  // Strings
+  s = db.Set("GP3_EXPIRE_STRING_KEY", "VALUE");
+  ASSERT_TRUE(s.ok());
+  ret = db.Del({"GP3_EXPIRE_STRING_KEY"}, &type_status);
+  ASSERT_EQ(ret, 1);
+
+  type_status.clear();
+  ret = db.Expire("GP3_EXPIRE_STRING_KEY", 1, &type_status);
+  ASSERT_EQ(ret, 0);
+
+  // Hashes
+  s = db.HSet("GP3_EXPIRE_HASHES_KEY", "FIELD", "VALUE", &ret);
+  ASSERT_TRUE(s.ok());
+  s = db.HDel("GP3_EXPIRE_HASHES_KEY", {"FIELD"}, &ret);
+  ASSERT_TRUE(s.ok());
+
+  type_status.clear();
+  ret = db.Expire("GP3_EXPIRE_HASHES_KEY", 1, &type_status);
+  ASSERT_EQ(ret, 0);
+
+  // Sets
+  s = db.SAdd("GP3_EXPIRE_SETS_KEY", {"MEMBER"}, &ret);
+  ASSERT_TRUE(s.ok());
+  s = db.SRem("GP3_EXPIRE_SETS_KEY", {"MEMBER"}, &ret);
+  ASSERT_TRUE(s.ok());
+
+  type_status.clear();
+  ret = db.Expire("GP3_EXPIRE_SETS_KEY", 1, &type_status);
+  ASSERT_EQ(ret, 0);
+
+  // Lists
+  s = db.RPush("GP3_EXPIRE_LISTS_KEY", {"NODE"}, &llen);
+  ASSERT_TRUE(s.ok());
+  std::string element;
+  s = db.LPop("GP3_EXPIRE_LISTS_KEY", &element);
+  ASSERT_TRUE(s.ok());
+
+  type_status.clear();
+  ret = db.Expire("GP3_EXPIRE_LISTS_KEY", 1, &type_status);
+  ASSERT_EQ(ret, 0);
+
+  // Zsets
+  s = db.ZAdd("GP3_EXPIRE_ZSETS_KEY", {{1, "MEMBER"}}, &ret);
+  ASSERT_TRUE(s.ok());
+  s = db.ZRem("GP3_EXPIRE_ZSETS_KEY", {"MEMBER"}, &ret);
+  ASSERT_TRUE(s.ok());
+
+  type_status.clear();
+  ret = db.Expire("GP3_EXPIRE_ZSETS_KEY", 1, &type_status);
+  ASSERT_EQ(ret, 0);
 }
 
 // Del

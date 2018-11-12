@@ -1328,8 +1328,11 @@ Status RedisZSets::Expire(const Slice& key, int32_t ttl) {
   if (s.ok()) {
     ParsedZSetsMetaValue parsed_zsets_meta_value(&meta_value);
     if (parsed_zsets_meta_value.IsStale()) {
+      return Status::NotFound("Stale");
+    } else if (parsed_zsets_meta_value.count() == 0) {
       return Status::NotFound();
     }
+
     if (ttl > 0) {
       parsed_zsets_meta_value.SetRelativeTimestamp(ttl);
     } else {
@@ -1414,6 +1417,8 @@ Status RedisZSets::Expireat(const Slice& key, int32_t timestamp) {
     ParsedZSetsMetaValue parsed_zsets_meta_value(&meta_value);
     if (parsed_zsets_meta_value.IsStale()) {
       return Status::NotFound("Stale");
+    } else if (parsed_zsets_meta_value.count() == 0) {
+      return Status::NotFound();
     } else {
       parsed_zsets_meta_value.set_timestamp(timestamp);
       return db_->Put(default_write_options_, handles_[0], key, meta_value);
