@@ -11,11 +11,12 @@ Redis::Redis(BlackWidow* const bw, const DataType& type)
     : bw_(bw),
       type_(type),
       lock_mgr_(new LockMgr(1000, 0, std::make_shared<MutexFactoryImpl>())),
-      db_(nullptr) {
-    scan_cursors_store_.max_size_ = 5000;
-    statistics_store_.max_size_ = 5000;
-    default_compact_range_options_.exclusive_manual_compaction = false;
-    default_compact_range_options_.change_level = true;
+      db_(nullptr),
+      small_compaction_threshold_(5000) {
+  statistics_store_.max_size_ = 0;
+  scan_cursors_store_.max_size_ = 5000;
+  default_compact_range_options_.exclusive_manual_compaction = false;
+  default_compact_range_options_.change_level = true;
 }
 
 Redis::~Redis() {
@@ -61,6 +62,10 @@ Status Redis::StoreScanNextPoint(const Slice& key,
 Status Redis::UpdateSpecificKeyStatistics(const std::string& key,
                                           uint32_t count) {
   uint32_t total = 0;
+  if (statistics_store_.max_size_ == 0) {
+    return Status::OK();
+  }
+
   slash::MutexLock l(&statistics_mutex_);
   if (statistics_store_.map_.find(key) == statistics_store_.map_.end()) {
     statistics_store_.map_[key] = count;
@@ -83,7 +88,7 @@ Status Redis::UpdateSpecificKeyStatistics(const std::string& key,
 
 Status Redis::AddCompactKeyTaskIfNeeded(const std::string& key,
                                         uint32_t total) {
-  if (total < COMPACT_THRESHOLD_COUNT) {
+  if (total < small_compaction_threshold_) {
     return Status::OK();
   } else {
     bw_->AddBGTask({type_, kCompactKey, key});

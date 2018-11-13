@@ -61,6 +61,8 @@ struct BlackwidowOptions {
   rocksdb::BlockBasedTableOptions table_options;
   size_t block_cache_size;
   bool share_block_cache;
+  size_t statistics_max_size;
+  size_t small_compaction_threshold;
 };
 
 struct KeyValue {

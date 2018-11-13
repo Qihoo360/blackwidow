@@ -76,6 +76,7 @@ class Redis {
   // For Statistics
   slash::Mutex statistics_mutex_;
   BlackWidow::LRU<std::string, uint32_t> statistics_store_;
+  size_t small_compaction_threshold_;
 
   Status UpdateSpecificKeyStatistics(const std::string& key, uint32_t count);
   Status AddCompactKeyTaskIfNeeded(const std::string& key, uint32_t total);
