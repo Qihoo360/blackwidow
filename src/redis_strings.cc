@@ -119,10 +119,12 @@ Status RedisStrings::Append(const Slice& key, const Slice& value,
       StringsValue strings_value(value);
       return db_->Put(default_write_options_, key, strings_value.Encode());
     } else {
-      parsed_strings_value.StripSuffix();
-      *ret = old_value.size() + value.size();
-      old_value += value.data();
-      StringsValue strings_value(old_value);
+      int32_t timestamp = parsed_strings_value.timestamp();
+      std::string old_user_value = parsed_strings_value.value().ToString();
+      std::string new_value = old_user_value + value.ToString();
+      StringsValue strings_value(new_value);
+      strings_value.set_timestamp(timestamp);
+      *ret = new_value.size();
       return db_->Put(default_write_options_, key, strings_value.Encode());
     }
   } else if (s.IsNotFound()) {
@@ -307,9 +309,10 @@ Status RedisStrings::Decrby(const Slice& key, int64_t value, int64_t* ret) {
       StringsValue strings_value(new_value);
       return db_->Put(default_write_options_, key, strings_value.Encode());
     } else {
-      parsed_strings_value.StripSuffix();
+      int32_t timestamp = parsed_strings_value.timestamp();
+      std::string old_user_value = parsed_strings_value.value().ToString();
       char* end = nullptr;
-      int64_t ival = strtoll(old_value.c_str(), &end, 10);
+      int64_t ival = strtoll(old_user_value.c_str(), &end, 10);
       if (*end != 0) {
         return Status::Corruption("Value is not a integer");
       }
@@ -320,6 +323,7 @@ Status RedisStrings::Decrby(const Slice& key, int64_t value, int64_t* ret) {
       *ret = ival - value;
       new_value = std::to_string(*ret);
       StringsValue strings_value(new_value);
+      strings_value.set_timestamp(timestamp);
       return db_->Put(default_write_options_, key, strings_value.Encode());
     }
   } else if (s.IsNotFound()) {
@@ -444,9 +448,10 @@ Status RedisStrings::Incrby(const Slice& key, int64_t value, int64_t* ret) {
       StringsValue strings_value(buf);
       return db_->Put(default_write_options_, key, strings_value.Encode());
     } else {
-      parsed_strings_value.StripSuffix();
+      int32_t timestamp = parsed_strings_value.timestamp();
+      std::string old_user_value = parsed_strings_value.value().ToString();
       char* end = nullptr;
-      int64_t ival = strtoll(old_value.c_str(), &end, 10);
+      int64_t ival = strtoll(old_user_value.c_str(), &end, 10);
       if (*end != 0) {
         return Status::Corruption("Value is not a integer");
       }
@@ -455,9 +460,9 @@ Status RedisStrings::Incrby(const Slice& key, int64_t value, int64_t* ret) {
         return Status::InvalidArgument("Overflow");
       }
       *ret = ival + value;
-      char buf[32];
-      Int64ToStr(buf, 32, *ret);
-      StringsValue strings_value(buf);
+      new_value = std::to_string(*ret);
+      StringsValue strings_value(new_value);
+      strings_value.set_timestamp(timestamp);
       return db_->Put(default_write_options_, key, strings_value.Encode());
     }
   } else if (s.IsNotFound()) {
@@ -488,10 +493,11 @@ Status RedisStrings::Incrbyfloat(const Slice& key, const Slice& value,
       StringsValue strings_value(new_value);
       return db_->Put(default_write_options_, key, strings_value.Encode());
     } else {
-      parsed_strings_value.StripSuffix();
+      int32_t timestamp = parsed_strings_value.timestamp();
+      std::string old_user_value = parsed_strings_value.value().ToString();
       long double total, old_number;
-      if (StrToLongDouble(old_value.data(),
-                          old_value.size(), &old_number) == -1) {
+      if (StrToLongDouble(old_user_value.data(),
+                          old_user_value.size(), &old_number) == -1) {
         return Status::Corruption("Value is not a vaild float");
       }
       total = old_number + long_double_by;
@@ -500,6 +506,7 @@ Status RedisStrings::Incrbyfloat(const Slice& key, const Slice& value,
       }
       *ret = new_value;
       StringsValue strings_value(new_value);
+      strings_value.set_timestamp(timestamp);
       return db_->Put(default_write_options_, key, strings_value.Encode());
     }
   } else if (s.IsNotFound()) {
