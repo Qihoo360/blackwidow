@@ -267,7 +267,8 @@ Status RedisSets::SDiff(const std::vector<std::string>& keys,
     s = db_->Get(read_options, handles_[0], keys[idx], &meta_value);
     if (s.ok()) {
       ParsedSetsMetaValue parsed_sets_meta_value(&meta_value);
-      if (!parsed_sets_meta_value.IsStale()) {
+      if (!parsed_sets_meta_value.IsStale()
+        && parsed_sets_meta_value.count() != 0) {
         vaild_sets.push_back({keys[idx], parsed_sets_meta_value.version()});
       }
     } else if (!s.IsNotFound()) {
@@ -278,7 +279,8 @@ Status RedisSets::SDiff(const std::vector<std::string>& keys,
   s = db_->Get(read_options, handles_[0], keys[0], &meta_value);
   if (s.ok()) {
     ParsedSetsMetaValue parsed_sets_meta_value(&meta_value);
-    if (!parsed_sets_meta_value.IsStale()) {
+    if (!parsed_sets_meta_value.IsStale()
+      && parsed_sets_meta_value.count() != 0) {
       bool found;
       Slice prefix;
       std::string member_value;
@@ -341,7 +343,8 @@ Status RedisSets::SDiffstore(const Slice& destination,
     s = db_->Get(read_options, handles_[0], keys[idx], &meta_value);
     if (s.ok()) {
       ParsedSetsMetaValue parsed_sets_meta_value(&meta_value);
-      if (!parsed_sets_meta_value.IsStale()) {
+      if (!parsed_sets_meta_value.IsStale()
+        && parsed_sets_meta_value.count() != 0) {
         vaild_sets.push_back({keys[idx], parsed_sets_meta_value.version()});
       }
     } else if (!s.IsNotFound()) {
@@ -353,7 +356,8 @@ Status RedisSets::SDiffstore(const Slice& destination,
   s = db_->Get(read_options, handles_[0], keys[0], &meta_value);
   if (s.ok()) {
     ParsedSetsMetaValue parsed_sets_meta_value(&meta_value);
-    if (!parsed_sets_meta_value.IsStale()) {
+    if (!parsed_sets_meta_value.IsStale()
+      && parsed_sets_meta_value.count() != 0) {
       bool found;
       std::string member_value;
       version = parsed_sets_meta_value.version();

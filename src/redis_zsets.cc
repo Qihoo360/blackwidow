@@ -202,13 +202,14 @@ Status RedisZSets::ZAdd(const Slice& key,
   ScopeRecordLock l(lock_mgr_, key);
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
-    bool is_stale = false;
+    bool vaild = true;
     ParsedZSetsMetaValue parsed_zsets_meta_value(&meta_value);
-    if (parsed_zsets_meta_value.IsStale()) {
-      is_stale = true;
+    if (parsed_zsets_meta_value.IsStale()
+      || parsed_zsets_meta_value.count() == 0) {
+      vaild = false;
       version = parsed_zsets_meta_value.InitialMetaValue();
     } else {
-      is_stale = false;
+      vaild = true;
       version = parsed_zsets_meta_value.version();
     }
 
@@ -217,7 +218,7 @@ Status RedisZSets::ZAdd(const Slice& key,
     for (const auto& sm : filtered_score_members) {
       bool not_found = true;
       ZSetsMemberKey zsets_member_key(key, version, sm.member);
-      if (!is_stale) {
+      if (vaild) {
         s = db_->Get(default_read_options_,
             handles_[1], zsets_member_key.Encode(), &data_value);
         if (s.ok()) {
@@ -371,7 +372,8 @@ Status RedisZSets::ZIncrby(const Slice& key,
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
     ParsedZSetsMetaValue parsed_zsets_meta_value(&meta_value);
-    if (parsed_zsets_meta_value.IsStale()) {
+    if (parsed_zsets_meta_value.IsStale()
+      || parsed_zsets_meta_value.count() == 0) {
       version = parsed_zsets_meta_value.InitialMetaValue();
     } else {
       version = parsed_zsets_meta_value.version();

@@ -377,7 +377,8 @@ Status RedisLists::LPush(const Slice& key,
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
     ParsedListsMetaValue parsed_lists_meta_value(&meta_value);
-    if (parsed_lists_meta_value.IsStale()) {
+    if (parsed_lists_meta_value.IsStale()
+      || parsed_lists_meta_value.count() == 0) {
       version = parsed_lists_meta_value.InitialMetaValue();
     } else {
       version = parsed_lists_meta_value.version();
@@ -854,7 +855,8 @@ Status RedisLists::RPoplpush(const Slice& source,
       handles_[0], destination, &destination_meta_value);
   if (s.ok()) {
     ParsedListsMetaValue parsed_lists_meta_value(&destination_meta_value);
-    if (parsed_lists_meta_value.IsStale()) {
+    if (parsed_lists_meta_value.IsStale()
+      || parsed_lists_meta_value.count() == 0) {
       version = parsed_lists_meta_value.InitialMetaValue();
     } else {
       version = parsed_lists_meta_value.version();
@@ -899,7 +901,8 @@ Status RedisLists::RPush(const Slice& key,
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
     ParsedListsMetaValue parsed_lists_meta_value(&meta_value);
-    if (parsed_lists_meta_value.IsStale()) {
+    if (parsed_lists_meta_value.IsStale()
+      || parsed_lists_meta_value.count() == 0) {
       version = parsed_lists_meta_value.InitialMetaValue();
     } else {
       version = parsed_lists_meta_value.version();

@@ -250,7 +250,7 @@ TEST_F(ListsTest, LIndexTest) {
   std::vector<std::string> gp7_nodes {"m", "i", "s", "t", "y"};
   s = db.RPush("GP7_LINDEX_KEY", gp7_nodes, &num);
   ASSERT_TRUE(s.ok());
-  ASSERT_EQ(gp6_nodes.size(), num);
+  ASSERT_EQ(gp7_nodes.size(), num);
   ASSERT_TRUE(len_match(&db, "GP7_LINDEX_KEY", gp7_nodes.size()));
   ASSERT_TRUE(elements_match(&db, "GP7_LINDEX_KEY", {"m", "i", "s", "t", "y"}));
 
@@ -575,8 +575,11 @@ TEST_F(ListsTest, LPopTest) {
 
 // LPush
 TEST_F(ListsTest, LPushTest) {
+  int32_t ret;
   uint64_t num;
   std::string element;
+  std::map<DataType, int64_t> type_ttl;
+  std::map<blackwidow::DataType, rocksdb::Status> type_status;
 
   // ***************** Group 1 Test *****************
   //  "s" -> "l" -> "a" -> "s" -> "h"
@@ -618,7 +621,7 @@ TEST_F(ListsTest, LPushTest) {
 
   // Delete the key
   std::vector<std::string> del_keys = {"GP3_LPUSH_KEY"};
-  std::map<blackwidow::DataType, blackwidow::Status> type_status;
+  type_status.clear();
   db.Del(del_keys, &type_status);
   ASSERT_TRUE(type_status[blackwidow::DataType::kLists].ok());
 
@@ -647,6 +650,69 @@ TEST_F(ListsTest, LPushTest) {
   ASSERT_EQ(8, num);
   ASSERT_TRUE(len_match(&db, "GP4_LPUSH_KEY", 8));
   ASSERT_TRUE(elements_match(&db, "GP4_LPUSH_KEY", {"t", "h", "e", " ", "b", "l", "u", "e"}));
+
+
+  // ***************** Group 5 Test *****************
+  //  "b" -> "l" -> "u" -> "e"
+  std::vector<std::string> gp5_nodes1 {"e", "u", "l", "b"};
+  s = db.LPush("GP5_LPUSH_KEY", gp5_nodes1, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp5_nodes1.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP5_LPUSH_KEY", gp5_nodes1.size()));
+  ASSERT_TRUE(elements_match(&db, "GP5_LPUSH_KEY", {"b", "l", "u", "e"}));
+
+  ASSERT_TRUE(make_expired(&db, "GP5_LPUSH_KEY"));
+
+  // "t" -> "h" -> "e" -> " ";
+  std::vector<std::string> gp5_nodes2 {" ", "e", "h", "t"};
+  s = db.LPush("GP5_LPUSH_KEY", gp5_nodes2, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(4, num);
+  ASSERT_TRUE(len_match(&db, "GP5_LPUSH_KEY", 4));
+  ASSERT_TRUE(elements_match(&db, "GP5_LPUSH_KEY", {"t", "h", "e", " "}));
+
+
+  // ***************** Group 6 Test *****************
+  //  "b" -> "l" -> "u" -> "e"
+  std::vector<std::string> gp6_nodes1 {"e", "u", "l", "b"};
+  s = db.LPush("GP6_LPUSH_KEY", gp6_nodes1, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp6_nodes1.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP6_LPUSH_KEY", gp6_nodes1.size()));
+  ASSERT_TRUE(elements_match(&db, "GP6_LPUSH_KEY", {"b", "l", "u", "e"}));
+
+  type_status.clear();
+  ret = db.Expire("GP6_LPUSH_KEY", 100, &type_status);
+  ASSERT_EQ(ret, 1);
+  ASSERT_TRUE(type_status[blackwidow::DataType::kLists].ok());
+
+  type_status.clear();
+  type_ttl = db.TTL("GP6_LPUSH_KEY", &type_status);
+  ASSERT_LE(type_ttl[kLists], 100);
+  ASSERT_GE(type_ttl[kLists], 0);
+
+  s = db.LPop("GP6_LPUSH_KEY", &element);
+  ASSERT_EQ(element, "b");
+  s = db.LPop("GP6_LPUSH_KEY", &element);
+  ASSERT_EQ(element, "l");
+  s = db.LPop("GP6_LPUSH_KEY", &element);
+  ASSERT_EQ(element, "u");
+  s = db.LPop("GP6_LPUSH_KEY", &element);
+  ASSERT_EQ(element, "e");
+  ASSERT_TRUE(len_match(&db, "GP6_LPUSH_KEY", 0));
+  ASSERT_TRUE(elements_match(&db, "GP6_LPUSH_KEY", {}));
+
+  // "t" -> "h" -> "e" -> " ";
+  std::vector<std::string> gp6_nodes2 {" ", "e", "h", "t"};
+  s = db.LPush("GP6_LPUSH_KEY", gp6_nodes2, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(4, num);
+  ASSERT_TRUE(len_match(&db, "GP6_LPUSH_KEY", 4));
+  ASSERT_TRUE(elements_match(&db, "GP6_LPUSH_KEY", {"t", "h", "e", " "}));
+
+  type_status.clear();
+  type_ttl = db.TTL("GP6_LPUSH_KEY", &type_status);
+  ASSERT_EQ(type_ttl[kLists], -1);
 }
 
 // LPushx
@@ -2081,7 +2147,9 @@ TEST_F(ListsTest, RPopTest) {
 TEST_F(ListsTest, RPoplpushTest) {
   int64_t ret;
   uint64_t num;
-  std::string target;
+  std::string element, target;
+  std::map<DataType, int64_t> type_ttl;
+  std::map<blackwidow::DataType, rocksdb::Status> type_status;
 
   // ***************** Group 1 Test *****************
   // source        "o"
@@ -2385,12 +2453,65 @@ TEST_F(ListsTest, RPoplpushTest) {
   ASSERT_EQ(target, "o");
   ASSERT_TRUE(len_match(&db, "GP10_RPOPLPUSH_SOURCE_KEY", 1));
   ASSERT_TRUE(elements_match(&db, "GP10_RPOPLPUSH_SOURCE_KEY", {"o"}));
+
+
+  // ***************** Group 11 Test *****************
+  // source        "a" -> "b" -> "c"
+  // destination   "x" -> "y" -> "z"   (TTL 100);
+  // ------------- destination after lpop -------------
+  // destination    empty              (TTL -2)
+  // --------------- after rpoplpush -----------------
+  // source        "a" -> "b"
+  // destination   "c"                 (TTL -1)
+  //
+  std::vector<std::string> gp11_nodes1 {"a", "b", "c"};
+  std::vector<std::string> gp11_nodes2 {"x", "y", "z"};
+  s = db.RPush("GP11_RPOPLPUSH_SOURCE_KEY", gp11_nodes1, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp11_nodes1.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP11_RPOPLPUSH_SOURCE_KEY", gp11_nodes1.size()));
+  ASSERT_TRUE(elements_match(&db, "GP11_RPOPLPUSH_SOURCE_KEY", {"a", "b", "c"}));
+
+  s = db.RPush("GP11_RPOPLPUSH_DESTINATION_KEY", gp11_nodes2, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp11_nodes2.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP11_RPOPLPUSH_DESTINATION_KEY", gp11_nodes2.size()));
+  ASSERT_TRUE(elements_match(&db, "GP11_RPOPLPUSH_DESTINATION_KEY", {"x", "y", "z"}));
+
+  type_status.clear();
+  ret = db.Expire("GP11_RPOPLPUSH_DESTINATION_KEY", 100, &type_status);
+  ASSERT_EQ(ret, 1);
+  ASSERT_TRUE(type_status[blackwidow::DataType::kLists].ok());
+
+  s = db.LPop("GP11_RPOPLPUSH_DESTINATION_KEY", &element);
+  ASSERT_EQ(element, "x");
+  s = db.LPop("GP11_RPOPLPUSH_DESTINATION_KEY", &element);
+  ASSERT_EQ(element, "y");
+  s = db.LPop("GP11_RPOPLPUSH_DESTINATION_KEY", &element);
+  ASSERT_EQ(element, "z");
+  ASSERT_TRUE(len_match(&db, "GP11_RPOPLPUSH_DESTINATION_KEY", 0));
+  ASSERT_TRUE(elements_match(&db, "GP11_RPOPLPUSH_DESTINATION_KEY", {}));
+
+  s = db.RPoplpush("GP11_RPOPLPUSH_SOURCE_KEY", "GP11_RPOPLPUSH_DESTINATION_KEY", &target);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(target, "c");
+  ASSERT_TRUE(len_match(&db, "GP11_RPOPLPUSH_SOURCE_KEY", 2));
+  ASSERT_TRUE(elements_match(&db, "GP11_RPOPLPUSH_SOURCE_KEY", {"a", "b"}));
+  ASSERT_TRUE(len_match(&db, "GP11_RPOPLPUSH_DESTINATION_KEY", 1));
+  ASSERT_TRUE(elements_match(&db, "GP11_RPOPLPUSH_DESTINATION_KEY", {"c"}));
+
+  type_status.clear();
+  type_ttl = db.TTL("GP11_RPOPLPUSH_DESTINATION_KEY", &type_status);
+  ASSERT_EQ(type_ttl[kLists], -1);
 }
 
 // RPush
 TEST_F(ListsTest, RPushTest) {
+  int32_t ret;
   uint64_t num;
   std::string element;
+  std::map<DataType, int64_t> type_ttl;
+  std::map<blackwidow::DataType, rocksdb::Status> type_status;
 
   // ***************** Group 1 Test *****************
   //  "s" -> "l" -> "a" -> "s" -> "h"
@@ -2432,7 +2553,7 @@ TEST_F(ListsTest, RPushTest) {
 
   // Delete the key
   std::vector<std::string> del_keys = {"GP3_RPUSH_KEY"};
-  std::map<blackwidow::DataType, blackwidow::Status> type_status;
+  type_status.clear();
   db.Del(del_keys, &type_status);
   ASSERT_TRUE(type_status[blackwidow::DataType::kLists].ok());
 
@@ -2461,6 +2582,69 @@ TEST_F(ListsTest, RPushTest) {
   ASSERT_EQ(8, num);
   ASSERT_TRUE(len_match(&db, "GP4_RPUSH_KEY", 8));
   ASSERT_TRUE(elements_match(&db, "GP4_RPUSH_KEY", {"t", "h", "e", " ", "b", "l", "u", "e"}));
+
+
+  // ***************** Group 5 Test *****************
+  //  "t" -> "h" -> "e"
+  std::vector<std::string> gp5_nodes1 {"t", "h", "e"};
+  s = db.RPush("GP5_RPUSH_KEY", gp5_nodes1, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp5_nodes1.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP5_RPUSH_KEY", gp5_nodes1.size()));
+  ASSERT_TRUE(elements_match(&db, "GP5_RPUSH_KEY", {"t", "h", "e"}));
+
+  ASSERT_TRUE(make_expired(&db, "GP5_RPUSH_KEY"));
+
+  // "b" -> "l" -> "u" -> "e"
+  std::vector<std::string> gp5_nodes2 {"b", "l", "u", "e"};
+  s = db.RPush("GP5_RPUSH_KEY", gp5_nodes2, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(4, num);
+  ASSERT_TRUE(len_match(&db, "GP5_RPUSH_KEY", 4));
+  ASSERT_TRUE(elements_match(&db, "GP5_RPUSH_KEY", {"b", "l", "u", "e"}));
+
+
+  // ***************** Group 6 Test *****************
+  //  "b" -> "l" -> "u" -> "e"
+  std::vector<std::string> gp6_nodes1 {"b", "l", "u", "e"};
+  s = db.RPush("GP6_RPUSH_KEY", gp6_nodes1, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(gp6_nodes1.size(), num);
+  ASSERT_TRUE(len_match(&db, "GP6_RPUSH_KEY", gp6_nodes1.size()));
+  ASSERT_TRUE(elements_match(&db, "GP6_RPUSH_KEY", {"b", "l", "u", "e"}));
+
+  type_status.clear();
+  ret = db.Expire("GP6_RPUSH_KEY", 100, &type_status);
+  ASSERT_EQ(ret, 1);
+  ASSERT_TRUE(type_status[blackwidow::DataType::kLists].ok());
+
+  type_status.clear();
+  type_ttl = db.TTL("GP6_RPUSH_KEY", &type_status);
+  ASSERT_LE(type_ttl[kLists], 100);
+  ASSERT_GE(type_ttl[kLists], 0);
+
+  s = db.LPop("GP6_RPUSH_KEY", &element);
+  ASSERT_EQ(element, "b");
+  s = db.LPop("GP6_RPUSH_KEY", &element);
+  ASSERT_EQ(element, "l");
+  s = db.LPop("GP6_RPUSH_KEY", &element);
+  ASSERT_EQ(element, "u");
+  s = db.LPop("GP6_RPUSH_KEY", &element);
+  ASSERT_EQ(element, "e");
+  ASSERT_TRUE(len_match(&db, "GP6_RPUSH_KEY", 0));
+  ASSERT_TRUE(elements_match(&db, "GP6_RPUSH_KEY", {}));
+
+  // "t" -> "h" -> "e"
+  std::vector<std::string> gp6_nodes2 {"t", "h", "e"};
+  s = db.RPush("GP6_RPUSH_KEY", gp6_nodes2, &num);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(3, num);
+  ASSERT_TRUE(len_match(&db, "GP6_RPUSH_KEY", 3));
+  ASSERT_TRUE(elements_match(&db, "GP6_RPUSH_KEY", {"t", "h", "e"}));
+
+  type_status.clear();
+  type_ttl = db.TTL("GP6_RPUSH_KEY", &type_status);
+  ASSERT_EQ(type_ttl[kLists], -1);
 }
 
 // RPushx
