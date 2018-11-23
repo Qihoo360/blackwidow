@@ -3453,7 +3453,7 @@ TEST_F(KeysTest, ExpireatTest) {
   ASSERT_TRUE(s.ok());
 
   // Hashes
-  s = db.HSet("EXPIREAT_KEY", "FIELD", "VALUE", &ret);
+  s = db.HSet("EXPIREAT_KEY", "EXPIREAT_FIELD", "VALUE", &ret);
   ASSERT_TRUE(s.ok());
 
   // Sets
@@ -3476,6 +3476,46 @@ TEST_F(KeysTest, ExpireatTest) {
   ASSERT_EQ(ret, 5);
 
   std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+  // Strings
+  s = db.Get("EXPIREAT_KEY", &value);
+  ASSERT_TRUE(s.IsNotFound());
+
+  // Hashes
+  s = db.HGet("EXPIREAT_KEY", "EXPIREAT_FIELD", &value);
+  ASSERT_TRUE(s.IsNotFound());
+
+  // Sets
+  s = db.SCard("EXPIREAT_KEY", &ret);
+  ASSERT_TRUE(s.IsNotFound());
+
+  // List
+  s = db.LLen("EXPIREAT_KEY", &llen);
+  ASSERT_TRUE(s.IsNotFound());
+
+  // ZSets
+  s = db.ZCard("EXPIREAT_KEY", &ret);
+  ASSERT_TRUE(s.IsNotFound());
+
+  // Expireat key 0
+  s = db.Set("EXPIREAT_KEY", "VALUE");
+  ASSERT_TRUE(s.ok());
+
+  s = db.HSet("EXPIREAT_KEY", "EXPIREAT_FIELD", "VALUE", &ret);
+  ASSERT_TRUE(s.ok());
+
+  s = db.SAdd("EXPIREAT_KEY", {"MEMBER"}, &ret);
+  ASSERT_TRUE(s.ok());
+
+  s = db.RPush("EXPIREAT_KEY", {"NODE"}, &llen);
+  ASSERT_TRUE(s.ok());
+
+  s = db.ZAdd("EXPIREAT_KEY", {{1, "MEMBER"}}, &ret);
+  ASSERT_TRUE(s.ok());
+
+  
+  ret = db.Expireat("EXPIREAT_KEY", 0, &type_status);
+  ASSERT_EQ(ret, 5);
+
   // Strings
   s = db.Get("EXPIREAT_KEY", &value);
   ASSERT_TRUE(s.IsNotFound());

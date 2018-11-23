@@ -1425,7 +1425,11 @@ Status RedisZSets::Expireat(const Slice& key, int32_t timestamp) {
     } else if (parsed_zsets_meta_value.count() == 0) {
       return Status::NotFound();
     } else {
-      parsed_zsets_meta_value.set_timestamp(timestamp);
+      if (timestamp > 0) {
+        parsed_zsets_meta_value.set_timestamp(timestamp);
+      } else {
+        parsed_zsets_meta_value.InitialMetaValue();
+      }
       return db_->Put(default_write_options_, handles_[0], key, meta_value);
     }
   }
