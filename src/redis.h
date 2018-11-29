@@ -55,6 +55,9 @@ class Redis {
   virtual Status Persist(const Slice& key) = 0;
   virtual Status TTL(const Slice& key, int64_t* timestamp) = 0;
 
+  Status SetMaxCacheStatisticKeys(size_t max_cache_statistic_keys);
+  Status SetSmallCompactionThreshold(size_t small_compaction_threshold);
+
  protected:
   BlackWidow* const bw_;
   DataType type_;
@@ -75,7 +78,7 @@ class Redis {
 
   // For Statistics
   slash::Mutex statistics_mutex_;
-  BlackWidow::LRU<std::string, uint32_t> statistics_store_;
+  BlackWidow::LRU<std::string, size_t> statistics_store_;
   size_t small_compaction_threshold_;
 
   Status UpdateSpecificKeyStatistics(const std::string& key, uint32_t count);

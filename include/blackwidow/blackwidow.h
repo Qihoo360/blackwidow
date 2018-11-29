@@ -1085,6 +1085,9 @@ class BlackWidow {
   Status DoCompact(const DataType& type);
   Status CompactKey(const DataType& type, const std::string& key);
 
+  Status SetMaxCacheStatisticKeys(uint32_t max_cache_statistic_keys);
+  Status SetSmallCompactionThreshold(uint32_t small_compaction_threshold);
+
   std::string GetCurrentTaskType();
   Status GetUsage(const std::string& type, uint64_t *result);
   uint64_t GetProperty(const std::string &property);

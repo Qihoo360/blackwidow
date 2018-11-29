@@ -59,6 +59,23 @@ Status Redis::StoreScanNextPoint(const Slice& key,
   return Status::OK();
 }
 
+Status Redis::SetMaxCacheStatisticKeys(size_t max_cache_statistic_keys) {
+  slash::MutexLock l(&statistics_mutex_);
+  statistics_store_.max_size_ = max_cache_statistic_keys;
+  while (statistics_store_.list_.size() > statistics_store_.max_size_) {
+    std::string tail = statistics_store_.list_.back();
+    statistics_store_.map_.erase(tail);
+    statistics_store_.list_.pop_back();
+  }
+  return Status::OK();
+}
+
+Status Redis::SetSmallCompactionThreshold(size_t small_compaction_threshold) {
+  slash::MutexLock l(&statistics_mutex_);
+  small_compaction_threshold_ = small_compaction_threshold;
+  return Status::OK();
+}
+
 Status Redis::UpdateSpecificKeyStatistics(const std::string& key,
                                           uint32_t count) {
   uint32_t total = 0;

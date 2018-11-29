@@ -1641,6 +1641,22 @@ Status BlackWidow::CompactKey(const DataType& type, const std::string& key) {
   return Status::OK();
 }
 
+Status BlackWidow::SetMaxCacheStatisticKeys(uint32_t max_cache_statistic_keys) {
+  std::vector<Redis*> dbs = {sets_db_, zsets_db_, hashes_db_, lists_db_};
+  for (const auto& db : dbs) {
+    db->SetMaxCacheStatisticKeys(max_cache_statistic_keys);
+  }
+  return Status::OK();
+}
+
+Status BlackWidow::SetSmallCompactionThreshold(uint32_t small_compaction_threshold) {
+  std::vector<Redis*> dbs = {sets_db_, zsets_db_, hashes_db_, lists_db_};
+  for (const auto& db : dbs) {
+    db->SetSmallCompactionThreshold(small_compaction_threshold);
+  }
+  return Status::OK();
+}
+
 std::string BlackWidow::GetCurrentTaskType() {
   int type = current_task_type_;
   switch (type) {
