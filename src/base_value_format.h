@@ -119,6 +119,10 @@ class ParsedInternalValue {
     SetTimestampToValue();
   }
 
+  bool IsPermanentSurvival() {
+    return timestamp_ == 0;
+  }
+
   bool IsStale() {
     if (timestamp_ == 0) {
       return false;

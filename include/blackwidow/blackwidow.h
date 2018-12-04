@@ -76,9 +76,11 @@ struct KeyValue {
   }
 };
 
-struct VaildAndInVaildKeyNum {
-  uint64_t vaild_key_num;
-  uint64_t invaild_key_num;
+struct KeyInfo {
+  uint64_t keys;
+  uint64_t expires;
+  uint64_t avg_ttl;
+  uint64_t invaild_keys;
 };
 
 struct ValueStatus {
@@ -1092,7 +1094,7 @@ class BlackWidow {
   Status GetUsage(const std::string& type, uint64_t *result);
   uint64_t GetProperty(const std::string &property);
 
-  Status GetKeyNum(std::vector<VaildAndInVaildKeyNum>* vaild_and_invaild_key_nums);
+  Status GetKeyNum(std::vector<KeyInfo>* key_infos);
   Status StopScanKeyNum();
 
   rocksdb::DB* GetDBByType(const std::string& type);

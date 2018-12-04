@@ -27,7 +27,7 @@ class RedisLists : public Redis {
                       const rocksdb::Slice* end,
                       const ColumnFamilyType& type = kMetaAndData) override;
   Status GetProperty(const std::string& property, uint64_t* out) override;
-  Status ScanKeyNum(VaildAndInVaildKeyNum* vaild_and_invaild_key_num) override;
+  Status ScanKeyNum(KeyInfo* key_info) override;
   Status ScanKeys(const std::string& pattern,
                   std::vector<std::string>* keys) override;
 

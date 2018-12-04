@@ -38,7 +38,7 @@ class Redis {
                               const rocksdb::Slice* end,
                               const ColumnFamilyType& type = kMetaAndData) = 0;
   virtual Status GetProperty(const std::string& property, uint64_t* out) = 0;
-  virtual Status ScanKeyNum(VaildAndInVaildKeyNum* vaild_and_invaild_key_num) = 0;
+  virtual Status ScanKeyNum(KeyInfo* key_info) = 0;
   virtual Status ScanKeys(const std::string& pattern,
                           std::vector<std::string>* keys) = 0;
 

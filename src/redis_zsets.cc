@@ -127,14 +127,20 @@ Status RedisZSets::GetProperty(const std::string& property, uint64_t* out) {
   return Status::OK();
 }
 
-Status RedisZSets::ScanKeyNum(VaildAndInVaildKeyNum* vaild_and_invaild_key_num) {
-  uint64_t vaild = 0;
-  uint64_t invaild = 0;
+Status RedisZSets::ScanKeyNum(KeyInfo* key_info) {
+  uint64_t keys = 0;
+  uint64_t expires = 0;
+  uint64_t ttl_sum = 0;
+  uint64_t invaild_keys = 0;
+
   rocksdb::ReadOptions iterator_options;
   const rocksdb::Snapshot* snapshot;
   ScopeSnapshot ss(db_, &snapshot);
   iterator_options.snapshot = snapshot;
   iterator_options.fill_cache = false;
+
+  int64_t curtime;
+  rocksdb::Env::Default()->GetCurrentTime(&curtime);
 
   rocksdb::Iterator* iter = db_->NewIterator(iterator_options, handles_[0]);
   for (iter->SeekToFirst();
@@ -143,14 +149,21 @@ Status RedisZSets::ScanKeyNum(VaildAndInVaildKeyNum* vaild_and_invaild_key_num) 
     ParsedZSetsMetaValue parsed_zsets_meta_value(iter->value());
     if (parsed_zsets_meta_value.IsStale()
       || parsed_zsets_meta_value.count() == 0) {
-      invaild++;
+      invaild_keys++;
     } else {
-      vaild++;
+      keys++;
+      if (!parsed_zsets_meta_value.IsPermanentSurvival()) {
+        expires++;
+        ttl_sum += parsed_zsets_meta_value.timestamp() - curtime;
+      }
     }
   }
-  vaild_and_invaild_key_num->vaild_key_num = vaild;
-  vaild_and_invaild_key_num->invaild_key_num = invaild;
   delete iter;
+
+  key_info->keys = keys;
+  key_info->expires = expires;
+  key_info->avg_ttl = (expires != 0) ? ttl_sum / expires : 0;
+  key_info->invaild_keys = invaild_keys;
   return Status::OK();
 }
 
