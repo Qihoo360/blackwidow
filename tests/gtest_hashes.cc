@@ -721,6 +721,32 @@ TEST_F(HashesTest, HMGetTest) {
   ASSERT_EQ(vss[1].value, "");
   ASSERT_TRUE(vss[2].status.IsNotFound());
   ASSERT_EQ(vss[2].value, "");
+
+
+  // ***************** Group 4 Test *****************
+  std::vector<blackwidow::FieldValue> fvs4;
+  fvs4.push_back({"TEST_FIELD1", "TEST_VALUE1"});
+  fvs4.push_back({"TEST_FIELD2", "TEST_VALUE2"});
+  fvs4.push_back({"TEST_FIELD3", "TEST_VALUE3"});
+
+  s = db.HMSet("GP4_HMGET_KEY", fvs4);
+  ASSERT_TRUE(s.ok());
+
+  ASSERT_TRUE(make_expired(&db, "GP4_HMGET_KEY"));
+
+  vss.clear();
+  std::vector<std::string> fields4 {"TEST_FIELD1",
+      "TEST_FIELD2", "TEST_FIELD3"};
+  s = db.HMGet("GP4_HMGET_KEY", fields4, &vss);
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(vss.size(), 3);
+
+  ASSERT_TRUE(vss[0].status.IsNotFound());
+  ASSERT_EQ(vss[0].value, "");
+  ASSERT_TRUE(vss[1].status.IsNotFound());
+  ASSERT_EQ(vss[1].value, "");
+  ASSERT_TRUE(vss[2].status.IsNotFound());
+  ASSERT_EQ(vss[2].value, "");
 }
 
 // HMSet
