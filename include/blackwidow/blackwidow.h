@@ -301,6 +301,12 @@ class BlackWidow {
   // is returned when key holds a non-string value.
   Status Strlen(const Slice& key, int32_t* len);
 
+  // PKSETEXAT has the same effect and semantic as SETEX, but instead of
+  // specifying the number of seconds representing the TTL (time to live), it
+  // takes an absolute Unix timestamp (seconds since January 1, 1970). A
+  // timestamp in the past will delete the key immediately.
+  Status PKSetexAt(const Slice& key, const Slice& value, int32_t timestamp);
+
 
   // Hashes Commands
 

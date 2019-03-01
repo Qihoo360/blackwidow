@@ -278,6 +278,12 @@ Status BlackWidow::Strlen(const Slice& key, int32_t* len) {
   return strings_db_->Strlen(key, len);
 }
 
+Status BlackWidow::PKSetexAt(const Slice& key,
+                             const Slice& value,
+                             int32_t timestamp) {
+  return strings_db_->PKSetexAt(key, value, timestamp);
+}
+
 // Hashes Commands
 Status BlackWidow::HSet(const Slice& key, const Slice& field,
     const Slice& value, int32_t* res) {

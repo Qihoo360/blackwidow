@@ -964,6 +964,77 @@ TEST_F(StringsTest, BitPosTest) {
   ASSERT_EQ(ret, -1);
 }
 
+// PKSetexAt
+TEST_F(StringsTest, PKSetexAtTest) {
+  int64_t unix_time;
+  rocksdb::Env::Default()->GetCurrentTime(&unix_time);
+  std::map<blackwidow::DataType, int64_t> ttl_ret;
+  std::map<blackwidow::DataType, Status> type_status;
+
+  // ***************** Group 1 Test *****************
+  s = db.PKSetexAt("GP1_PKSETEX_KEY", "VALUE", unix_time + 100);
+  ASSERT_TRUE(s.ok());
+
+  type_status.clear();
+  std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+  ttl_ret = db.TTL("GP1_PKSETEX_KEY", &type_status);
+  ASSERT_LE(ttl_ret[DataType::kStrings], 100);
+  ASSERT_GE(ttl_ret[DataType::kStrings], 90);
+
+
+  // ***************** Group 2 Test *****************
+  s = db.Set("GP2_PKSETEX_KEY", "VALUE");
+  ASSERT_TRUE(s.ok());
+  s = db.PKSetexAt("GP2_PKSETEX_KEY", "VALUE", unix_time + 100);
+  ASSERT_TRUE(s.ok());
+
+  type_status.clear();
+  std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+  ttl_ret = db.TTL("GP2_PKSETEX_KEY", &type_status);
+  ASSERT_LE(ttl_ret[DataType::kStrings], 100);
+  ASSERT_GE(ttl_ret[DataType::kStrings], 90);
+
+
+  // ***************** Group 3 Test *****************
+  s = db.PKSetexAt("GP3_PKSETEX_KEY", "VALUE", unix_time - 100);
+  ASSERT_TRUE(s.ok());
+
+  type_status.clear();
+  ttl_ret = db.TTL("GP3_PKSETEX_KEY", &type_status);
+  ASSERT_EQ(ttl_ret[DataType::kStrings], -2);
+
+
+  // ***************** Group 4 Test *****************
+  s = db.Set("GP4_PKSETEX_KEY", "VALUE");
+  ASSERT_TRUE(s.ok());
+  s = db.PKSetexAt("GP4_PKSETEX_KEY", "VALUE", unix_time - 100);
+  ASSERT_TRUE(s.ok());
+
+  type_status.clear();
+  ttl_ret = db.TTL("GP4_PKSETEX_KEY", &type_status);
+  ASSERT_EQ(ttl_ret[DataType::kStrings], -2);
+
+
+  // ***************** Group 5 Test *****************
+  s = db.PKSetexAt("GP5_PKSETEX_KEY", "VALUE", -unix_time);
+  ASSERT_TRUE(s.ok());
+
+  type_status.clear();
+  ttl_ret = db.TTL("GP5_PKSETEX_KEY", &type_status);
+  ASSERT_EQ(ttl_ret[DataType::kStrings], -2);
+
+
+  // ***************** Group 6 Test *****************
+  s = db.Set("GP6_PKSETEX_KEY", "VALUE");
+  ASSERT_TRUE(s.ok());
+  s = db.PKSetexAt("GP6_PKSETEX_KEY", "VALUE", -unix_time);
+  ASSERT_TRUE(s.ok());
+
+  type_status.clear();
+  ttl_ret = db.TTL("GP6_PKSETEX_KEY", &type_status);
+  ASSERT_EQ(ttl_ret[DataType::kStrings], -2);
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

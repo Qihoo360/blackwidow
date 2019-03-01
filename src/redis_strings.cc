@@ -1039,6 +1039,13 @@ Status RedisStrings::BitPos(const Slice& key, int32_t bit,
   return Status::OK();
 }
 
+Status RedisStrings::PKSetexAt(const Slice& key, const Slice& value, int32_t timestamp) {
+  StringsValue strings_value(value);
+  ScopeRecordLock l(lock_mgr_, key);
+  strings_value.set_timestamp(timestamp);
+  return db_->Put(default_write_options_, key, strings_value.Encode());
+}
+
 Status RedisStrings::PKScanRange(const Slice& key_start,
                                  const Slice& key_end,
                                  const Slice& pattern,

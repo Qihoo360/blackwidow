@@ -69,6 +69,7 @@ class RedisStrings : public Redis {
   Status BitPos(const Slice& key, int32_t bit,
                 int64_t start_offset, int64_t end_offset,
                 int64_t* ret);
+  Status PKSetexAt(const Slice& key, const Slice& value, int32_t timestamp);
   Status PKScanRange(const Slice& key_start, const Slice& key_end,
                      const Slice& pattern, int32_t limit,
                      std::vector<KeyValue>* kvs, std::string* next_key);
