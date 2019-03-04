@@ -603,13 +603,9 @@ Status RedisStrings::MSetnx(const std::vector<KeyValue>& kvs,
 }
 
 Status RedisStrings::Set(const Slice& key,
-                         const Slice& value,
-                         const int32_t ttl) {
+                         const Slice& value) {
   StringsValue strings_value(value);
   ScopeRecordLock l(lock_mgr_, key);
-  if (ttl > 0) {
-    strings_value.SetRelativeTimestamp(ttl);
-  }
   return db_->Put(default_write_options_, key, strings_value.Encode());
 }
 

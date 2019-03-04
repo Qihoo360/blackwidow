@@ -157,9 +157,8 @@ int64_t BlackWidow::StoreAndGetCursor(int64_t cursor,
 
 // Strings Commands
 Status BlackWidow::Set(const Slice& key,
-                       const Slice& value,
-                       const int32_t ttl) {
-  return strings_db_->Set(key, value, ttl);
+                       const Slice& value) {
+  return strings_db_->Set(key, value);
 }
 
 Status BlackWidow::Setxx(const Slice& key,

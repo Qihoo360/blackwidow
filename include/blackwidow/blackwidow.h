@@ -193,7 +193,7 @@ class BlackWidow {
 
   // Set key to hold the string value. if key
   // already holds a value, it is overwritten
-  Status Set(const Slice& key, const Slice& value, const int32_t ttl = 0);
+  Status Set(const Slice& key, const Slice& value);
 
   // Set key to hold the string value. if key exist
   Status Setxx(const Slice& key, const Slice& value, int32_t* ret, const int32_t ttl = 0);
