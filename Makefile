@@ -111,11 +111,11 @@ LIBOBJECTS = $(LIB_SOURCES:.cc=.o)
 ifeq ($(LIBNAME),)
 # we should only run blackwidow in production with DEBUG_LEVEL 0
 LIBNAME=libblackwidow
-#ifeq ($(DEBUG_LEVEL),0)
-#        LIBNAME=libblackwidow
-#else
-#        LIBNAME=libblackwidow_debug
-#endif
+ifeq ($(DEBUG_LEVEL),0)
+        LIBNAME=libblackwidow
+else
+        LIBNAME=libblackwidow_debug
+endif
 endif
 LIBOUTPUT = ./lib
 dummy := $(shell mkdir -p $(LIBOUTPUT))

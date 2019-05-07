@@ -84,6 +84,11 @@ class ListsDataKeyComparatorImpl : public rocksdb::Comparator {
   }
 };
 
+
+/*
+ *  |  <Key Size>  |      <Key>      |  <Version>  |  <Score>  | <Member> |
+ *       4 Bytes     Key Size Bytes      4 Bytes      8 Bytes
+ */
 class ZSetsScoreKeyComparatorImpl : public rocksdb::Comparator {
  public:
   const char* Name() const override {
@@ -146,10 +151,133 @@ class ZSetsScoreKeyComparatorImpl : public rocksdb::Comparator {
     return !Compare(a, b);
   }
 
-  void FindShortestSeparator(std::string* start,
-                             const Slice& limit) const override {
+  void ParseAndPrintZSetsScoreKey(const std::string& from, const std::string& str) {
+    const char* ptr = str.data();
+
+    int32_t key_len = DecodeFixed32(ptr);
+    ptr += sizeof(int32_t);
+
+    std::string key(ptr, key_len);
+    ptr += key_len;
+
+    int32_t version = DecodeFixed32(ptr);
+    ptr += sizeof(int32_t);
+
+    uint64_t key_score_i = DecodeFixed64(ptr);
+    const void* ptr_key_score = reinterpret_cast<const void*>(&key_score_i);
+    double score = *reinterpret_cast<const double*>(ptr_key_score);
+    ptr += sizeof(uint64_t);
+
+
+    std::string member(ptr, str.size() - (key_len + 2 * sizeof(int32_t) + sizeof(uint64_t)));
+    printf("%s: total_len[%lu], key_len[%d], key[%s], version[%d], score[%lf], member[%s]\n",
+            from.data(), str.size(), key_len, key.data(), version, score, member.data());
   }
 
+  // Advanced functions: these are used to reduce the space requirements
+  // for internal data structures like index blocks.
+
+  // If *start < limit, changes *start to a short string in [start,limit).
+  // Simple comparator implementations may return with *start unchanged,
+  // i.e., an implementation of this method that does nothing is correct.
+  void FindShortestSeparator(std::string* start,
+                             const Slice& limit) const override {
+    assert(start->size() > sizeof(int32_t));
+    assert(start->size() >= DecodeFixed32(start->data())
+            + 2 * sizeof(int32_t) + sizeof(uint64_t));
+    assert(limit.size() > sizeof(int32_t));
+    assert(limit.size() >= DecodeFixed32(limit.data())
+            + 2 * sizeof(int32_t) + sizeof(uint64_t));
+
+    const char* ptr_start = start->data();
+    const char* ptr_limit = limit.data();
+    int32_t key_start_len = DecodeFixed32(ptr_start);
+    int32_t key_limit_len = DecodeFixed32(ptr_limit);
+    Slice key_start_prefix(ptr_start,  key_start_len + 2 * sizeof(int32_t));
+    Slice key_limit_prefix(ptr_limit,  key_limit_len + 2 * sizeof(int32_t));
+    ptr_start += key_start_len + 2 * sizeof(int32_t);
+    ptr_limit += key_limit_len + 2 * sizeof(int32_t);
+    if (key_start_prefix.compare(key_limit_prefix)) {
+      return;
+    }
+
+    uint64_t start_i = DecodeFixed64(ptr_start);
+    uint64_t limit_i = DecodeFixed64(ptr_limit);
+    const void* ptr_start_score = reinterpret_cast<const void*>(&start_i);
+    const void* ptr_limit_score = reinterpret_cast<const void*>(&limit_i);
+    double start_score = *reinterpret_cast<const double*>(ptr_start_score);
+    double limit_score = *reinterpret_cast<const double*>(ptr_limit_score);
+    ptr_start += sizeof(uint64_t);
+    ptr_limit += sizeof(uint64_t);
+    if (start_score < limit_score) {
+      if (start_score + 1 < limit_score) {
+        start->resize(key_start_len + 2 * sizeof(int32_t));
+        start_score += 1;
+        const void* addr_start_score = reinterpret_cast<const void*>(&start_score);
+        char dst[sizeof(uint64_t)];
+        EncodeFixed64(dst, *reinterpret_cast<const uint64_t*>(addr_start_score));
+        start->append(dst, sizeof(uint64_t));
+      }
+      return;
+    }
+
+    std::string key_start_member(ptr_start, start->size() - (key_start_len + 2 * sizeof(int32_t) + sizeof(uint64_t)));
+    std::string key_limit_member(ptr_limit, limit.size() - (key_limit_len + 2 * sizeof(int32_t) + sizeof(uint64_t)));
+    // Find length of common prefix
+    size_t min_length = std::min(key_start_member.size(), key_limit_member.size());
+    size_t diff_index = 0;
+    while ((diff_index < min_length) &&
+           (key_start_member[diff_index] == key_limit_member[diff_index])) {
+      diff_index++;
+    }
+
+    if (diff_index >= min_length) {
+      // Do not shorten if one string is a prefix of the other
+    } else {
+      uint8_t key_start_member_byte = static_cast<uint8_t>(key_start_member[diff_index]);
+      uint8_t key_limit_member_byte = static_cast<uint8_t>(key_limit_member[diff_index]);
+      if (key_start_member_byte >= key_limit_member_byte) {
+        // Cannot shorten since limit is smaller than start or start is
+        // already the shortest possible.
+        return;
+      }
+      assert(key_start_member_byte < key_limit_member_byte);
+
+      if (diff_index < key_limit_member.size() - 1
+        || key_start_member_byte + 1 < key_limit_member_byte) {
+        key_start_member[diff_index]++;
+        key_start_member.resize(diff_index + 1);
+        start->resize(key_start_len + 2 * sizeof(int32_t) + sizeof(uint64_t));
+        start->append(key_start_member);
+      } else {
+        //     v
+        // A A 1 A A A
+        // A A 2
+        //
+        // Incrementing the current byte will make start bigger than limit, we
+        // will skip this byte, and find the first non 0xFF byte in start and
+        // increment it.
+        diff_index++;
+
+        while (diff_index < key_start_member.size()) {
+          // Keep moving until we find the first non 0xFF byte to
+          // increment it
+          if (static_cast<uint8_t>(key_start_member[diff_index]) < static_cast<uint8_t>(0xff)) {
+              key_start_member[diff_index]++;
+              key_start_member.resize(diff_index + 1);
+              start->resize(key_start_len + 2 * sizeof(int32_t) + sizeof(uint64_t));
+              start->append(key_start_member);
+              break;
+          }
+          diff_index++;
+        }
+      }
+    }
+  }
+
+  // Changes *key to a short string >= *key.
+  // Simple comparator implementations may return with *key unchanged,
+  // i.e., an implementation of this method that does nothing is correct.
   void FindShortSuccessor(std::string* key) const override {
   }
 };
