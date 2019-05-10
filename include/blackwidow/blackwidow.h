@@ -175,7 +175,7 @@ class BlackWidow {
   BlackWidow();
   ~BlackWidow();
 
-  Status Open(const BlackwidowOptions& bw_options, const std::string& db_path);
+  Status Open(BlackwidowOptions& bw_options, const std::string& db_path);
 
   Status GetStartKey(int64_t cursor, std::string* start_key);
 
@@ -183,7 +183,7 @@ class BlackWidow {
 
   // Common
   template <typename T1, typename T2>
-  struct LRU {
+  struct LRU{
     size_t max_size_;
     std::list<T1> list_;
     std::map<T1, T2> map_;
