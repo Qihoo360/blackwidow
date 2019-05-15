@@ -1725,7 +1725,6 @@ Status BlackWidow::GetKeyNum(std::vector<KeyInfo>* key_infos) {
 }
 
 Status BlackWidow::StopScanKeyNum() {
-  sleep(1);
   scan_keynum_exit_ = true;
   return Status::OK();
 }
