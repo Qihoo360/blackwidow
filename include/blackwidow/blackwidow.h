@@ -1111,6 +1111,7 @@ class BlackWidow {
   RedisSets* sets_db_;
   RedisZSets* zsets_db_;
   RedisLists* lists_db_;
+  std::atomic<bool> is_opened_;
 
   MutexFactory* mutex_factory_;
 

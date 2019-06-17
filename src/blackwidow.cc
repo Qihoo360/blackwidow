@@ -22,6 +22,7 @@ BlackWidow::BlackWidow() :
   sets_db_(nullptr),
   zsets_db_(nullptr),
   lists_db_(nullptr),
+  is_opened_(false),
   mutex_factory_(new MutexFactoryImpl),
   bg_tasks_cond_var_(&bg_tasks_mutex_),
   current_task_type_(0),
@@ -42,11 +43,13 @@ BlackWidow::~BlackWidow() {
   bg_tasks_should_exit_ = true;
   bg_tasks_cond_var_.Signal();
 
-  rocksdb::CancelAllBackgroundWork(strings_db_->GetDB(), true);
-  rocksdb::CancelAllBackgroundWork(hashes_db_->GetDB(), true);
-  rocksdb::CancelAllBackgroundWork(sets_db_->GetDB(), true);
-  rocksdb::CancelAllBackgroundWork(lists_db_->GetDB(), true);
-  rocksdb::CancelAllBackgroundWork(zsets_db_->GetDB(), true);
+  if (is_opened_) {
+    rocksdb::CancelAllBackgroundWork(strings_db_->GetDB(), true);
+    rocksdb::CancelAllBackgroundWork(hashes_db_->GetDB(), true);
+    rocksdb::CancelAllBackgroundWork(sets_db_->GetDB(), true);
+    rocksdb::CancelAllBackgroundWork(lists_db_->GetDB(), true);
+    rocksdb::CancelAllBackgroundWork(zsets_db_->GetDB(), true);
+  }
 
   int ret = 0;
   if ((ret = pthread_join(bg_tasks_thread_id_, NULL)) != 0) {
@@ -114,6 +117,7 @@ Status BlackWidow::Open(const BlackwidowOptions& bw_options,
         "[FATAL] open zset db failed, %s\n", s.ToString().c_str());
     exit(-1);
   }
+  is_opened_.store(true);
   return Status::OK();
 }
 
