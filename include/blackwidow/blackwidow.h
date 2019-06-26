@@ -63,6 +63,12 @@ struct BlackwidowOptions {
   bool share_block_cache;
   size_t statistics_max_size;
   size_t small_compaction_threshold;
+
+  explicit BlackwidowOptions()
+      : block_cache_size(0),
+        share_block_cache(false),
+        statistics_max_size(0),
+        small_compaction_threshold(5000) {}
 };
 
 struct KeyValue {
