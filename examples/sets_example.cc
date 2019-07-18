@@ -10,10 +10,10 @@
 using namespace blackwidow;
 
 int main() {
-  blackwidow::Options options;
-  options.create_if_missing = true;
   blackwidow::BlackWidow db;
-  blackwidow::Status s = db.Open(options, "./db");
+  BlackwidowOptions bw_options;
+  bw_options.options.create_if_missing = true;
+  blackwidow::Status s = db.Open(bw_options, "./db");
   if (s.ok()) {
     printf("Open success\n");
   } else {

@@ -24,13 +24,23 @@ endif
 ROCKSDB_INCLUDE_DIR=$(ROCKSDB_PATH)/include
 ROCKSDB_LIBRARY=$(ROCKSDB_PATH)/librocksdb.a
 
-CXXFLAGS+= -I$(BLACKWIDOW_INCLUDE_DIR) -I$(ROCKSDB_INCLUDE_DIR)
+ifndef SLASH_PATH
+  $(warning Warning: missing slash path, using default)
+	SLASH_PATH=../deps/slash
+endif
+SLASH_INCLUDE_DIR=$(SLASH_PATH)
+SLASH_LIBRARY=$(SLASH_PATH)/slash/lib/libslash.a
 
-DEP_LIBS = $(BLACKWIDOW_LIBRARY) $(ROCKSDB_LIBRARY)
+CXXFLAGS+= -I$(BLACKWIDOW_INCLUDE_DIR) -I$(ROCKSDB_INCLUDE_DIR) -I$(SLASH_INCLUDE_DIR)
+
+DEP_LIBS = $(BLACKWIDOW_LIBRARY) $(ROCKSDB_LIBRARY) $(SLASH_LIBRARY)
 LDFLAGS := $(DEP_LIBS) $(LDFLAGS)
 
 ROCKSDB:
 	$(AM_V_at)make -j $(PROCESSOR_NUMS) -C $(ROCKSDB_PATH)/ static_lib
+
+SLASH:
+	$(AM_V_at)make -C $(SLASH_PATH)/slash
 
 strings_example: strings_example.cc
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)

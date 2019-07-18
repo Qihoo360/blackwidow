@@ -10,10 +10,10 @@
 using namespace blackwidow;
 
 int main() {
-  blackwidow::Options options;
-  options.create_if_missing = true;
   blackwidow::BlackWidow db;
-  blackwidow::Status s = db.Open(options, "./db");
+  BlackwidowOptions bw_options;
+  bw_options.options.create_if_missing = true;
+  blackwidow::Status s = db.Open(bw_options, "./db");
   if (s.ok()) {
     printf("Open success\n");
   } else {
@@ -51,21 +51,21 @@ int main() {
       s.ToString().c_str(), ret);
 
   // MSet
-  std::vector<BlackWidow::KeyValue> kvs;
+  std::vector<blackwidow::KeyValue> kvs;
   kvs.push_back({"TEST_KEY1", "TEST_VALUE1"});
   kvs.push_back({"TEST_KEY2", "TEST_VALUE2"});
   s = db.MSet(kvs);
   printf("MSet return: %s\n", s.ToString().c_str());
 
   // MGet
-  std::vector<std::string> values;
+  std::vector<blackwidow::ValueStatus> vss;
   std::vector<std::string> keys {"TEST_KEY1",
       "TEST_KEY2", "TEST_KEY_NOT_EXIST"};
-  s = db.MGet(keys, &values);
+  s = db.MGet(keys, &vss);
   printf("MGet return: %s\n", s.ToString().c_str());
   for (size_t idx = 0; idx != keys.size(); idx++) {
     printf("idx = %d, keys = %s, value = %s\n",
-        idx, keys[idx].c_str(), values[idx].c_str());
+        idx, keys[idx].c_str(), vss[idx].value.c_str());
   }
 
   // Setnx
@@ -109,20 +109,20 @@ int main() {
   s = db.Set("BITOP_KEY3", "BLACKWIDOW");
   std::vector<std::string> src_keys {"BITOP_KEY1", "BITOP_KEY2", "BITOP_KEY3"};
   // and
-  s = db.BitOp(BlackWidow::BitOpType::kBitOpAnd,
+  s = db.BitOp(blackwidow::BitOpType::kBitOpAnd,
                "BITOP_DESTKEY", src_keys, &bitop_ret);
   printf("BitOp return: %s, ret: %d\n", s.ToString().c_str(), bitop_ret);
   // or
-  s = db.BitOp(BlackWidow::BitOpType::kBitOpOr,
+  s = db.BitOp(blackwidow::BitOpType::kBitOpOr,
                "BITOP_DESTKEY", src_keys, &bitop_ret);
   printf("BitOp return: %s, ret: %d\n", s.ToString().c_str(), bitop_ret);
   // xor
-  s = db.BitOp(BlackWidow::BitOpType::kBitOpXor,
+  s = db.BitOp(blackwidow::BitOpType::kBitOpXor,
                "BITOP_DESTKEY", src_keys, &bitop_ret);
   printf("BitOp return: %s, ret: %d\n", s.ToString().c_str(), bitop_ret);
   // not
   std::vector<std::string> not_keys {"BITOP_KEY1"};
-  s = db.BitOp(BlackWidow::BitOpType::kBitOpNot,
+  s = db.BitOp(blackwidow::BitOpType::kBitOpNot,
                "BITOP_DESTKEY", not_keys, &bitop_ret);
   printf("BitOp return: %s, ret: %d\n", s.ToString().c_str(), bitop_ret);
 
@@ -171,7 +171,7 @@ int main() {
 
 
   // Expire
-  std::map<BlackWidow::DataType, Status> key_status;
+  std::map<blackwidow::DataType, Status> key_status;
   s = db.Set("EXPIRE_KEY", "EXPIREVALUE");
   printf("Set return: %s\n", s.ToString().c_str());
   db.Expire("EXPIRE_KEY", 1, &key_status);
@@ -180,7 +180,7 @@ int main() {
   printf("Get return: %s, value: %s\n", s.ToString().c_str(), value.c_str());
 
   // Compact
-  s = db.Compact();
+  s = db.Compact(blackwidow::DataType::kStrings);
   printf("Compact return: %s\n", s.ToString().c_str());
 
   return 0;
