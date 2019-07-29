@@ -24,6 +24,12 @@ $(warning Warning: Compiling in debug mode. Don't use the resulting binary in pr
 OPT += -O0 $(PROFILING_FLAGS)
 endif
 
+# if complie with lockless, the security of the same Key operation is guaranteed
+# by the upper layer
+ifeq ($(LOCKLESS),true)
+OPT += -DLOCKLESS
+endif
+
 #-----------------------------------------------
 
 SRC_DIR=./src
