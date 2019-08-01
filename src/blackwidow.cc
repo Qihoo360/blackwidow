@@ -13,6 +13,7 @@
 #include "src/redis_lists.h"
 #include "src/redis_zsets.h"
 #include "src/redis_hyperloglog.h"
+#include "src/lru_cache.h"
 
 namespace blackwidow {
 
@@ -23,13 +24,12 @@ BlackWidow::BlackWidow() :
   zsets_db_(nullptr),
   lists_db_(nullptr),
   is_opened_(false),
-  mutex_factory_(new MutexFactoryImpl),
   bg_tasks_cond_var_(&bg_tasks_mutex_),
-  current_task_type_(0),
+  current_task_type_(kNone),
   bg_tasks_should_exit_(false),
   scan_keynum_exit_(false) {
-  cursors_store_.max_size_ = 5000;
-  cursors_mutex_ = mutex_factory_->AllocateMutex();
+  cursors_store_ = new LRUCache<int64_t, std::string>();
+  cursors_store_->SetCapacity(5000);
 
   Status s = StartBGThread();
   if (!s.ok()) {
@@ -61,7 +61,7 @@ BlackWidow::~BlackWidow() {
   delete sets_db_;
   delete lists_db_;
   delete zsets_db_;
-  delete mutex_factory_;
+  delete cursors_store_;
 }
 
 static std::string AppendSubDirectory(const std::string& db_path,
@@ -122,33 +122,12 @@ Status BlackWidow::Open(const BlackwidowOptions& bw_options,
 }
 
 Status BlackWidow::GetStartKey(int64_t cursor, std::string* start_key) {
-  cursors_mutex_->Lock();
-  if (cursors_store_.map_.end() == cursors_store_.map_.find(cursor)) {
-    cursors_mutex_->UnLock();
-    return Status::NotFound();
-  } else {
-    // If the cursor is present in the list,
-    // move the cursor to the start of list
-    cursors_store_.list_.remove(cursor);
-    cursors_store_.list_.push_front(cursor);
-    *start_key = cursors_store_.map_[cursor];
-    cursors_mutex_->UnLock();
-    return Status::OK();
-  }
+  return cursors_store_->Lookup(cursor, start_key);
 }
 
 int64_t BlackWidow::StoreAndGetCursor(int64_t cursor,
                                       const std::string& next_key) {
-  cursors_mutex_->Lock();
-  if (cursors_store_.map_.size() > cursors_store_.max_size_) {
-    int64_t tail = cursors_store_.list_.back();
-    cursors_store_.list_.remove(tail);
-    cursors_store_.map_.erase(tail);
-  }
-
-  cursors_store_.list_.push_front(cursor);
-  cursors_store_.map_[cursor] = next_key;
-  cursors_mutex_->UnLock();
+  cursors_store_->Insert(cursor, next_key);
   return cursor;
 }
 

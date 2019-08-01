@@ -15,6 +15,7 @@
 #include "rocksdb/slice.h"
 
 #include "src/lock_mgr.h"
+#include "src/lru_cache.h"
 #include "src/mutex_impl.h"
 #include "blackwidow/blackwidow.h"
 
@@ -68,8 +69,7 @@ class Redis {
   rocksdb::CompactRangeOptions default_compact_range_options_;
 
   // For Scan
-  slash::Mutex scan_cursors_mutex_;
-  BlackWidow::LRU<std::string, std::string> scan_cursors_store_;
+  LRUCache<std::string, std::string>* scan_cursors_store_;
 
   Status GetScanStartPoint(const Slice& key, const Slice& pattern,
                            int64_t cursor, std::string* start_point);
@@ -77,12 +77,11 @@ class Redis {
                             int64_t cursor, const std::string& next_point);
 
   // For Statistics
-  slash::Mutex statistics_mutex_;
-  BlackWidow::LRU<std::string, size_t> statistics_store_;
-  size_t small_compaction_threshold_;
+  std::atomic<size_t> small_compaction_threshold_;
+  LRUCache<std::string, size_t>* statistics_store_;
 
-  Status UpdateSpecificKeyStatistics(const std::string& key, uint32_t count);
-  Status AddCompactKeyTaskIfNeeded(const std::string& key, uint32_t total);
+  Status UpdateSpecificKeyStatistics(const std::string& key, size_t count);
+  Status AddCompactKeyTaskIfNeeded(const std::string& key, size_t total);
 };
 
 }  //  namespace blackwidow

@@ -62,7 +62,7 @@ CXXFLAGS+= -I$(BLACKWIDOW_PATH) -I$(BLACKWIDOW_INCLUDE_DIR) -I$(ROCKSDB_INCLUDE_
 DEP_LIBS = $(BLACKWIDOW_LIBRARY) $(ROCKSDB_LIBRARY) $(SLASH_LIBRARY) $(GOOGLETEST_LIBRARY)
 LDFLAGS := $(DEP_LIBS) $(LDFLAGS)
 
-OBJECTS= GOOGLETEST ROCKSDB SLASH main lock_mgr gtest_keys gtest_strings gtest_hashes gtest_lists gtest_sets gtest_zsets gtest_strings_filter gtest_hashes_filter gtest_hyperloglog gtest_lists_filter gtest_custom_comparator
+OBJECTS= GOOGLETEST ROCKSDB SLASH main lock_mgr gtest_keys gtest_strings gtest_hashes gtest_lists gtest_sets gtest_zsets gtest_strings_filter gtest_hashes_filter gtest_hyperloglog gtest_lists_filter gtest_custom_comparator gtest_lru_cache
 
 all: $(OBJECTS)
 
@@ -82,6 +82,7 @@ test: $(OBJECTS)
 	@./gtest_lists_filter
 	@./gtest_hyperloglog
 	@./gtest_custom_comparator
+	@./gtest_lru_cache
 	@rm -rf db
 
 GOOGLETEST:
@@ -132,9 +133,12 @@ gtest_lists_filter: gtest_lists_filter.cc
 gtest_hyperloglog: gtest_hyperloglog.cc
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 
+gtest_lru_cache: gtest_lru_cache.cc
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
+
 
 clean:
 	find . -name "*.[oda]" -exec rm -f {} \;
 	rm -f ./make_config.mk
 	rm -rf db
-	rm -rf ./main ./lock_mgr ./gtest_keys ./gtest_strings ./gtest_hashes ./gtest_lists ./gtest_sets ./gtest_zsets ./gtest_strings_filter ./gtest_hashes_filter ./gtest_hyperloglog ./gtest_lists_filter ./gtest_custom_comparator
+	rm -rf ./main ./lock_mgr ./gtest_keys ./gtest_strings ./gtest_hashes ./gtest_lists ./gtest_sets ./gtest_zsets ./gtest_strings_filter ./gtest_hashes_filter ./gtest_hyperloglog ./gtest_lists_filter ./gtest_custom_comparator ./gtest_lru_cache

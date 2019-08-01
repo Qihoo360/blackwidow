@@ -47,14 +47,16 @@ using BlockBasedTableOptions = rocksdb::BlockBasedTableOptions;
 using Status = rocksdb::Status;
 using Slice = rocksdb::Slice;
 
+class Mutex;
 class RedisStrings;
 class RedisHashes;
 class RedisSets;
 class RedisLists;
 class RedisZSets;
 class HyperLogLog;
-class MutexFactory;
-class Mutex;
+
+template <typename T1, typename T2>
+class LRUCache;
 
 struct BlackwidowOptions {
   rocksdb::Options options;
@@ -186,14 +188,6 @@ class BlackWidow {
   Status GetStartKey(int64_t cursor, std::string* start_key);
 
   int64_t StoreAndGetCursor(int64_t cursor, const std::string& next_key);
-
-  // Common
-  template <typename T1, typename T2>
-  struct LRU {
-    size_t max_size_;
-    std::list<T1> list_;
-    std::map<T1, T2> map_;
-  };
 
   // Strings Commands
 
@@ -1119,10 +1113,7 @@ class BlackWidow {
   RedisLists* lists_db_;
   std::atomic<bool> is_opened_;
 
-  MutexFactory* mutex_factory_;
-
-  LRU<int64_t, std::string> cursors_store_;
-  std::shared_ptr<Mutex> cursors_mutex_;
+  LRUCache<int64_t, std::string>* cursors_store_;
 
   // Blackwidow start the background thread for compaction task
   pthread_t bg_tasks_thread_id_;

@@ -13,6 +13,7 @@
 #include "slash/include/env.h"
 
 #include "src/redis.h"
+#include "src/lru_cache.h"
 #include "src/custom_comparator.h"
 
 #define SPOP_COMPACT_THRESHOLD_COUNT     500
@@ -93,8 +94,7 @@ class RedisSets : public Redis {
   std::vector<rocksdb::ColumnFamilyHandle*> handles_;
 
   // For compact in time after multiple spop
-  slash::Mutex spop_counts_mutex_;
-  BlackWidow::LRU<std::string, uint64_t> spop_counts_store_;
+  LRUCache<std::string, size_t>* spop_counts_store_;
   Status ResetSpopCount(const std::string& key);
   Status AddAndGetSpopCount(const std::string& key, uint64_t* count);
 };

@@ -12,14 +12,15 @@
 
 #include "blackwidow/util.h"
 #include "src/base_filter.h"
-#include "src/scope_record_lock.h"
 #include "src/scope_snapshot.h"
+#include "src/scope_record_lock.h"
 
 namespace blackwidow {
 
 RedisSets::RedisSets(BlackWidow* const bw, const DataType& type)
     : Redis(bw, type) {
-  spop_counts_store_.max_size_ = 1000;
+  spop_counts_store_ = new LRUCache<std::string, size_t>();
+  spop_counts_store_->SetCapacity(1000);
 }
 
 RedisSets::~RedisSets() {
@@ -28,11 +29,12 @@ RedisSets::~RedisSets() {
   for (auto handle : tmp_handles) {
     delete handle;
   }
+  delete spop_counts_store_;
 }
 
 Status RedisSets::Open(const BlackwidowOptions& bw_options,
                        const std::string& db_path) {
-  statistics_store_.max_size_ = bw_options.statistics_max_size;
+  statistics_store_->SetCapacity(bw_options.statistics_max_size);
   small_compaction_threshold_ = bw_options.small_compaction_threshold;
 
   rocksdb::Options ops(bw_options.options);
@@ -841,31 +843,14 @@ Status RedisSets::SPop(const Slice& key,
 }
 
 Status RedisSets::ResetSpopCount(const std::string& key) {
-  slash::MutexLock l(&spop_counts_mutex_);
-  if (spop_counts_store_.map_.find(key) == spop_counts_store_.map_.end()) {
-    return Status::NotFound();
-  }
-  spop_counts_store_.map_.erase(key);
-  spop_counts_store_.list_.remove(key);
-  return Status::OK();
+  return spop_counts_store_->Remove(key);
 }
 
 Status RedisSets::AddAndGetSpopCount(const std::string& key, uint64_t* count) {
-  slash::MutexLock l(&spop_counts_mutex_);
-  if (spop_counts_store_.map_.find(key) == spop_counts_store_.map_.end()) {
-    *count = ++spop_counts_store_.map_[key];
-    spop_counts_store_.list_.push_front(key);
-  } else {
-    *count = ++spop_counts_store_.map_[key];
-    spop_counts_store_.list_.remove(key);
-    spop_counts_store_.list_.push_front(key);
-  }
-
-  if (spop_counts_store_.list_.size() > spop_counts_store_.max_size_) {
-    std::string tail = spop_counts_store_.list_.back();
-    spop_counts_store_.map_.erase(tail);
-    spop_counts_store_.list_.pop_back();
-  }
+  size_t old_count = 0;
+  spop_counts_store_->Lookup(key, &old_count);
+  spop_counts_store_->Insert(key, old_count + 1);
+  *count = old_count + 1;
   return Status::OK();
 }
 
