@@ -520,6 +520,18 @@ Status BlackWidow::RPoplpush(const Slice& source,
   return lists_db_->RPoplpush(source, destination, element);
 }
 
+Status BlackWidow::ZPopMax(const Slice& key,
+			   const int64_t count,
+			   std::vector<ScoreMember>* score_members){
+  return zsets_db_->ZPopMax(key, count, score_members);
+}
+
+Status BlackWidow::ZPopMin(const Slice& key,
+			   const int64_t count,
+                           std::vector<ScoreMember>* score_members){
+  return zsets_db_->ZPopMin(key, count, score_members);
+}
+
 Status BlackWidow::ZAdd(const Slice& key,
                         const std::vector<ScoreMember>& score_members,
                         int32_t* ret) {

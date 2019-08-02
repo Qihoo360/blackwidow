@@ -194,6 +194,102 @@ Status RedisZSets::ScanKeys(const std::string& pattern,
   return Status::OK();
 }
 
+Status RedisZSets::ZPopMax(const Slice& key, 
+                           const int64_t count,
+                           std::vector<ScoreMember>* score_members) {
+  uint32_t statistic = 0;
+  score_members->clear();
+  rocksdb::WriteBatch batch;
+  ScopeRecordLock l(lock_mgr_, key);
+  std::string meta_value;
+  Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
+  if (s.ok()) {
+    ParsedZSetsMetaValue parsed_zsets_meta_value(&meta_value);
+    if (parsed_zsets_meta_value.IsStale()) {
+      return Status::NotFound("Stale");
+    } else if (parsed_zsets_meta_value.count() == 0) {
+      return Status::NotFound();
+    } else {
+      int32_t num = parsed_zsets_meta_value.count();
+      num = num <= count ? num : count;
+      int32_t version = parsed_zsets_meta_value.version();
+      ZSetsScoreKey zsets_score_key(key, version,
+          std::numeric_limits<double>::max(), Slice());
+      rocksdb::Iterator* iter = db_->NewIterator(default_read_options_, handles_[2]);
+      int32_t del_cnt = 0;
+      for (iter->SeekForPrev(zsets_score_key.Encode());
+           iter->Valid() && del_cnt < num;
+           iter->Prev()) {
+        ParsedZSetsScoreKey parsed_zsets_score_key(iter->key());
+        score_members->emplace_back(
+                       ScoreMember{parsed_zsets_score_key.score(), 
+                                   parsed_zsets_score_key.member().ToString()});
+        ZSetsMemberKey zsets_member_key(key, version, parsed_zsets_score_key.member());
+        ++statistic;
+        ++del_cnt;
+        batch.Delete(handles_[1], zsets_member_key.Encode());
+        batch.Delete(handles_[2], iter->key());
+      }
+      delete iter;
+      parsed_zsets_meta_value.ModifyCount(-del_cnt);
+      batch.Put(handles_[0], key, meta_value); 
+      s = db_->Write(default_write_options_, &batch);
+      UpdateSpecificKeyStatistics(key.ToString(), statistic);
+      return s;
+    }    
+  } else {
+    return s;
+  } 
+}
+
+Status RedisZSets::ZPopMin(const Slice& key, 
+                           const int64_t count,
+                           std::vector<ScoreMember>* score_members) {
+  uint32_t statistic = 0;
+  score_members->clear();
+  rocksdb::WriteBatch batch;
+  ScopeRecordLock l(lock_mgr_, key);
+  std::string meta_value;
+  Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
+  if (s.ok()) {
+    ParsedZSetsMetaValue parsed_zsets_meta_value(&meta_value);
+    if (parsed_zsets_meta_value.IsStale()) {
+      return Status::NotFound("Stale");
+    } else if (parsed_zsets_meta_value.count() == 0) {
+      return Status::NotFound();
+    } else {
+      int32_t num = parsed_zsets_meta_value.count();
+      num = num <= count ? num : count;
+      int32_t version = parsed_zsets_meta_value.version();
+      ZSetsScoreKey zsets_score_key(key, version,
+                    std::numeric_limits<double>::lowest(), Slice());
+      rocksdb::Iterator* iter = db_->NewIterator(default_read_options_, handles_[2]);
+      int32_t del_cnt = 0;
+      for (iter->Seek(zsets_score_key.Encode());
+           iter->Valid() && del_cnt < num;
+           iter->Next()) {
+        ParsedZSetsScoreKey parsed_zsets_score_key(iter->key());
+        score_members->emplace_back(
+                       ScoreMember{parsed_zsets_score_key.score(),
+                                   parsed_zsets_score_key.member().ToString()} );
+        ZSetsMemberKey zsets_member_key(key, version, parsed_zsets_score_key.member());
+        ++statistic;
+        ++del_cnt;
+        batch.Delete(handles_[1], zsets_member_key.Encode());
+        batch.Delete(handles_[2], iter->key());
+      }
+      delete iter;
+      parsed_zsets_meta_value.ModifyCount(-del_cnt);
+      batch.Put(handles_[0], key, meta_value); 
+      s = db_->Write(default_write_options_, &batch);
+      UpdateSpecificKeyStatistics(key.ToString(), statistic);
+      return s;
+    }    
+  } else {
+    return s;
+  } 
+}
+
 Status RedisZSets::ZAdd(const Slice& key,
                         const std::vector<ScoreMember>& score_members,
                         int32_t* ret) {

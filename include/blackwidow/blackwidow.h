@@ -652,6 +652,24 @@ class BlackWidow {
 
   // Zsets Commands
 
+  //Pop the maximum count score_members which have greater score in the sorted set.
+  //And return the result in the score_members,If the total number of the sorted 
+  //set less than count, it will pop out the total number of sorted set. If two
+  //ScoreMember's score were the same, the lexicographic predominant elements will
+  //be pop out.
+  Status ZPopMax(const Slice& key,
+  		 const int64_t count,
+                 std::vector<ScoreMember>* score_members);
+
+  //Pop the minimum count score_members which have less score in the sorted set.
+  //And return the result in the score_members,If the total number of the sorted 
+  //set less than count, it will pop out the total number of sorted set. If two
+  //ScoreMember's score were the same, the lexicographic predominant elements will 
+  //not be pop out.
+  Status ZPopMin(const Slice& key,
+ 		 const int64_t count,
+                 std::vector<ScoreMember>* score_members);  
+
   // Adds all the specified members with the specified scores to the sorted set
   // stored at key. It is possible to specify multiple score / member pairs. If
   // a specified member is already a member of the sorted set, the score is
@@ -661,7 +679,6 @@ class BlackWidow {
   // If key does not exist, a new sorted set with the specified members as sole
   // members is created, like if the sorted set was empty. If the key exists but
   // does not hold a sorted set, an error is returned.
-  //
   // The score values should be the string representation of a double precision
   // floating point number. +inf and -inf values are valid values as well.
   Status ZAdd(const Slice& key,

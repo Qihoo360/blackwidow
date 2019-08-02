@@ -118,6 +118,324 @@ static bool delete_key(blackwidow::BlackWidow *const db,
   return type_status[blackwidow::DataType::kZSets].ok();
 }
 
+//ZPopMax
+TEST_F(ZSetsTest, ZPopMaxTest){  
+  int32_t ret;
+  std::map<DataType, int64_t> type_ttl;
+  std::map<blackwidow::DataType, rocksdb::Status> type_status;
+
+  // ***************** Group 1 Test *****************
+  // [-0.54,        MM4]
+  // [0,            MM2]
+  // [3.23,         MM1]
+  // [8.0004,       MM3]
+  std::vector<blackwidow::ScoreMember> gp1_sm {{3.23, "MM1"}, {0, "MM2"}, {8.0004, "MM3"}, {-0.54, "MM4"}};
+  Status s = db.ZAdd("GP1_ZPOPMAX_KEY", gp1_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(4, ret);
+  ASSERT_TRUE(size_match(&db, "GP1_ZPOPMAX_KEY", 4));
+  ASSERT_TRUE(score_members_match(&db, "GP1_ZPOPMAX_KEY", {{-0.54, "MM4"}, {0, "MM2"}, {3.23, "MM1"}, {8.0004, "MM3"}}));
+  std::vector<blackwidow::ScoreMember> score_members;
+  s = db.ZPopMax("GP1_ZPOPMAX_KEY", 1, &score_members);
+  
+  // [-0.54,        MM4]             ret: [8.0004,        MM3]       
+  // [0,            MM2]
+  // [3.23,         MM1]
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(1, score_members.size());
+  ASSERT_TRUE(score_members_match(score_members, {{8.0004, "MM3"}}));
+  ASSERT_TRUE(score_members_match(&db, "GP1_ZPOPMAX_KEY", {{-0.54, "MM4"}, {0, "MM2"}, {3.23, "MM1"}}));
+  ASSERT_TRUE(size_match(&db, "GP1_ZPOPMAX_KEY", 3));
+  s = db.ZPopMax("GP1_ZPOPMAX_KEY", 3, &score_members);
+  
+  //                                 ret: [3.23,          MM1]       
+  //                                      [0,             MM2]
+  //                                      [-0.54,         MM4]
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(3, score_members.size());
+  ASSERT_TRUE(score_members_match(score_members, {{3.23, "MM1"}, {0, "MM2"}, {-0.54, "MM4"}}));
+  ASSERT_TRUE(size_match(&db, "GP1_ZPOPMAX_KEY", 0));
+  ASSERT_TRUE(score_members_match(&db, "GP1_ZPOPMAX_KEY", {}));
+  s = db.ZPopMax("GP1_ZPOPMAX_KEY", 1, &score_members);
+
+  //                		     ret: 
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(0, score_members.size());
+  ASSERT_TRUE(size_match(&db, "GP1_ZPOPMAX_KEY", 0));
+  ASSERT_TRUE(score_members_match(&db, "GP1_ZPOPMAX_KEY", {}));
+  
+  
+  // ***************** Group 2 Test *****************
+  // [0,            MM1]   
+  // [0,            MM2]
+  // [0,            MM3]
+  std::vector<blackwidow::ScoreMember> gp2_sm {{0, "MM1"}, {0, "MM2"}, {0, "MM3"}};
+  s = db.ZAdd("GP2_ZPOPMAX_KEY", gp2_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(3, ret);
+  ASSERT_TRUE(size_match(&db, "GP2_ZPOPMAX_KEY", 3));
+  ASSERT_TRUE(score_members_match(&db, "GP2_ZPOPMAX_KEY", {{0, "MM1"}, {0, "MM2"}, {0, "MM3"}}));
+  s = db.ZPopMax("GP2_ZPOPMAX_KEY", 1, &score_members);
+
+  // [0,            MM1]             ret: [0,             MM3]
+  // [0,            MM2]
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(1, score_members.size());
+  ASSERT_TRUE(size_match(&db, "GP2_ZPOPMAX_KEY", 2)); 
+  ASSERT_TRUE(score_members_match(score_members, {{0, "MM3"}}));
+  ASSERT_TRUE(score_members_match(&db, "GP2_ZPOPMAX_KEY", {{0, "MM1"}, {0, "MM2"}}));
+  s = db.ZPopMax("GP2_ZPOPMAX_KEY", 3, &score_members);
+
+  //                                 ret: [0,             MM2]
+  //                                      [0,             MM1]
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(2, score_members.size());
+  ASSERT_TRUE(size_match(&db, "GP2_ZPOPMAX_KEY", 0)); 
+  ASSERT_TRUE(score_members_match(score_members, {{0, "MM2"}, {0, "MM1"}}));
+  ASSERT_TRUE(score_members_match(&db, "GP2_ZPOPMAX_KEY", {}));
+
+
+  // ***************** Group 3 Test *****************
+  // [-1,           MM3]
+  // [-1,           MM4]
+  // [1 / 6.0,      MM5]
+  // [1 / 6.0,      MM6]
+  // [0.532445,     MM7]
+  // [0.532445,     MM8]
+  // [1,            MM1]
+  // [1,            MM2]
+  // [2e5 + 3.98,  MM10]
+  // [2e5 + 3.98,   MM9]
+  std::vector<blackwidow::ScoreMember> gp3_sm {
+      {1, "MM1"},
+      {1, "MM2"},
+      {-1, "MM3"},
+      {-1, "MM4"},
+      {1/6.0, "MM5"},
+      {1/6.0, "MM6"},
+      {0.532445, "MM7"},
+      {0.532445, "MM8"},
+      {2e5 + 3.98, "MM9"},
+      {2e5 + 3.98, "MM10"}
+    };
+  s = db.ZAdd("GP3_ZPOPMAX_KEY", gp3_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(10, ret);
+  ASSERT_TRUE(size_match(&db, "GP3_ZPOPMAX_KEY", 10));
+  ASSERT_TRUE(score_members_match(&db, "GP3_ZPOPMAX_KEY", {
+       {-1, "MM3"},
+       {-1, "MM4"},
+       {1/6.0, "MM5"},
+       {1/6.0, "MM6"},
+       {0.532445, "MM7"},
+       {0.532445, "MM8"},
+       {1, "MM1"},
+       {1, "MM2"},
+       {2e5 + 3.98, "MM10"},
+       {2e5 + 3.98, "MM9"}
+  }));
+  s = db.ZPopMax("GP3_ZPOPMAX_KEY", 5, &score_members);
+
+  // [-1,           MM3]             ret: [2e5 + 3.98,    MM9]
+  // [-1,           MM4]                  [2e5 + 3.98,   MM10]
+  // [1 / 6.0,      MM5]                  [1,             MM2]
+  // [1 / 6.0,      MM6]                  [1,             MM1]
+  // [0.532445,     MM7]                  [0.532445,      MM8]
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(5, score_members.size());
+  ASSERT_TRUE(size_match(&db, "GP3_ZPOPMAX_KEY", 5));
+  ASSERT_TRUE(score_members_match(score_members, {{2e5 + 3.98, "MM9"}, {2e5 + 3.98, "MM10"}, {1, "MM2"}, {1, "MM1"}, {0.532445, "MM8"}}));
+  ASSERT_TRUE(score_members_match(&db, "GP3_ZPOPMAX_KEY", {{-1, "MM3"}, {-1, "MM4"}, {1/6.0, "MM5"}, {1/6.0, "MM6"}, {0.532445, "MM7"}}));  
+  
+
+  // ***************** Group 4 Test *****************
+  //
+  s = db.ZPopMax("GP4_ZPOPMAX_KEY", 1, &score_members);
+
+  //                                 ret: 
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(0, score_members.size());
+
+
+  // ***************** Group 5 Test *****************
+  // [-1,           MM1]
+  // [0,            MM2]
+  // [1,            MM3]
+  std::vector<blackwidow::ScoreMember> gp5_sm1 {{-1, "MM1"}, {0, "MM2"}, {1, "MM3"}};
+  s = db.ZAdd("GP5_ZPOPMAX_KEY", gp5_sm1, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(3, ret);
+  ASSERT_TRUE(size_match(&db, "GP5_ZPOPMAX_KEY", 3)); 
+  ASSERT_TRUE(score_members_match(&db, "GP5_ZPOPMAX_KEY", {{-1, "MM1"}, {0, "MM2"}, {1, "MM3"}}));
+  ASSERT_TRUE(make_expired(&db, "GP5_ZPOPMAX_KEY"));
+  ASSERT_TRUE(size_match(&db, "GP5_ZPOPMAX_KEY", 0));
+  ASSERT_TRUE(score_members_match(&db, "GP5_ZPOPMAX_KEY", {}));
+  s = db.ZPopMax("GP5_ZPOPMAX_KEY", 1, &score_members);
+
+  //                                 ret: 
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(0, score_members.size());
+} 
+
+//ZPopMin
+TEST_F(ZSetsTest, ZPopMinTest) { 
+  int32_t ret;
+  std::map<DataType, int64_t> type_ttl;
+  std::map<blackwidow::DataType, rocksdb::Status> type_status;
+
+  // ***************** Group 1 Test *****************
+  // [-0.54,        MM4]             
+  // [0,            MM2]
+  // [3.23,         MM1]
+  // [8.0004,       MM3]
+  std::vector<blackwidow::ScoreMember> gp1_sm {{3.23, "MM1"}, {0, "MM2"}, {8.0004, "MM3"}, {-0.54, "MM4"}};
+  Status s = db.ZAdd("GP1_ZPOPMIN_KEY", gp1_sm, &ret); 
+  ASSERT_TRUE(s.ok()); 
+  ASSERT_EQ(4, ret);
+  ASSERT_TRUE(size_match(&db, "GP1_ZPOPMIN_KEY", 4));
+  ASSERT_TRUE(score_members_match(&db, "GP1_ZPOPMIN_KEY", {{-0.54, "MM4"}, {0, "MM2"}, {3.23, "MM1"}, {8.0004, "MM3"}}));
+  std::vector<blackwidow::ScoreMember> score_members;
+  s = db.ZPopMin("GP1_ZPOPMIN_KEY", 1, &score_members);
+
+  // [0,            MM2]             ret: [-0.54,         MM4]
+  // [3.23,         MM1]
+  // [8.0004,       MM3]
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(1, score_members.size());
+  ASSERT_TRUE(score_members_match(score_members, {{-0.54, "MM4"}}));
+  ASSERT_TRUE(size_match(&db, "GP1_ZPOPMIN_KEY", 3));
+  ASSERT_TRUE(score_members_match(&db, "GP1_ZPOPMIN_KEY", {{0, "MM2"}, {3.23, "MM1"}, {8.0004, "MM3"}}));
+  s = db.ZPopMin("GP1_ZPOPMIN_KEY", 3, &score_members);
+
+  //                                 ret: [0,             MM2]
+  //                                      [3.23,          MM1]
+  //                                      [8.0004,        MM3]
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(3, score_members.size());
+  ASSERT_TRUE(score_members_match(score_members, {{0, "MM2"}, {3.23, "MM1"}, {8.0004, "MM3"}}));
+  ASSERT_TRUE(size_match(&db, "GP1_ZPOPMIN_KEY", 0));
+  ASSERT_TRUE(score_members_match(&db, "GP1_ZPOPMIN_KEY", {}));
+  s = db.ZPopMin("GP1_ZPOPMIN_KEY", 1, &score_members);
+
+  //                                 ret:                              
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(0, score_members.size());
+  ASSERT_TRUE(size_match(&db, "GP1_ZPOPMIN_KEY", 0));
+  ASSERT_TRUE(score_members_match(&db, "GP1_ZPOPMIN_KEY", {}));
+  
+  
+  // ***************** Group 2 Test *****************
+  // [0,            MM1]
+  // [0,            MM2]
+  // [0,            MM3]
+  std::vector<blackwidow::ScoreMember> gp2_sm {{0, "MM1"}, {0, "MM2"}, {0, "MM3"}};
+  s = db.ZAdd("GP2_ZPOPMIN_KEY", gp2_sm, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(3, ret);
+  ASSERT_TRUE(size_match(&db, "GP2_ZPOPMIN_KEY", 3));
+  ASSERT_TRUE(score_members_match(&db, "GP2_ZPOPMIN_KEY", {{0, "MM1"}, {0, "MM2"}, {0, "MM3"}}));
+  s = db.ZPopMin("GP2_ZPOPMIN_KEY", 1, &score_members);
+
+  // [0,            MM2]             ret: [0,        MM1]
+  // [0,            MM3]              
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(1, score_members.size());
+  ASSERT_TRUE(size_match(&db, "GP2_ZPOPMIN_KEY", 2)); 
+  ASSERT_TRUE(score_members_match(score_members, {{0, "MM1"}}));
+  ASSERT_TRUE(score_members_match(&db,"GP2_ZPOPMIN_KEY",{{0, "MM2"}, {0, "MM3"}}));
+  s = db.ZPopMin("GP2_ZPOPMIN_KEY", 3, &score_members);
+
+  //                                 ret: [0,             MM2]
+  //                                      [0,             MM3] 
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(score_members.size(), 2);
+  ASSERT_TRUE(size_match(&db, "GP2_ZPOPMIN_KEY", 0)); 
+  ASSERT_TRUE(score_members_match(score_members, {{0, "MM2"}, {0, "MM3"}}));
+  ASSERT_TRUE(score_members_match(&db,"GP2_ZPOPMIN_KEY", {}));
+
+
+  // ***************** Group 3 Test *****************
+  // [-1,           MM3]
+  // [-1,           MM4]
+  // [1 / 6.0,      MM5]
+  // [1 / 6.0,      MM6]
+  // [0.532445,     MM7]
+  // [0.532445,     MM8]
+  // [1,            MM1]
+  // [1,            MM2]
+  // [2e5 + 3.98,  MM10]
+  // [2e5 + 3.98,   MM9]
+  std::vector<blackwidow::ScoreMember> gp3_sm {
+      {1, "MM1"},
+      {1, "MM2"},
+      {-1, "MM3"},
+      {-1, "MM4"},
+      {1/6.0, "MM5"},
+      {1/6.0, "MM6"},
+      {0.532445, "MM7"},
+      {0.532445, "MM8"},
+      {2e5 + 3.98, "MM9"},
+      {2e5 + 3.98, "MM10"}
+    };
+  s = db.ZAdd("GP3_ZPOPMIN_KEY", gp3_sm, &ret); 
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(10, ret);
+  ASSERT_TRUE(size_match(&db, "GP3_ZPOPMIN_KEY", 10));
+  ASSERT_TRUE(score_members_match(&db, "GP3_ZPOPMIN_KEY", {
+       {-1, "MM3"},
+       {-1, "MM4"},
+       {1/6.0, "MM5"},
+       {1/6.0, "MM6"},
+       {0.532445, "MM7"},
+       {0.532445, "MM8"},
+       {1, "MM1"},
+       {1, "MM2"},
+       {2e5 + 3.98, "MM10"},
+       {2e5 + 3.98, "MM9"}
+  }));
+  s = db.ZPopMin("GP3_ZPOPMIN_KEY", 5, &score_members);
+
+  // [0.532445,     MM8]             ret: [-1,            MM3]
+  // [1,            MM1]                  [-1,            MM4]
+  // [1,            MM2]                  [1 / 6.0,       MM5]
+  // [2e5 + 3.98,  MM10]                  [1 / 6.0,       MM6]
+  // [2e5 + 3.98,   MM9]                  [0.532445,      MM7]
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(5, score_members.size());
+  ASSERT_TRUE(size_match(&db, "GP3_ZPOPMIN_KEY", 5));
+  ASSERT_TRUE(score_members_match(&db, "GP3_ZPOPMIN_KEY", {{0.532445, "MM8"}, {1, "MM1"}, {1, "MM2"}, {2e5 + 3.98, "MM10"}, {2e5 + 3.98, "MM9"}}));
+  ASSERT_TRUE(score_members_match(score_members,{{-1, "MM3"}, {-1, "MM4"}, {1/6.0, "MM5"}, {1/6.0, "MM6"}, {0.532445, "MM7"}}));  
+
+
+  // ***************** Group 4 Test *****************
+  //
+  s = db.ZPopMin("GP4_ZPOPMIN_KEY", 1, &score_members);
+
+  //                                 ret: 
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(0, score_members.size());  
+
+
+  // ***************** Group 5 Test *****************
+  // [-1,           MM1]
+  // [0,            MM2]
+  // [1,            MM3]
+  std::vector<blackwidow::ScoreMember> gp5_sm1 {{-1, "MM1"}, {0, "MM2"}, {1, "MM3"}};
+  s = db.ZAdd("GP5_ZPOPMIN_KEY", gp5_sm1, &ret);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ(3, ret);
+  ASSERT_TRUE(size_match(&db, "GP5_ZPOPMIN_KEY", 3)); 
+  ASSERT_TRUE(score_members_match(&db, "GP5_ZPOPMIN_KEY", {{-1, "MM1"}, {0, "MM2"}, {1, "MM3"}}));
+  ASSERT_TRUE(make_expired(&db, "GP5_ZPOPMIN_KEY"));
+  ASSERT_TRUE(size_match(&db, "GP5_ZPOPMIN_KEY", 0));
+  ASSERT_TRUE(score_members_match(&db, "GP5_ZPOPMIN_KEY", {}));
+  s = db.ZPopMin("GP5_ZPOPMIN_KEY", 1, &score_members);
+  
+  //                                 ret: 
+  ASSERT_TRUE(s.IsNotFound());
+  ASSERT_EQ(0, score_members.size());
+} 
+
 // ZAdd
 TEST_F(ZSetsTest, ZAddTest) {
   int32_t ret;
