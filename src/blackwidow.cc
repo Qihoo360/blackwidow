@@ -1671,29 +1671,43 @@ std::string BlackWidow::GetCurrentTaskType() {
   }
 }
 
-Status BlackWidow::GetUsage(const std::string& type, uint64_t *result) {
-  *result = 0;
-  if (type == USAGE_TYPE_ALL
-    || type == USAGE_TYPE_ROCKSDB
-    || type == USAGE_TYPE_ROCKSDB_MEMTABLE) {
-    *result += GetProperty("rocksdb.cur-size-all-mem-tables");
-  }
-  if (type == USAGE_TYPE_ALL
-    || type == USAGE_TYPE_ROCKSDB
-    || type == USAGE_TYPE_ROCKSDB_TABLE_READER) {
-    *result += GetProperty("rocksdb.estimate-table-readers-mem");
-  }
+Status BlackWidow::GetUsage(const std::string& property, uint64_t* const result) {
+  *result = GetProperty(ALL_DB, property);
   return Status::OK();
 }
 
-uint64_t BlackWidow::GetProperty(const std::string &property) {
-  uint64_t out = 0;
-  uint64_t result = 0;
+Status BlackWidow::GetUsage(const std::string& property,
+                            std::map<std::string, uint64_t>* const type_result) {
+  type_result->clear();
+  (*type_result)[STRINGS_DB] = GetProperty(STRINGS_DB, property);
+  (*type_result)[HASHES_DB]  = GetProperty(HASHES_DB,  property);
+  (*type_result)[LISTS_DB]   = GetProperty(LISTS_DB,   property);
+  (*type_result)[ZSETS_DB]   = GetProperty(ZSETS_DB,   property);
+  (*type_result)[SETS_DB]    = GetProperty(SETS_DB,    property);
+  return Status::OK();
+}
 
-  std::vector<Redis*> dbs = {strings_db_, hashes_db_,
-    lists_db_, zsets_db_, sets_db_};
-  for (const auto& db : dbs) {
-    db->GetProperty(property, &out);
+uint64_t BlackWidow::GetProperty(const std::string& db_type,
+                                 const std::string& property) {
+  uint64_t out = 0, result = 0;
+  if (db_type == ALL_DB || db_type == STRINGS_DB) {
+    strings_db_->GetProperty(property, &out);
+    result += out;
+  }
+  if (db_type == ALL_DB || db_type == HASHES_DB) {
+    hashes_db_->GetProperty(property, &out);
+    result += out;
+  }
+  if (db_type == ALL_DB || db_type == LISTS_DB) {
+    lists_db_->GetProperty(property, &out);
+    result += out;
+  }
+  if (db_type == ALL_DB || db_type == ZSETS_DB) {
+    zsets_db_->GetProperty(property, &out);
+    result += out;
+  }
+  if (db_type == ALL_DB || db_type == SETS_DB) {
+    sets_db_->GetProperty(property, &out);
     result += out;
   }
   return result;

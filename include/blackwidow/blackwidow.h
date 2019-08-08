@@ -27,11 +27,9 @@ namespace blackwidow {
 const double ZSET_SCORE_MAX = std::numeric_limits<double>::max();
 const double ZSET_SCORE_MIN = std::numeric_limits<double>::lowest();
 
-const std::string USAGE_TYPE_ALL = "all";
-const std::string USAGE_TYPE_ROCKSDB = "rocksdb";
-const std::string USAGE_TYPE_ROCKSDB_MEMTABLE = "rocksdb.memtable";
-//const std::string USAGE_TYPE_ROCKSDB_BLOCK_CACHE = "rocksdb.block_cache";
-const std::string USAGE_TYPE_ROCKSDB_TABLE_READER = "rocksdb.table_reader";
+const std::string PROPERTY_TYPE_ROCKSDB_MEMTABLE = "rocksdb.cur-size-all-mem-tables";
+const std::string PROPERTY_TYPE_ROCKSDB_TABLE_READER = "rocksdb.estimate-table-readers-mem";
+const std::string PROPERTY_TYPE_ROCKSDB_BACKGROUND_ERRORS  = "rocksdb.background-errors";
 
 const std::string ALL_DB = "all";
 const std::string STRINGS_DB = "strings";
@@ -1114,8 +1112,10 @@ class BlackWidow {
   Status SetSmallCompactionThreshold(uint32_t small_compaction_threshold);
 
   std::string GetCurrentTaskType();
-  Status GetUsage(const std::string& type, uint64_t *result);
-  uint64_t GetProperty(const std::string &property);
+  Status GetUsage(const std::string& property, uint64_t* const result);
+  Status GetUsage(const std::string& property,
+                  std::map<std::string, uint64_t>* const type_result);
+  uint64_t GetProperty(const std::string& db_type, const std::string& property);
 
   Status GetKeyNum(std::vector<KeyInfo>* key_infos);
   Status StopScanKeyNum();
