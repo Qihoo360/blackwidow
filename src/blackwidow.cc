@@ -28,7 +28,7 @@ BlackWidow::BlackWidow() :
   current_task_type_(kNone),
   bg_tasks_should_exit_(false),
   scan_keynum_exit_(false) {
-  cursors_store_ = new LRUCache<int64_t, std::string>();
+  cursors_store_ = new LRUCache<std::string, std::string>();
   cursors_store_->SetCapacity(5000);
 
   Status s = StartBGThread();
@@ -121,14 +121,15 @@ Status BlackWidow::Open(const BlackwidowOptions& bw_options,
   return Status::OK();
 }
 
-Status BlackWidow::GetStartKey(int64_t cursor, std::string* start_key) {
-  return cursors_store_->Lookup(cursor, start_key);
+Status BlackWidow::GetStartKey(const DataType& dtype, int64_t cursor, std::string* start_key) {
+  std::string index_key = DataTypeTag[dtype] + std::to_string(cursor);
+  return cursors_store_->Lookup(index_key, start_key);
 }
 
-int64_t BlackWidow::StoreAndGetCursor(int64_t cursor,
-                                      const std::string& next_key) {
-  cursors_store_->Insert(cursor, next_key);
-  return cursor;
+Status BlackWidow::StoreCursorStartKey(const DataType& dtype, int64_t cursor,
+                                       const std::string& next_key) {
+  std::string index_key = DataTypeTag[dtype] + std::to_string(cursor);
+  return cursors_store_->Insert(index_key, next_key);
 }
 
 // Strings Commands
@@ -806,7 +807,7 @@ int64_t BlackWidow::Del(const std::vector<std::string>& keys,
 }
 
 int64_t BlackWidow::DelByType(const std::vector<std::string>& keys,
-                              DataType type) {
+                              const DataType& type) {
   Status s;
   int64_t count = 0;
   bool is_corruption = false;
@@ -941,13 +942,14 @@ int64_t BlackWidow::Exists(const std::vector<std::string>& keys,
   }
 }
 
-int64_t BlackWidow::Scan(int64_t cursor, const std::string& pattern,
-                         int64_t count, std::vector<std::string>* keys) {
+int64_t BlackWidow::Scan(const DataType& dtype, int64_t cursor,
+                         const std::string& pattern, int64_t count,
+                         std::vector<std::string>* keys) {
+  keys->clear();
   bool is_finish;
+  int64_t leftover_visits = count;
   int64_t step_length = count, cursor_ret = 0;
-  std::string start_key;
-  std::string next_key;
-  std::string prefix;
+  std::string start_key, next_key, prefix;
 
   prefix = isTailWildcard(pattern) ?
     pattern.substr(0, pattern.size() - 1) : "";
@@ -955,9 +957,11 @@ int64_t BlackWidow::Scan(int64_t cursor, const std::string& pattern,
   if (cursor < 0) {
     return cursor_ret;
   } else {
-    Status s = GetStartKey(cursor, &start_key);
+    Status s = GetStartKey(dtype, cursor, &start_key);
     if (s.IsNotFound()) {
-      start_key = "k" + prefix;
+      // If want to scan all the databases, we start with the strings database
+      start_key = (dtype == DataType::kAll
+          ? DataTypeTag[kStrings] : DataTypeTag[dtype]) + prefix;
       cursor = 0;
     }
   }
@@ -966,66 +970,86 @@ int64_t BlackWidow::Scan(int64_t cursor, const std::string& pattern,
   start_key.erase(start_key.begin());
   switch (key_type) {
     case 'k':
-      is_finish = strings_db_->Scan(start_key, pattern, keys,
-                                    &count, &next_key);
-      if (count == 0 && is_finish) {
-        cursor_ret = StoreAndGetCursor(cursor + step_length,
-            std::string("h") + prefix);
+      is_finish = strings_db_->Scan(start_key, pattern,
+                                    keys, &leftover_visits, &next_key);
+      if (!leftover_visits && !is_finish) {
+        cursor_ret = cursor + step_length;
+        StoreCursorStartKey(dtype, cursor_ret, std::string("k") + next_key);
         break;
-      } else if (count == 0 && !is_finish) {
-        cursor_ret = StoreAndGetCursor(cursor + step_length,
-            std::string("k") + next_key);
-        break;
+      } else if (is_finish) {
+        if (DataType::kStrings == dtype) {
+          cursor_ret = 0;
+          break;
+        } else if (!leftover_visits) {
+          cursor_ret = cursor + step_length;
+          StoreCursorStartKey(dtype, cursor_ret, std::string("h") + prefix);
+          break;
+        }
       }
       start_key = prefix;
     case 'h':
-      is_finish = hashes_db_->Scan(start_key, pattern, keys,
-                                   &count, &next_key);
-      if (count == 0 && is_finish) {
-        cursor_ret = StoreAndGetCursor(cursor + step_length,
-            std::string("s") + prefix);
+      is_finish = hashes_db_->Scan(start_key, pattern,
+                                   keys, &leftover_visits, &next_key);
+      if (!leftover_visits && !is_finish) {
+        cursor_ret = cursor + step_length;
+        StoreCursorStartKey(dtype, cursor_ret, std::string("h") + next_key);
         break;
-      } else if (count == 0 && !is_finish) {
-        cursor_ret = StoreAndGetCursor(cursor + step_length,
-            std::string("h") + next_key);
-        break;
+      } else if (is_finish) {
+        if (DataType::kHashes == dtype) {
+          cursor_ret = 0;
+          break;
+        } else if (!leftover_visits) {
+          cursor_ret = cursor + step_length;
+          StoreCursorStartKey(dtype, cursor_ret, std::string("s") + prefix);
+          break;
+        }
       }
       start_key = prefix;
     case 's':
-      is_finish = sets_db_->Scan(start_key, pattern, keys,
-                                   &count, &next_key);
-      if (count == 0 && is_finish) {
-        cursor_ret = StoreAndGetCursor(cursor + step_length,
-            std::string("l") + prefix);
+      is_finish = sets_db_->Scan(start_key, pattern,
+                                 keys, &leftover_visits, &next_key);
+      if (!leftover_visits && !is_finish) {
+        cursor_ret = cursor + step_length;
+        StoreCursorStartKey(dtype, cursor_ret, std::string("s") + next_key);
         break;
-      } else if (count == 0 && !is_finish) {
-        cursor_ret = StoreAndGetCursor(cursor + step_length,
-            std::string("s") + next_key);
-        break;
+      } else if (is_finish) {
+        if (DataType::kSets == dtype) {
+          cursor_ret = 0;
+          break;
+        } else if (!leftover_visits) {
+          cursor_ret = cursor + step_length;
+          StoreCursorStartKey(dtype, cursor_ret, std::string("l") + prefix);
+          break;
+        }
       }
       start_key = prefix;
     case 'l':
-      is_finish = lists_db_->Scan(start_key, pattern, keys,
-                                    &count, &next_key);
-      if (count == 0 && is_finish) {
-        cursor_ret = StoreAndGetCursor(cursor + step_length,
-            std::string("z") + prefix);
+      is_finish = lists_db_->Scan(start_key, pattern,
+                                  keys, &leftover_visits, &next_key);
+      if (!leftover_visits && !is_finish) {
+        cursor_ret = cursor + step_length;
+        StoreCursorStartKey(dtype, cursor_ret, std::string("l") + next_key);
         break;
-      } else if (count == 0 && !is_finish) {
-        cursor_ret = StoreAndGetCursor(cursor + step_length,
-            std::string("l") + next_key);
-        break;
+      } else if (is_finish) {
+        if (DataType::kLists == dtype) {
+          cursor_ret = 0;
+          break;
+        } else if (!leftover_visits) {
+          cursor_ret = cursor + step_length;
+          StoreCursorStartKey(dtype, cursor_ret, std::string("z") + prefix);
+          break;
+        }
       }
       start_key = prefix;
     case 'z':
-      is_finish = zsets_db_->Scan(start_key, pattern, keys,
-                                  &count, &next_key);
-      if (is_finish) {
-        cursor_ret = 0;
+      is_finish = zsets_db_->Scan(start_key, pattern,
+                                  keys, &leftover_visits, &next_key);
+      if (!leftover_visits && !is_finish) {
+        cursor_ret = cursor + step_length;
+        StoreCursorStartKey(dtype, cursor_ret, std::string("z") + next_key);
         break;
-      } else if (count == 0 && !is_finish) {
-        cursor_ret = StoreAndGetCursor(cursor + step_length,
-            std::string("z") + next_key);
+      } else if (is_finish) {
+        cursor_ret = 0;
         break;
       }
   }

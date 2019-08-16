@@ -135,6 +135,10 @@ enum DataType {
   kSets
 };
 
+const char DataTypeTag[] = {
+  'a', 'k', 'h', 'l', 'z','s'
+};
+
 enum ColumnFamilyType {
   kMeta,
   kData,
@@ -183,9 +187,9 @@ class BlackWidow {
 
   Status Open(const BlackwidowOptions& bw_options, const std::string& db_path);
 
-  Status GetStartKey(int64_t cursor, std::string* start_key);
+  Status GetStartKey(const DataType& dtype, int64_t cursor, std::string* start_key);
 
-  int64_t StoreAndGetCursor(int64_t cursor, const std::string& next_key);
+  Status StoreCursorStartKey(const DataType& dtype, int64_t cursor, const std::string& next_key);
 
   // Strings Commands
 
@@ -999,15 +1003,16 @@ class BlackWidow {
 
   // Removes the specified keys of the specified type
   // return -1 operation exception errors happen in database
-  // return >=0 the number of keys that were removed
+  // return >= 0 the number of keys that were removed
   int64_t DelByType(const std::vector<std::string>& keys,
-                    DataType type);
+                    const DataType& type);
 
   // Iterate over a collection of elements
   // return an updated cursor that the user need to use as the cursor argument
   // in the next call
-  int64_t Scan(int64_t cursor, const std::string& pattern,
-               int64_t count, std::vector<std::string>* keys);
+  int64_t Scan(const DataType& dtype, int64_t cursor,
+               const std::string& pattern, int64_t count,
+               std::vector<std::string>* keys);
 
   // Iterate over a collection of elements by specified range
   // return a next_key that the user need to use as the key_start argument
@@ -1130,7 +1135,7 @@ class BlackWidow {
   RedisLists* lists_db_;
   std::atomic<bool> is_opened_;
 
-  LRUCache<int64_t, std::string>* cursors_store_;
+  LRUCache<std::string, std::string>* cursors_store_;
 
   // Blackwidow start the background thread for compaction task
   pthread_t bg_tasks_thread_id_;
