@@ -119,6 +119,54 @@ Status RedisStrings::ScanKeys(const std::string& pattern,
   return Status::OK();
 }
 
+Status RedisStrings::PKPatternMatchDel(const std::string& pattern,
+                                       int32_t* ret) {
+  rocksdb::ReadOptions iterator_options;
+  const rocksdb::Snapshot* snapshot;
+  ScopeSnapshot ss(db_, &snapshot);
+  iterator_options.snapshot = snapshot;
+  iterator_options.fill_cache = false;
+
+  std::string key;
+  std::string value;
+  int32_t total_delete = 0;
+  Status s;
+  rocksdb::WriteBatch batch;
+  rocksdb::Iterator* iter = db_->NewIterator(iterator_options);
+  iter->SeekToFirst();
+  while (iter->Valid()) {
+    key = iter->key().ToString();
+    value = iter->value().ToString();
+    ParsedStringsValue parsed_strings_value(&value);
+    if (!parsed_strings_value.IsStale()
+      && StringMatch(pattern.data(), pattern.size(), key.data(), key.size(), 0)) {
+      batch.Delete(key);
+    }
+    // In order to be more efficient, we use batch deletion here
+    if (static_cast<size_t>(batch.Count()) >= BATCH_DELETE_LIMIT) {
+      s = db_->Write(default_write_options_, &batch);
+      if (s.ok()) {
+        total_delete += batch.Count();
+        batch.Clear();
+      } else {
+        *ret = total_delete;
+        return s;
+      }
+    }
+    iter->Next();
+  }
+  if (batch.Count()) {
+    s = db_->Write(default_write_options_, &batch);
+    if (s.ok()) {
+      total_delete += batch.Count();
+      batch.Clear();
+    }
+  }
+
+  *ret = total_delete;
+  return s;
+}
+
 Status RedisStrings::Append(const Slice& key, const Slice& value,
     int32_t* ret) {
   std::string old_value;

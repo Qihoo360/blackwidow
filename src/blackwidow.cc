@@ -1130,6 +1130,33 @@ Status BlackWidow::PKRScanRange(const DataType& data_type,
   return s;
 }
 
+Status BlackWidow::PKPatternMatchDel(const DataType& data_type,
+                                     const std::string& pattern,
+                                     int32_t* ret) {
+  Status s;
+  switch (data_type) {
+    case DataType::kStrings:
+      s = strings_db_->PKPatternMatchDel(pattern, ret);
+      break;
+    case DataType::kHashes:
+      s = hashes_db_->PKPatternMatchDel(pattern, ret);
+      break;
+    case DataType::kLists:
+      s = lists_db_->PKPatternMatchDel(pattern, ret);
+      break;
+    case DataType::kZSets:
+      s = zsets_db_->PKPatternMatchDel(pattern, ret);
+      break;
+    case DataType::kSets:
+      s = sets_db_->PKPatternMatchDel(pattern, ret);
+      break;
+    default:
+      s = Status::Corruption("Unsupported data type");
+      break;
+  }
+  return s;
+}
+
 Status BlackWidow::Scanx(const DataType& data_type,
                          const std::string& start_key,
                          const std::string& pattern,
@@ -1370,23 +1397,23 @@ Status BlackWidow::Type(const std::string &key, std::string* type) {
   return Status::OK();
 }
 
-Status BlackWidow::Keys(const std::string& type,
+Status BlackWidow::Keys(const DataType& data_type,
                         const std::string& pattern,
                         std::vector<std::string>* keys) {
   Status s;
-  if (type == "string") {
+  if (data_type == DataType::kStrings) {
     s = strings_db_->ScanKeys(pattern, keys);
     if (!s.ok()) return s;
-  } else if (type == "hash") {
+  } else if (data_type == DataType::kHashes) {
     s = hashes_db_->ScanKeys(pattern, keys);
     if (!s.ok()) return s;
-  } else if (type == "zset") {
+  } else if (data_type == DataType::kZSets) {
     s = zsets_db_->ScanKeys(pattern, keys);
     if (!s.ok()) return s;
-  } else if (type == "set") {
+  } else if (data_type == DataType::kSets) {
     s = sets_db_->ScanKeys(pattern, keys);
     if (!s.ok()) return s;
-  } else if (type == "list") {
+  } else if (data_type == DataType::kLists) {
     s = lists_db_->ScanKeys(pattern, keys);
     if (!s.ok()) return s;
   } else {

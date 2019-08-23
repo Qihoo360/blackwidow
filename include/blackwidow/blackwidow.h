@@ -38,7 +38,8 @@ const std::string LISTS_DB = "lists";
 const std::string ZSETS_DB = "zsets";
 const std::string SETS_DB = "sets";
 
-const uint32_t COMPACT_THRESHOLD_COUNT = 2000;
+const size_t BATCH_DELETE_LIMIT = 100;
+const size_t COMPACT_THRESHOLD_COUNT = 2000;
 
 using Options = rocksdb::Options;
 using BlockBasedTableOptions = rocksdb::BlockBasedTableOptions;
@@ -1030,6 +1031,12 @@ class BlackWidow {
                       std::vector<std::string>* keys, std::vector<KeyValue>* kvs,
                       std::string* next_key);
 
+  // Traverses the database of the specified type, removing the Key that matches
+  // the pattern
+  Status PKPatternMatchDel(const DataType& data_type,
+                           const std::string& pattern,
+                           int32_t* ret);
+
   // Iterate over a collection of elements
   // return next_key that the user need to use as the start_key argument
   // in the next call
@@ -1076,7 +1083,7 @@ class BlackWidow {
   // Reutrns the data type of the key
   Status Type(const std::string& key, std::string* type);
 
-  Status Keys(const std::string& type,
+  Status Keys(const DataType& data_type,
               const std::string& pattern,
               std::vector<std::string>* keys);
 

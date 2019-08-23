@@ -36,6 +36,7 @@ class RedisSets : public Redis {
   Status ScanKeyNum(KeyInfo* key_info) override;
   Status ScanKeys(const std::string& pattern,
                   std::vector<std::string>* keys) override;
+  Status PKPatternMatchDel(const std::string& pattern, int32_t* ret) override;
 
   // Setes Commands
   Status SAdd(const Slice& key,

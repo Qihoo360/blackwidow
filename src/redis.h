@@ -42,6 +42,7 @@ class Redis {
   virtual Status ScanKeyNum(KeyInfo* key_info) = 0;
   virtual Status ScanKeys(const std::string& pattern,
                           std::vector<std::string>* keys) = 0;
+  virtual Status PKPatternMatchDel(const std::string& pattern, int32_t* ret) = 0;
 
   // Keys Commands
   virtual Status Expire(const Slice& key, int32_t ttl) = 0;

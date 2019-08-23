@@ -175,6 +175,55 @@ Status RedisSets::ScanKeys(const std::string& pattern,
   return Status::OK();
 }
 
+Status RedisSets::PKPatternMatchDel(const std::string& pattern,
+                                    int32_t* ret) {
+  rocksdb::ReadOptions iterator_options;
+  const rocksdb::Snapshot* snapshot;
+  ScopeSnapshot ss(db_, &snapshot);
+  iterator_options.snapshot = snapshot;
+  iterator_options.fill_cache = false;
+
+  std::string key;
+  std::string meta_value;
+  int32_t total_delete = 0;
+  Status s;
+  rocksdb::WriteBatch batch;
+  rocksdb::Iterator* iter = db_->NewIterator(iterator_options, handles_[0]);
+  iter->SeekToFirst();
+  while (iter->Valid()) {
+    key = iter->key().ToString();
+    meta_value = iter->value().ToString();
+    ParsedSetsMetaValue parsed_sets_meta_value(&meta_value);
+    if (!parsed_sets_meta_value.IsStale()
+      && parsed_sets_meta_value.count()
+      && StringMatch(pattern.data(), pattern.size(), key.data(), key.size(), 0)) {
+      parsed_sets_meta_value.InitialMetaValue();
+      batch.Put(handles_[0], key, meta_value);
+    }
+    if (static_cast<size_t>(batch.Count()) >= BATCH_DELETE_LIMIT) {
+      s = db_->Write(default_write_options_, &batch);
+      if (s.ok()) {
+        total_delete += batch.Count();
+        batch.Clear();
+      } else {
+        *ret = total_delete;
+        return s;
+      }
+    }
+    iter->Next();
+  }
+  if (batch.Count()) {
+    s = db_->Write(default_write_options_, &batch);
+    if (s.ok()) {
+      total_delete += batch.Count();
+      batch.Clear();
+    }
+  }
+
+  *ret = total_delete;
+  return s;
+}
+
 Status RedisSets::SAdd(const Slice& key,
                        const std::vector<std::string>& members, int32_t* ret) {
   std::unordered_set<std::string> unique;

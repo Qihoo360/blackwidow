@@ -29,6 +29,7 @@ class RedisHashes : public Redis {
   Status ScanKeyNum(KeyInfo* key_info) override;
   Status ScanKeys(const std::string& pattern,
                   std::vector<std::string>* keys) override;
+  Status PKPatternMatchDel(const std::string& pattern, int32_t* ret) override;
 
   // Hashes Commands
   Status HDel(const Slice& key, const std::vector<std::string>& fields,
