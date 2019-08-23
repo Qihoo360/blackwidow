@@ -1294,7 +1294,7 @@ TEST_F(SetsTest, SMoveTest) {
   // source = {a, b, c, d}
   // destination = {a, c, d}
   // SMove source destination d
-  // source = {a, b, c, d}
+  // source = {a, b, c}
   // destination = {a, c, d}
   std::vector<std::string> gp8_source {"a", "b", "c", "d"};
   std::vector<std::string> gp8_destination {"a", "c", "d"};
