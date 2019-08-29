@@ -88,6 +88,11 @@ class RedisHashes : public Redis {
   bool Scan(const std::string& start_key, const std::string& pattern,
             std::vector<std::string>* keys,
             int64_t* count, std::string* next_key) override;
+  bool PKExpireScan(const std::string& start_key,
+                    int32_t min_timestamp, int32_t max_timestamp,
+                    std::vector<std::string>* keys,
+                    int64_t* leftover_visits,
+                    std::string* next_key) override;
   Status Expireat(const Slice& key, int32_t timestamp) override;
   Status Persist(const Slice& key) override;
   Status TTL(const Slice& key, int64_t* timestamp) override;

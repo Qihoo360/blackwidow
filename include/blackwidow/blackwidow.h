@@ -1015,6 +1015,14 @@ class BlackWidow {
                const std::string& pattern, int64_t count,
                std::vector<std::string>* keys);
 
+  // Iterate over a collection of elements, obtaining the item which timeout
+  // conforms to the inequality (min_ttl < item_ttl < max_ttl)
+  // return an updated cursor that the user need to use as the cursor argument
+  // in the next call
+  int64_t PKExpireScan(const DataType& dtype, int64_t cursor,
+                       int32_t min_ttl, int32_t max_ttl,
+                       int64_t count, std::vector<std::string>* keys);
+
   // Iterate over a collection of elements by specified range
   // return a next_key that the user need to use as the key_start argument
   // in the next call
@@ -1036,6 +1044,7 @@ class BlackWidow {
   Status PKPatternMatchDel(const DataType& data_type,
                            const std::string& pattern,
                            int32_t* ret);
+
 
   // Iterate over a collection of elements
   // return next_key that the user need to use as the start_key argument

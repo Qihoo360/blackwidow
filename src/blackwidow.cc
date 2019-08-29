@@ -1056,6 +1056,122 @@ int64_t BlackWidow::Scan(const DataType& dtype, int64_t cursor,
   return cursor_ret;
 }
 
+int64_t BlackWidow::PKExpireScan(const DataType& dtype, int64_t cursor,
+                                 int32_t min_ttl, int32_t max_ttl,
+                                 int64_t count, std::vector<std::string>* keys) {
+  keys->clear();
+  bool is_finish;
+  int64_t leftover_visits = count;
+  int64_t step_length = count, cursor_ret = 0;
+  std::string start_key, next_key;
+
+  int64_t curtime;
+  rocksdb::Env::Default()->GetCurrentTime(&curtime);
+
+  if (cursor < 0) {
+    return cursor_ret;
+  } else {
+    Status s = GetStartKey(dtype, cursor, &start_key);
+    if (s.IsNotFound()) {
+      // If want to scan all the databases, we start with the strings database
+      start_key = std::string(1, dtype == DataType::kAll
+              ? DataTypeTag[kStrings] : DataTypeTag[dtype]);
+      cursor = 0;
+    }
+  }
+
+  char key_type = start_key.at(0);
+  start_key.erase(start_key.begin());
+  switch (key_type) {
+    case 'k':
+      is_finish = strings_db_->PKExpireScan(start_key, curtime + min_ttl,
+              curtime + max_ttl, keys, &leftover_visits, &next_key);
+      if (!leftover_visits && !is_finish) {
+        cursor_ret = cursor + step_length;
+        StoreCursorStartKey(dtype, cursor_ret, std::string("k") + next_key);
+        break;
+      } else if (is_finish) {
+        if (DataType::kStrings == dtype) {
+          cursor_ret = 0;
+          break;
+        } else if (!leftover_visits) {
+          cursor_ret = cursor + step_length;
+          StoreCursorStartKey(dtype, cursor_ret, std::string("h"));
+          break;
+        }
+      }
+      start_key = "";
+    case 'h':
+      is_finish = hashes_db_->PKExpireScan(start_key, curtime + min_ttl,
+              curtime + max_ttl, keys, &leftover_visits, &next_key);
+      if (!leftover_visits && !is_finish) {
+        cursor_ret = cursor + step_length;
+        StoreCursorStartKey(dtype, cursor_ret, std::string("h") + next_key);
+        break;
+      } else if (is_finish) {
+        if (DataType::kHashes == dtype) {
+          cursor_ret = 0;
+          break;
+        } else if (!leftover_visits) {
+          cursor_ret = cursor + step_length;
+          StoreCursorStartKey(dtype, cursor_ret, std::string("s"));
+          break;
+        }
+      }
+      start_key = "";
+    case 's':
+      is_finish = sets_db_->PKExpireScan(start_key, curtime + min_ttl,
+              curtime + max_ttl, keys, &leftover_visits, &next_key);
+      if (!leftover_visits && !is_finish) {
+        cursor_ret = cursor + step_length;
+        StoreCursorStartKey(dtype, cursor_ret, std::string("s") + next_key);
+        break;
+      } else if (is_finish) {
+        if (DataType::kSets == dtype) {
+          cursor_ret = 0;
+          break;
+        } else if (!leftover_visits) {
+          cursor_ret = cursor + step_length;
+          StoreCursorStartKey(dtype, cursor_ret, std::string("l"));
+          break;
+        }
+      }
+      start_key = "";
+    case 'l':
+      is_finish = lists_db_->PKExpireScan(start_key, curtime + min_ttl,
+              curtime + max_ttl, keys, &leftover_visits, &next_key);
+      if (!leftover_visits && !is_finish) {
+        cursor_ret = cursor + step_length;
+        StoreCursorStartKey(dtype, cursor_ret, std::string("l") + next_key);
+        break;
+      } else if (is_finish) {
+        if (DataType::kLists == dtype) {
+          cursor_ret = 0;
+          break;
+        } else if (!leftover_visits) {
+          cursor_ret = cursor + step_length;
+          StoreCursorStartKey(dtype, cursor_ret, std::string("z"));
+          break;
+        }
+      }
+      start_key = "";
+    case 'z':
+      is_finish = zsets_db_->PKExpireScan(start_key, curtime + min_ttl,
+              curtime + max_ttl, keys, &leftover_visits, &next_key);
+      if (!leftover_visits && !is_finish) {
+        cursor_ret = cursor + step_length;
+        StoreCursorStartKey(dtype, cursor_ret, std::string("z") + next_key);
+        break;
+      } else if (is_finish) {
+        cursor_ret = 0;
+        break;
+      }
+  }
+  return cursor_ret;
+}
+
+
+
 Status BlackWidow::PKScanRange(const DataType& data_type,
                                const Slice& key_start, const Slice& key_end,
                                const Slice& pattern, int32_t limit,

@@ -1299,6 +1299,46 @@ bool RedisStrings::Scan(const std::string& start_key,
   return is_finish;
 }
 
+bool RedisStrings::PKExpireScan(const std::string& start_key,
+                                int32_t min_timestamp, int32_t max_timestamp,
+                                std::vector<std::string>* keys,
+                                int64_t* leftover_visits,
+                                std::string* next_key) {
+  bool is_finish = true;
+  rocksdb::ReadOptions iterator_options;
+  const rocksdb::Snapshot* snapshot;
+  ScopeSnapshot ss(db_, &snapshot);
+  iterator_options.snapshot = snapshot;
+  iterator_options.fill_cache = false;
+
+  rocksdb::Iterator* it = db_->NewIterator(iterator_options);
+
+  it->Seek(start_key);
+  while (it->Valid() && (*leftover_visits) > 0) {
+    ParsedStringsValue parsed_strings_value(it->value());
+    if (parsed_strings_value.IsStale()) {
+      it->Next();
+      continue;
+    } else {
+      if (min_timestamp < parsed_strings_value.timestamp()
+        && parsed_strings_value.timestamp() < max_timestamp) {
+        keys->push_back(it->key().ToString());
+      }
+      (*leftover_visits)--;
+      it->Next();
+    }
+  }
+
+  if (it->Valid()) {
+    is_finish = false;
+    *next_key = it->key().ToString();
+  } else {
+    *next_key = "";
+  }
+  delete it;
+  return is_finish;
+}
+
 Status RedisStrings::Expireat(const Slice& key, int32_t timestamp) {
   std::string value;
   ScopeRecordLock l(lock_mgr_, key);
