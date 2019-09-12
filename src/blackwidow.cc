@@ -1084,8 +1084,16 @@ int64_t BlackWidow::PKExpireScan(const DataType& dtype, int64_t cursor,
   start_key.erase(start_key.begin());
   switch (key_type) {
     case 'k':
-      is_finish = strings_db_->PKExpireScan(start_key, curtime + min_ttl,
-              curtime + max_ttl, keys, &leftover_visits, &next_key);
+      if (min_ttl == INT_MIN) {
+        is_finish = strings_db_->PKExpireScan(start_key, curtime - 1, curtime + max_ttl, 
+                                             keys, &leftover_visits, &next_key); 
+      } else if (max_ttl == INT_MAX) {
+        is_finish = strings_db_->PKExpireScan(start_key, curtime + min_ttl, max_ttl,
+                                             keys, &leftover_visits, &next_key);
+      } else {
+        is_finish = strings_db_->PKExpireScan(start_key, curtime + min_ttl, curtime + max_ttl, 
+                                             keys, &leftover_visits, &next_key);
+      }
       if (!leftover_visits && !is_finish) {
         cursor_ret = cursor + step_length;
         StoreCursorStartKey(dtype, cursor_ret, std::string("k") + next_key);
@@ -1102,8 +1110,16 @@ int64_t BlackWidow::PKExpireScan(const DataType& dtype, int64_t cursor,
       }
       start_key = "";
     case 'h':
-      is_finish = hashes_db_->PKExpireScan(start_key, curtime + min_ttl,
-              curtime + max_ttl, keys, &leftover_visits, &next_key);
+      if (min_ttl == INT_MIN) {
+        is_finish = hashes_db_->PKExpireScan(start_key, curtime - 1, curtime + max_ttl, 
+                                             keys, &leftover_visits, &next_key); 
+      } else if (max_ttl == INT_MAX) {
+        is_finish = hashes_db_->PKExpireScan(start_key, curtime + min_ttl, max_ttl, 
+                                             keys, &leftover_visits, &next_key);
+      } else {
+        is_finish = hashes_db_->PKExpireScan(start_key, curtime + min_ttl, curtime + max_ttl, 
+                                             keys, &leftover_visits, &next_key);
+      }
       if (!leftover_visits && !is_finish) {
         cursor_ret = cursor + step_length;
         StoreCursorStartKey(dtype, cursor_ret, std::string("h") + next_key);
@@ -1120,8 +1136,16 @@ int64_t BlackWidow::PKExpireScan(const DataType& dtype, int64_t cursor,
       }
       start_key = "";
     case 's':
-      is_finish = sets_db_->PKExpireScan(start_key, curtime + min_ttl,
-              curtime + max_ttl, keys, &leftover_visits, &next_key);
+      if (min_ttl == INT_MIN) {
+        is_finish = sets_db_->PKExpireScan(start_key, curtime - 1, curtime + max_ttl, 
+                                             keys, &leftover_visits, &next_key); 
+      } else if (max_ttl == INT_MAX) {
+        is_finish = sets_db_->PKExpireScan(start_key, curtime + min_ttl, max_ttl, 
+                                             keys, &leftover_visits, &next_key);
+      } else {
+        is_finish = sets_db_->PKExpireScan(start_key, curtime + min_ttl, curtime + max_ttl, 
+                                             keys, &leftover_visits, &next_key);
+      }
       if (!leftover_visits && !is_finish) {
         cursor_ret = cursor + step_length;
         StoreCursorStartKey(dtype, cursor_ret, std::string("s") + next_key);
@@ -1138,8 +1162,16 @@ int64_t BlackWidow::PKExpireScan(const DataType& dtype, int64_t cursor,
       }
       start_key = "";
     case 'l':
-      is_finish = lists_db_->PKExpireScan(start_key, curtime + min_ttl,
-              curtime + max_ttl, keys, &leftover_visits, &next_key);
+      if (min_ttl == INT_MIN) {
+        is_finish = lists_db_->PKExpireScan(start_key, curtime - 1, curtime + max_ttl, 
+                                             keys, &leftover_visits, &next_key); 
+      } else if (max_ttl == INT_MAX) {
+        is_finish = lists_db_->PKExpireScan(start_key, curtime + min_ttl, max_ttl, 
+                                             keys, &leftover_visits, &next_key);
+      } else {
+        is_finish = lists_db_->PKExpireScan(start_key, curtime + min_ttl, curtime + max_ttl, 
+                                             keys, &leftover_visits, &next_key);
+      }
       if (!leftover_visits && !is_finish) {
         cursor_ret = cursor + step_length;
         StoreCursorStartKey(dtype, cursor_ret, std::string("l") + next_key);
@@ -1156,8 +1188,16 @@ int64_t BlackWidow::PKExpireScan(const DataType& dtype, int64_t cursor,
       }
       start_key = "";
     case 'z':
-      is_finish = zsets_db_->PKExpireScan(start_key, curtime + min_ttl,
-              curtime + max_ttl, keys, &leftover_visits, &next_key);
+      if (min_ttl == INT_MIN) {
+        is_finish = zsets_db_->PKExpireScan(start_key, curtime - 1, curtime + max_ttl, 
+                                             keys, &leftover_visits, &next_key); 
+      } else if (max_ttl == INT_MAX) {
+        is_finish = zsets_db_->PKExpireScan(start_key, curtime + min_ttl, max_ttl, 
+                                             keys, &leftover_visits, &next_key);
+      } else {
+        is_finish = zsets_db_->PKExpireScan(start_key, curtime + min_ttl, curtime + max_ttl, 
+                                             keys, &leftover_visits, &next_key);
+      }
       if (!leftover_visits && !is_finish) {
         cursor_ret = cursor + step_length;
         StoreCursorStartKey(dtype, cursor_ret, std::string("z") + next_key);
@@ -1170,6 +1210,151 @@ int64_t BlackWidow::PKExpireScan(const DataType& dtype, int64_t cursor,
   return cursor_ret;
 }
 
+Status BlackWidow::PKExpireReset(const DataType& data_type, int32_t min_ttl,
+   			         int32_t max_ttl, int32_t reset_ttl) {
+  int64_t curtime;
+  rocksdb::Env::Default()->GetCurrentTime(&curtime);
+  int min_timestamp, max_timestamp, reset_timestamp;
+  if (min_ttl == INT_MIN) {
+    min_timestamp = curtime;
+  } else {
+    min_timestamp = curtime + min_ttl;
+  }
+  if (max_ttl == INT_MAX) {
+    max_timestamp = max_ttl;
+  } else {
+    max_timestamp = curtime + max_ttl;
+  }
+  reset_timestamp = curtime + reset_ttl; 
+  Status s; 
+  switch (data_type) {
+    case kAll:
+      s = strings_db_->PKExpireReset(min_timestamp, max_timestamp, reset_timestamp);
+      if (!s.ok()) return s;
+      s = hashes_db_->PKExpireReset(min_timestamp, max_timestamp, reset_timestamp); 
+      if (!s.ok()) return s;
+      s = lists_db_->PKExpireReset(min_timestamp, max_timestamp, reset_timestamp);
+      if (!s.ok()) return s;
+      s = sets_db_->PKExpireReset(min_timestamp, max_timestamp, reset_timestamp);
+      if (!s.ok()) return s;
+      s = zsets_db_->PKExpireReset(min_timestamp, max_timestamp, reset_timestamp);
+      if (!s.ok()) return s;
+      break;
+
+    case kStrings:
+      s = strings_db_->PKExpireReset(min_timestamp, max_timestamp, reset_timestamp);
+      break;
+
+    case kHashes:
+      s = hashes_db_->PKExpireReset(min_timestamp, max_timestamp, reset_timestamp);
+      break;
+
+    case kLists:
+      s = lists_db_->PKExpireReset(min_timestamp, max_timestamp, reset_timestamp);
+      break;
+
+    case kSets:
+      s = sets_db_->PKExpireReset(min_timestamp, max_timestamp, reset_timestamp); 
+      break;
+
+    case kZSets:
+      s = zsets_db_->PKExpireReset(min_timestamp, max_timestamp, reset_timestamp);
+      break;
+  }
+  return s;
+}	
+
+int64_t BlackWidow::PKFieldScan(const DataType& dtype, int64_t cursor,
+				int32_t min_num, int32_t max_num,
+				int64_t count, std::vector<std::string>* keys) {
+  keys->clear(); 
+  bool is_finish;
+  int64_t leftover_visits = count;
+  int64_t step_length = count, cursor_ret = 0;
+  std::string start_key, next_key;
+  if (cursor < 0) {
+    return cursor_ret;
+  } else {
+    Status s = GetStartKey(dtype, cursor, &start_key);
+    if (s.IsNotFound()) {
+      //If want to scan all the databases, we start with the Hash database
+      start_key = std::string(1, dtype == DataType::kAll
+              ? DataTypeTag[kHashes] : DataTypeTag[dtype]);
+      cursor = 0;
+    }
+  }
+   
+  char key_type = start_key.at(0);
+  start_key.erase(start_key.begin());
+  switch (key_type) {
+    case 'h':
+      is_finish = hashes_db_->PKFieldScan(start_key, min_num, max_num,
+			     	&leftover_visits, &next_key, keys);
+      if (!leftover_visits && !is_finish) {
+        cursor_ret = cursor + step_length;
+        StoreCursorStartKey(dtype, cursor_ret, std::string("h") + next_key);
+        break;
+      } else if (is_finish) {
+        if (DataType::kHashes == dtype) {
+          cursor_ret = 0;
+          break;
+        } else if (!leftover_visits) {
+          cursor_ret = cursor + step_length;
+          StoreCursorStartKey(dtype, cursor_ret, std::string("s"));
+          break;
+        }
+      }
+      start_key = "";
+    case 's':
+      is_finish = sets_db_->PKFieldScan(start_key, min_num, max_num,
+				 &leftover_visits, &next_key, keys);
+      if (!leftover_visits && !is_finish) {
+        cursor_ret = cursor + step_length;
+        StoreCursorStartKey(dtype, cursor_ret, std::string("s") + next_key);
+        break;
+      } else if (is_finish) {
+        if (DataType::kSets == dtype) {
+          cursor_ret = 0;
+          break;
+        } else if (!leftover_visits) {
+          cursor_ret = cursor + step_length;
+          StoreCursorStartKey(dtype, cursor_ret, std::string("l"));
+          break;
+        }
+      }
+      start_key = "";
+    case 'l':
+      is_finish = lists_db_->PKFieldScan(start_key, min_num, max_num,
+                                 &leftover_visits, &next_key, keys);
+      if (!leftover_visits && !is_finish) {
+        cursor_ret = cursor + step_length;
+        StoreCursorStartKey(dtype, cursor_ret, std::string("l") + next_key);
+        break;
+      } else if (is_finish) {
+        if (DataType::kLists == dtype) {
+          cursor_ret = 0;
+          break;
+        } else if (!leftover_visits) {
+          cursor_ret = cursor + step_length;
+          StoreCursorStartKey(dtype, cursor_ret, std::string("z"));
+          break;
+        }
+      }
+      start_key = "";
+    case 'z':
+      is_finish = zsets_db_->PKFieldScan(start_key, min_num, max_num,
+                                  &leftover_visits, &next_key, keys);
+      if (!leftover_visits && !is_finish) {
+        cursor_ret = cursor + step_length;
+        StoreCursorStartKey(dtype, cursor_ret, std::string("z") + next_key);
+        break;
+      } else if (is_finish) { 
+        cursor_ret = 0;
+        break;
+      }
+  }
+  return cursor_ret;
+}
 
 
 Status BlackWidow::PKScanRange(const DataType& data_type,

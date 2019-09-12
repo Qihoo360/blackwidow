@@ -11,6 +11,7 @@
 #include "src/lists_filter.h"
 #include "src/scope_record_lock.h"
 #include "src/scope_snapshot.h"
+#include "slash/include/slash_string.h"
 
 namespace blackwidow {
 
@@ -1254,6 +1255,10 @@ bool RedisLists::PKExpireScan(const std::string& start_key,
   iterator_options.snapshot = snapshot;
   iterator_options.fill_cache = false;
 
+  int64_t curtime;
+  rocksdb::Env::Default()->GetCurrentTime(&curtime);
+  char temp_ttl[20];
+
   rocksdb::Iterator* it = db_->NewIterator(iterator_options, handles_[0]);
   it->Seek(start_key);
   while (it->Valid() && (*leftover_visits) > 0) {
@@ -1266,6 +1271,12 @@ bool RedisLists::PKExpireScan(const std::string& start_key,
       if (min_timestamp < parsed_lists_meta_value.timestamp()
         && parsed_lists_meta_value.timestamp() < max_timestamp) {
         keys->push_back(it->key().ToString());
+        int len = slash::ll2string(temp_ttl, sizeof temp_ttl, parsed_lists_meta_value.timestamp() - curtime);
+        if (!len) {
+          keys->push_back("0");
+        } else {
+          keys->push_back(std::string(temp_ttl, len));
+        }
       }
       (*leftover_visits)--;
       it->Next();
@@ -1277,6 +1288,79 @@ bool RedisLists::PKExpireScan(const std::string& start_key,
     *next_key = it->key().ToString();
   } else {
     *next_key = "";
+  }
+  delete it;
+  return is_finish;
+}
+
+Status RedisLists::PKExpireReset(const int32_t min_timestamp,
+                                 const int32_t max_timestamp,
+                                 const int32_t reset_timestamp) {
+  rocksdb::ReadOptions iterator_options;
+  const rocksdb::Snapshot* snapshot;
+  ScopeSnapshot ss(db_, &snapshot);
+  iterator_options.snapshot = snapshot;
+  iterator_options.fill_cache = false;
+
+  rocksdb::WriteBatch batch;
+  rocksdb::Iterator* it = db_->NewIterator(iterator_options, handles_[0]);
+  it->SeekToFirst();
+  std::string meta_value;
+  while (it->Valid()) {
+    meta_value = it->value().ToString();
+    ParsedListsMetaValue parsed_lists_meta_value(&meta_value);
+    if (parsed_lists_meta_value.IsStale()
+      || parsed_lists_meta_value.count() == 0) {
+      it->Next();
+      continue;
+    } else {
+      if (min_timestamp < parsed_lists_meta_value.timestamp()
+        && parsed_lists_meta_value.timestamp() < max_timestamp) {
+        parsed_lists_meta_value.set_timestamp(reset_timestamp);
+        batch.Put(handles_[0], it->key(), meta_value);
+      }
+      it->Next();
+    }
+  }
+  return db_->Write(default_write_options_, &batch);
+}
+
+bool RedisLists::PKFieldScan(const std::string& start_key,
+                             int32_t min_num, int32_t max_num,
+                             int64_t* leftover_visits, std::string* next_key,
+                             std::vector<std::string>* keys) { 
+  bool is_finish = true;
+  rocksdb::ReadOptions iterator_options;
+  const rocksdb::Snapshot* snapshot;
+  ScopeSnapshot ss(db_, &snapshot);
+  iterator_options.snapshot = snapshot;
+  iterator_options.fill_cache = false;
+  
+  rocksdb::Iterator* it = db_->NewIterator(iterator_options, handles_[0]);
+  it->Seek(start_key);
+  char temp_count[20];
+  
+  while (it->Valid() && (*leftover_visits) > 0) {
+    ParsedListsMetaValue parsed_lists_meta_value(it->value());
+    if (!parsed_lists_meta_value.IsStale()
+        && parsed_lists_meta_value.count() > min_num
+        && parsed_lists_meta_value.count() < max_num) { 
+      keys->push_back(it->key().ToString());
+      int len = slash::ll2string(temp_count, sizeof temp_count, parsed_lists_meta_value.count());
+      if (!len) { 
+        keys->push_back("0");
+      } else { 
+        keys->push_back(std::string(temp_count, len));
+      }
+      (*leftover_visits)--;
+    }
+    it->Next();
+  }
+  if (it->Valid()) {
+    is_finish = false;
+    *next_key = it->key().ToString();
+  } else {
+    *next_key = ""; 
   }
   delete it;
   return is_finish;

@@ -57,6 +57,9 @@ class Redis {
                             std::vector<std::string>* keys,
                             int64_t* leftover_visits,
                             std::string* next_key) = 0;
+  virtual Status PKExpireReset(const int32_t min_timestamp,
+                               const int32_t max_timestamp,
+			       const int32_t reset_timestamp) = 0;
   virtual Status Expireat(const Slice& key,
                           int32_t timestamp) = 0;
   virtual Status Persist(const Slice& key) = 0;
