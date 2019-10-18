@@ -20,7 +20,7 @@ class HyperLogLog {
   double FirstEstimate() const;
   uint32_t CountZero() const;
   double Alpha() const;
-  uint8_t Nclz(uint32_t x, int b);
+  uint8_t Nctz(uint32_t x, int b);
 
   std::string Add(const char* str, uint32_t len);
   std::string Merge(const HyperLogLog& hll);
