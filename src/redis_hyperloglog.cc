@@ -37,7 +37,7 @@ std::string HyperLogLog::Add(const char* value, uint32_t len) {
   MurmurHash3_x86_32(value, len, HLL_HASH_SEED,
                      static_cast<void *>(&hash_value));
   int32_t index = hash_value & ((1 << b_) - 1);
-  uint8_t rank = Nclz((hash_value << b_), 32 - b_);
+  uint8_t rank = Nctz((hash_value >> b_), 32 - b_);
   if (rank > register_[index])
     register_[index] = rank;
   std::string result(m_, 0);
@@ -110,9 +110,9 @@ std::string HyperLogLog::Merge(const HyperLogLog & hll) {
   return result;
 }
 
-// ::__builtin_clz(x): 返回左起第一个‘1’之前0的个数
-uint8_t HyperLogLog::Nclz(uint32_t x, int b) {
-  return (uint8_t)std::min(b, ::__builtin_clz(x)) + 1;
+// ::__builtin_ctz(x): 返回右起第一个‘1’之后的0的个数
+uint8_t HyperLogLog::Nctz(uint32_t x, int b) {
+  return (uint8_t)std::min(b, ::__builtin_ctz(x)) + 1;
 }
 
 }  // namespace blackwidow
