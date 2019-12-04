@@ -656,7 +656,7 @@ class BlackWidow {
   // Zsets Commands
 
   //Pop the maximum count score_members which have greater score in the sorted set.
-  //And return the result in the score_members,If the total number of the sorted
+  //And return the result in the score_members,If the total number of the sorted 
   //set less than count, it will pop out the total number of sorted set. If two
   //ScoreMember's score were the same, the lexicographic predominant elements will
   //be pop out.
@@ -665,13 +665,13 @@ class BlackWidow {
                  std::vector<ScoreMember>* score_members);
 
   //Pop the minimum count score_members which have less score in the sorted set.
-  //And return the result in the score_members,If the total number of the sorted
+  //And return the result in the score_members,If the total number of the sorted 
   //set less than count, it will pop out the total number of sorted set. If two
-  //ScoreMember's score were the same, the lexicographic predominant elements will
+  //ScoreMember's score were the same, the lexicographic predominant elements will 
   //not be pop out.
   Status ZPopMin(const Slice& key,
  		 const int64_t count,
-                 std::vector<ScoreMember>* score_members);
+                 std::vector<ScoreMember>* score_members);  
 
   // Adds all the specified members with the specified scores to the sorted set
   // stored at key. It is possible to specify multiple score / member pairs. If

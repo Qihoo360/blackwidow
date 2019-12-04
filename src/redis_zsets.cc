@@ -243,7 +243,7 @@ Status RedisZSets::PKPatternMatchDel(const std::string& pattern,
   return s;
 }
 
-Status RedisZSets::ZPopMax(const Slice& key,
+Status RedisZSets::ZPopMax(const Slice& key, 
                            const int64_t count,
                            std::vector<ScoreMember>* score_members) {
   uint32_t statistic = 0;
@@ -271,7 +271,7 @@ Status RedisZSets::ZPopMax(const Slice& key,
            iter->Prev()) {
         ParsedZSetsScoreKey parsed_zsets_score_key(iter->key());
         score_members->emplace_back(
-                       ScoreMember{parsed_zsets_score_key.score(),
+                       ScoreMember{parsed_zsets_score_key.score(), 
                                    parsed_zsets_score_key.member().ToString()});
         ZSetsMemberKey zsets_member_key(key, version, parsed_zsets_score_key.member());
         ++statistic;
@@ -285,13 +285,13 @@ Status RedisZSets::ZPopMax(const Slice& key,
       s = db_->Write(default_write_options_, &batch);
       UpdateSpecificKeyStatistics(key.ToString(), statistic);
       return s;
-    }
+    }    
   } else {
     return s;
-  }
+  } 
 }
 
-Status RedisZSets::ZPopMin(const Slice& key,
+Status RedisZSets::ZPopMin(const Slice& key, 
                            const int64_t count,
                            std::vector<ScoreMember>* score_members) {
   uint32_t statistic = 0;
@@ -333,10 +333,10 @@ Status RedisZSets::ZPopMin(const Slice& key,
       s = db_->Write(default_write_options_, &batch);
       UpdateSpecificKeyStatistics(key.ToString(), statistic);
       return s;
-    }
+    }    
   } else {
     return s;
-  }
+  } 
 }
 
 Status RedisZSets::ZAdd(const Slice& key,
