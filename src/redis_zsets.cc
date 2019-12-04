@@ -281,7 +281,7 @@ Status RedisZSets::ZPopMax(const Slice& key,
       }
       delete iter;
       parsed_zsets_meta_value.ModifyCount(-del_cnt);
-      batch.Put(handles_[0], key, meta_value);
+      batch.Put(handles_[0], key, meta_value); 
       s = db_->Write(default_write_options_, &batch);
       UpdateSpecificKeyStatistics(key.ToString(), statistic);
       return s;
@@ -329,7 +329,7 @@ Status RedisZSets::ZPopMin(const Slice& key,
       }
       delete iter;
       parsed_zsets_meta_value.ModifyCount(-del_cnt);
-      batch.Put(handles_[0], key, meta_value);
+      batch.Put(handles_[0], key, meta_value); 
       s = db_->Write(default_write_options_, &batch);
       UpdateSpecificKeyStatistics(key.ToString(), statistic);
       return s;
