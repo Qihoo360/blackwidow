@@ -1134,7 +1134,7 @@ Status RedisZSets::ZRevrangebyscore(const Slice& key,
       return Status::NotFound("Stale");
     } else if (parsed_zsets_meta_value.count() == 0) {
       return Status::NotFound();
-    } else else if (offset >= 0 && count != 0 ) {
+    } else if (offset >= 0 && count != 0 ) {
       int32_t version = parsed_zsets_meta_value.version();
       int32_t left = parsed_zsets_meta_value.count();
       int64_t skipped = 0;
