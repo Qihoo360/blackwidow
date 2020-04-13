@@ -1314,6 +1314,73 @@ TEST_F(ZSetsTest, ZRangebyscoreTest) {
                                                   { 4321.000000000001, "MM13"}, { 54321.00000000001, "MM14"}, { 654321.0000000001, "MM15"},
                                                   { 7654321.000000001, "MM16"}, { 87654321.00000001, "MM17"}, { 987654321.0000001, "MM18"}}));
 
+  // count = max offset = 0
+  s = db.ZRangebyscore("GP1_ZRANGEBYSCORE_KEY", std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max(), true, true, std::numeric_limits<int64_t>::max(), 0, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {{-987654321.0000001, "MM1" }, {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
+                                                  {-654321.0000000001, "MM4" }, {-54321.00000000001, "MM5" }, {-4321.000000000001, "MM6" },
+                                                  {-1000.000000000001, "MM7" }, {-1000.000000000001, "MM8" }, {-1000.000000000001, "MM9" },
+                                                  {-100.0000000000001, "MM10"}, { 0,                 "MM11"}, { 100.0000000000001, "MM12"},
+                                                  { 4321.000000000001, "MM13"}, { 54321.00000000001, "MM14"}, { 654321.0000000001, "MM15"},
+                                                  { 7654321.000000001, "MM16"}, { 87654321.00000001, "MM17"}, { 987654321.0000001, "MM18"}}));
+
+
+  // count = 18 offset = 0
+  s = db.ZRangebyscore("GP1_ZRANGEBYSCORE_KEY", std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max(), true, true, 18, 0, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {{-987654321.0000001, "MM1" }, {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
+                                                  {-654321.0000000001, "MM4" }, {-54321.00000000001, "MM5" }, {-4321.000000000001, "MM6" },
+                                                  {-1000.000000000001, "MM7" }, {-1000.000000000001, "MM8" }, {-1000.000000000001, "MM9" },
+                                                  {-100.0000000000001, "MM10"}, { 0,                 "MM11"}, { 100.0000000000001, "MM12"},
+                                                  { 4321.000000000001, "MM13"}, { 54321.00000000001, "MM14"}, { 654321.0000000001, "MM15"},
+                                                  { 7654321.000000001, "MM16"}, { 87654321.00000001, "MM17"}, { 987654321.0000001, "MM18"}}));
+
+  // count = 10 offset = 0
+  s = db.ZRangebyscore("GP1_ZRANGEBYSCORE_KEY", std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max(), true, true, 10, 0, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {{-987654321.0000001, "MM1" }, {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
+                                                  {-654321.0000000001, "MM4" }, {-54321.00000000001, "MM5" }, {-4321.000000000001, "MM6" },
+                                                  {-1000.000000000001, "MM7" }, {-1000.000000000001, "MM8" }, {-1000.000000000001, "MM9" },
+                                                  {-100.0000000000001, "MM10"}}));
+
+  // count = 10 offset = 1
+  s = db.ZRangebyscore("GP1_ZRANGEBYSCORE_KEY", std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max(), true, true, 10, 1, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {                              {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
+                                                  {-654321.0000000001, "MM4" }, {-54321.00000000001, "MM5" }, {-4321.000000000001, "MM6" },
+                                                  {-1000.000000000001, "MM7" }, {-1000.000000000001, "MM8" }, {-1000.000000000001, "MM9" },
+                                                  {-100.0000000000001, "MM10"}, { 0,                 "MM11"}}));
+
+  // count = 10 offset = 17
+  s = db.ZRangebyscore("GP1_ZRANGEBYSCORE_KEY", std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max(), true, true, 10, 17, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {{ 987654321.0000001, "MM18"}}));
+
+  // count = 10 offset = 18
+  s = db.ZRangebyscore("GP1_ZRANGEBYSCORE_KEY", std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max(), true, true, 10, 18, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {}));
+
+  // count = 10 offset = 19
+  s = db.ZRangebyscore("GP1_ZRANGEBYSCORE_KEY", std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max(), true, true, 10, 19, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {}));
+
+  // count = 10000 offset = 1
+  s = db.ZRangebyscore("GP1_ZRANGEBYSCORE_KEY", std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max(), true, true, 10000, 1, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {                              {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
+                                                  {-654321.0000000001, "MM4" }, {-54321.00000000001, "MM5" }, {-4321.000000000001, "MM6" },
+                                                  {-1000.000000000001, "MM7" }, {-1000.000000000001, "MM8" }, {-1000.000000000001, "MM9" },
+                                                  {-100.0000000000001, "MM10"}, { 0,                 "MM11"}, { 100.0000000000001, "MM12"},
+                                                  { 4321.000000000001, "MM13"}, { 54321.00000000001, "MM14"}, { 654321.0000000001, "MM15"},
+                                                  { 7654321.000000001, "MM16"}, { 87654321.00000001, "MM17"}, { 987654321.0000001, "MM18"}}));
+
+  // count = 10000 offset = 10000
+  s = db.ZRangebyscore("GP1_ZRANGEBYSCORE_KEY", std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max(), true, true, 10000, 10000, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {}));
+
   s = db.ZRangebyscore("GP1_ZRANGEBYSCORE_KEY", std::numeric_limits<double>::lowest(), -1000.000000000001, true, true, &score_members);
   ASSERT_TRUE(s.ok());
   ASSERT_TRUE(score_members_match(score_members, {{-987654321.0000001, "MM1" }, {-87654321.00000001, "MM2" }, {-7654321.000000001, "MM3" },
@@ -2859,6 +2926,80 @@ TEST_F(ZSetsTest, ZRevrangebyscoreTest) {
                                                   {-1000.000000000001, "MM9" }, {-1000.000000000001, "MM8" }, {-1000.000000000001, "MM7" },
                                                   {-4321.000000000001, "MM6" }, {-54321.00000000001, "MM5" }, {-654321.0000000001, "MM4" },
                                                   {-7654321.000000001, "MM3" }, {-87654321.00000001, "MM2" }, {-987654321.0000001, "MM1" }}));
+
+  // count = max offset = 0
+  s = db.ZRevrangebyscore("GP1_ZRANGEBYSCORE_KEY", std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max(), true, true, std::numeric_limits<int64_t>::max(), 0, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {{ 987654321.0000001, "MM18"}, { 87654321.00000001, "MM17"}, { 7654321.000000001, "MM16"},
+                                                  { 654321.0000000001, "MM15"}, { 54321.00000000001, "MM14"}, { 4321.000000000001, "MM13"},
+                                                  { 100.0000000000001, "MM12"}, { 0,                 "MM11"}, {-100.0000000000001, "MM10"},
+                                                  {-1000.000000000001, "MM9" }, {-1000.000000000001, "MM8" }, {-1000.000000000001, "MM7" },
+                                                  {-4321.000000000001, "MM6" }, {-54321.00000000001, "MM5" }, {-654321.0000000001, "MM4" },
+                                                  {-7654321.000000001, "MM3" }, {-87654321.00000001, "MM2" }, {-987654321.0000001, "MM1" }}));
+
+  // count = 18 offset = 0
+  s = db.ZRevrangebyscore("GP1_ZRANGEBYSCORE_KEY", std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max(), true, true, 18, 0, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {{ 987654321.0000001, "MM18"}, { 87654321.00000001, "MM17"}, { 7654321.000000001, "MM16"},
+                                                  { 654321.0000000001, "MM15"}, { 54321.00000000001, "MM14"}, { 4321.000000000001, "MM13"},
+                                                  { 100.0000000000001, "MM12"}, { 0,                 "MM11"}, {-100.0000000000001, "MM10"},
+                                                  {-1000.000000000001, "MM9" }, {-1000.000000000001, "MM8" }, {-1000.000000000001, "MM7" },
+                                                  {-4321.000000000001, "MM6" }, {-54321.00000000001, "MM5" }, {-654321.0000000001, "MM4" },
+                                                  {-7654321.000000001, "MM3" }, {-87654321.00000001, "MM2" }, {-987654321.0000001, "MM1" }}));
+
+  // count = 10 offset = 0
+  s = db.ZRevrangebyscore("GP1_ZRANGEBYSCORE_KEY", std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max(), true, true, 10, 0, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {{ 987654321.0000001, "MM18"}, { 87654321.00000001, "MM17"}, { 7654321.000000001, "MM16"},
+                                                  { 654321.0000000001, "MM15"}, { 54321.00000000001, "MM14"}, { 4321.000000000001, "MM13"},
+                                                  { 100.0000000000001, "MM12"}, { 0,                 "MM11"}, {-100.0000000000001, "MM10"},
+                                                  {-1000.000000000001, "MM9" }}));
+  // count = 10 offset = 1
+  s = db.ZRevrangebyscore("GP1_ZRANGEBYSCORE_KEY", std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max(), true, true, 10, 1, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {                              { 87654321.00000001, "MM17"}, { 7654321.000000001, "MM16"},
+                                                  { 654321.0000000001, "MM15"}, { 54321.00000000001, "MM14"}, { 4321.000000000001, "MM13"},
+                                                  { 100.0000000000001, "MM12"}, { 0,                 "MM11"}, {-100.0000000000001, "MM10"},
+                                                  {-1000.000000000001, "MM9" }, {-1000.000000000001, "MM8" }}));
+
+  // count = 10 offset = 2
+  s = db.ZRevrangebyscore("GP1_ZRANGEBYSCORE_KEY", std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max(), true, true, 10, 2, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {                                                            { 7654321.000000001, "MM16"},
+                                                  { 654321.0000000001, "MM15"}, { 54321.00000000001, "MM14"}, { 4321.000000000001, "MM13"},
+                                                  { 100.0000000000001, "MM12"}, { 0,                 "MM11"}, {-100.0000000000001, "MM10"},
+                                                  {-1000.000000000001, "MM9" }, {-1000.000000000001, "MM8" }, {-1000.000000000001, "MM7" }}));
+
+  // count = 10 offset = 17
+  s = db.ZRevrangebyscore("GP1_ZRANGEBYSCORE_KEY", std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max(), true, true, 10, 17, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {{-987654321.0000001, "MM1" }}));
+
+  // count = 10 offset = 18
+  s = db.ZRevrangebyscore("GP1_ZRANGEBYSCORE_KEY", std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max(), true, true, 10, 18, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {}));
+
+  // count = 10 offset = 19
+  s = db.ZRevrangebyscore("GP1_ZRANGEBYSCORE_KEY", std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max(), true, true, 10, 19, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {}));
+
+  // count = 10000 offset = 1
+  s = db.ZRevrangebyscore("GP1_ZRANGEBYSCORE_KEY", std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max(), true, true, 10000, 1, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {                              { 87654321.00000001, "MM17"}, { 7654321.000000001, "MM16"},
+                                                  { 654321.0000000001, "MM15"}, { 54321.00000000001, "MM14"}, { 4321.000000000001, "MM13"},
+                                                  { 100.0000000000001, "MM12"}, { 0,                 "MM11"}, {-100.0000000000001, "MM10"},
+                                                  {-1000.000000000001, "MM9" }, {-1000.000000000001, "MM8" }, {-1000.000000000001, "MM7" },
+                                                  {-4321.000000000001, "MM6" }, {-54321.00000000001, "MM5" }, {-654321.0000000001, "MM4" },
+                                                  {-7654321.000000001, "MM3" }, {-87654321.00000001, "MM2" }, {-987654321.0000001, "MM1" }}));
+
+
+  // count = 10000 offset = 10000
+  s = db.ZRevrangebyscore("GP1_ZRANGEBYSCORE_KEY", std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max(), true, true, 10000, 10000, &score_members);
+  ASSERT_TRUE(s.ok());
+  ASSERT_TRUE(score_members_match(score_members, {}));
 
   s = db.ZRevrangebyscore("GP1_ZREVRANGEBYSCORE_KEY", std::numeric_limits<double>::lowest(), -1000.000000000001, true, true, &score_members);
   ASSERT_TRUE(s.ok());

@@ -573,8 +573,9 @@ Status BlackWidow::ZRangebyscore(const Slice& key,
                                  bool left_close,
                                  bool right_close,
                                  std::vector<ScoreMember>* score_members) {
+  // maximum number of zset is std::numeric_limits<int32_t>::max()
   return zsets_db_->ZRangebyscore(key, min, max,
-      left_close, right_close, score_members);
+      left_close, right_close, std::numeric_limits<int32_t>::max(), 0, score_members);
 }
 
 Status BlackWidow::ZRangebyscore(const Slice& key,
@@ -643,8 +644,9 @@ Status BlackWidow::ZRevrangebyscore(const Slice& key,
                                     bool left_close,
                                     bool right_close,
                                     std::vector<ScoreMember>* score_members) {
+  // maximum number of zset is std::numeric_limits<int32_t>::max()
   return zsets_db_->ZRevrangebyscore(key, min, max,
-      left_close, right_close, score_members);
+      left_close, right_close, std::numeric_limits<int32_t>::max(), 0, score_members);
 }
 
 Status BlackWidow::ZRevrank(const Slice& key,
