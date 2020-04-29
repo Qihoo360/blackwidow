@@ -23,7 +23,11 @@ class ZSetsScoreFilter : public rocksdb::CompactionFilter {
  public:
   ZSetsScoreFilter(rocksdb::DB* db,
                    std::vector<rocksdb::ColumnFamilyHandle*>* handles_ptr) :
-    db_(db), cf_handles_ptr_(handles_ptr), meta_not_found_(false) {}
+    db_(db),
+    cf_handles_ptr_(handles_ptr),
+    meta_not_found_(false),
+    cur_meta_version_(0),
+    cur_meta_timestamp_(0) {}
 
   bool Filter(int level, const rocksdb::Slice& key,
               const rocksdb::Slice& value,
