@@ -188,8 +188,14 @@ Status DBCheckpointImpl::CreateCheckpointWithFiles(
     }
   }
   if (s.ok() && !current_fname.empty() && !manifest_fname.empty()) {
+// 5.17.2 Createfile with new argv use_fsync
+#if (ROCKSDB_MAJOR < 5 || (ROCKSDB_MAJOR == 5 && ROCKSDB_MINOR < 17))
     s = CreateFile(db_->GetEnv(), full_private_path + current_fname,
                    manifest_fname.substr(1) + "\n");
+#else
+    s = CreateFile(db_->GetEnv(), full_private_path + current_fname,
+                   manifest_fname.substr(1) + "\n", false);
+#endif
   }
   // Log(db_->GetOptions().info_log,
   //    "Number of log files %" ROCKSDB_PRIszt, live_wal_files.size());
