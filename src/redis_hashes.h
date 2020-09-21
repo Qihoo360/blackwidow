@@ -17,7 +17,7 @@ namespace blackwidow {
 class RedisHashes : public Redis {
  public:
   RedisHashes(BlackWidow* const bw, const DataType& type);
-  ~RedisHashes();
+  ~RedisHashes() = default;
 
   // Common Commands
   Status Open(const BlackwidowOptions& bw_options,
@@ -99,9 +99,6 @@ class RedisHashes : public Redis {
 
   // Iterate all data
   void ScanDatabase();
-
- private:
-  std::vector<rocksdb::ColumnFamilyHandle*> handles_;
 };
 
 }  //  namespace blackwidow

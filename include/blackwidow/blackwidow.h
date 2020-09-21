@@ -53,6 +53,8 @@ class RedisSets;
 class RedisLists;
 class RedisZSets;
 class HyperLogLog;
+enum class OptionType;
+
 
 template <typename T1, typename T2>
 class LRUCache;
@@ -70,6 +72,9 @@ struct BlackwidowOptions {
         share_block_cache(false),
         statistics_max_size(0),
         small_compaction_threshold(5000) {}
+
+  Status ResetOptions(const OptionType& option_type,
+                      const std::unordered_map<std::string, std::string>& options_map);
 };
 
 struct KeyValue {
@@ -138,6 +143,11 @@ enum DataType {
 
 const char DataTypeTag[] = {
   'a', 'k', 'h', 'l', 'z','s'
+};
+
+enum class OptionType {
+  kDB,
+  kColumnFamily,
 };
 
 enum ColumnFamilyType {
@@ -1206,6 +1216,9 @@ class BlackWidow {
   Status StopScanKeyNum();
 
   rocksdb::DB* GetDBByType(const std::string& type);
+
+  Status SetOptions(const OptionType& option_type, const std::string& db_type,
+                    const std::unordered_map<std::string, std::string>& options);
 
  private:
   RedisStrings* strings_db_;

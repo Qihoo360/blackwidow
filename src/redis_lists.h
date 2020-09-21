@@ -18,7 +18,7 @@ namespace blackwidow {
 class RedisLists : public Redis {
  public:
   RedisLists(BlackWidow* const bw, const DataType& type);
-  ~RedisLists();
+  ~RedisLists() = default;
 
   // Common commands
   Status Open(const BlackwidowOptions& bw_options,
@@ -79,9 +79,6 @@ class RedisLists : public Redis {
 
   // Iterate all data
   void ScanDatabase();
-
- private:
-  std::vector<rocksdb::ColumnFamilyHandle*> handles_;
 };
 
 }  //  namespace blackwidow

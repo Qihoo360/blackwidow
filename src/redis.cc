@@ -18,9 +18,15 @@ Redis::Redis(BlackWidow* const bw, const DataType& type)
   scan_cursors_store_->SetCapacity(5000);
   default_compact_range_options_.exclusive_manual_compaction = false;
   default_compact_range_options_.change_level = true;
+  handles_.clear();
 }
 
 Redis::~Redis() {
+  std::vector<rocksdb::ColumnFamilyHandle*> tmp_handles = handles_;
+  handles_.clear();
+  for (auto handle : tmp_handles) {
+    delete handle;
+  }
   delete db_;
   delete lock_mgr_;
   delete statistics_store_;
@@ -75,6 +81,22 @@ Status Redis::AddCompactKeyTaskIfNeeded(const std::string& key,
     statistics_store_->Remove(key);
   }
   return Status::OK();
+}
+
+Status Redis::SetOptions(const OptionType& option_type,
+    const std::unordered_map<std::string, std::string>& options) {
+  if (option_type == OptionType::kDB) {
+    return db_->SetDBOptions(options);
+  }
+  if (handles_.size() == 0) {
+    return db_->SetOptions(db_->DefaultColumnFamily(), options);
+  }
+  Status s;
+  for (auto handle : handles_) {
+    s = db_->SetOptions(handle, options);
+    if(!s.ok()) break;
+  }
+  return s;
 }
 
 }  // namespace blackwidow
