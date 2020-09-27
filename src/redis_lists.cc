@@ -745,13 +745,6 @@ Status RedisLists::LTrim(const Slice& key, int64_t start, int64_t stop) {
       if (sublist_left_index > sublist_right_index
         || sublist_left_index > origin_right_index
         || sublist_right_index < origin_left_index) {
-        for (uint64_t idx = origin_left_index;
-             idx <= origin_right_index;
-             idx++) {
-          statistic++;
-          ListsDataKey lists_data_key(key, version, idx);
-          batch.Delete(handles_[1], lists_data_key.Encode());
-        }
         parsed_lists_meta_value.InitialMetaValue();
         batch.Put(handles_[0], key, meta_value);
       } else {
