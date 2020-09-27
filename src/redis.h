@@ -32,6 +32,8 @@ class Redis {
     return db_;
   }
 
+  Status SetOptions(const OptionType& option_type, const std::unordered_map<std::string, std::string>& options);
+
   // Common Commands
   virtual Status Open(const BlackwidowOptions& bw_options,
                       const std::string& db_path) = 0;
@@ -70,6 +72,7 @@ class Redis {
   DataType type_;
   LockMgr* lock_mgr_;
   rocksdb::DB* db_;
+  std::vector<rocksdb::ColumnFamilyHandle*> handles_;
   rocksdb::WriteOptions default_write_options_;
   rocksdb::ReadOptions default_read_options_;
   rocksdb::CompactRangeOptions default_compact_range_options_;

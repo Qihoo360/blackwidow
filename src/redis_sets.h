@@ -24,7 +24,7 @@ namespace blackwidow {
 class RedisSets : public Redis {
  public:
   RedisSets(BlackWidow* const bw, const DataType& type);
-  ~RedisSets();
+  ~RedisSets() = default;
 
   // Common Commands
   Status Open(const BlackwidowOptions& bw_options,
@@ -97,8 +97,6 @@ class RedisSets : public Redis {
   void ScanDatabase();
 
  private:
-  std::vector<rocksdb::ColumnFamilyHandle*> handles_;
-
   // For compact in time after multiple spop
   LRUCache<std::string, size_t>* spop_counts_store_;
   Status ResetSpopCount(const std::string& key);

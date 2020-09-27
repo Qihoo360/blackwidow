@@ -18,7 +18,7 @@ namespace blackwidow {
 class RedisZSets : public Redis {
  public:
   RedisZSets(BlackWidow* const bw, const DataType& type);
-  ~RedisZSets();
+  ~RedisZSets() = default;
 
   // Common Commands
   Status Open(const BlackwidowOptions& bw_options,
@@ -161,9 +161,6 @@ class RedisZSets : public Redis {
 
   // Iterate all data
   void ScanDatabase();
-
- private:
-  std::vector<rocksdb::ColumnFamilyHandle*> handles_;
 };
 
 }  // namespace blackwidow

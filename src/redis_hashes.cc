@@ -18,14 +18,6 @@ RedisHashes::RedisHashes(BlackWidow* const bw, const DataType& type)
     : Redis(bw, type) {
 }
 
-RedisHashes::~RedisHashes() {
-  std::vector<rocksdb::ColumnFamilyHandle*> tmp_handles = handles_;
-  handles_.clear();
-  for (auto handle : tmp_handles) {
-    delete handle;
-  }
-}
-
 Status RedisHashes::Open(const BlackwidowOptions& bw_options,
                          const std::string& db_path) {
   statistics_store_->SetCapacity(bw_options.statistics_max_size);

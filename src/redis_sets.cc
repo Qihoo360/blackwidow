@@ -23,15 +23,6 @@ RedisSets::RedisSets(BlackWidow* const bw, const DataType& type)
   spop_counts_store_->SetCapacity(1000);
 }
 
-RedisSets::~RedisSets() {
-  std::vector<rocksdb::ColumnFamilyHandle*> tmp_handles = handles_;
-  handles_.clear();
-  for (auto handle : tmp_handles) {
-    delete handle;
-  }
-  delete spop_counts_store_;
-}
-
 Status RedisSets::Open(const BlackwidowOptions& bw_options,
                        const std::string& db_path) {
   statistics_store_->SetCapacity(bw_options.statistics_max_size);
