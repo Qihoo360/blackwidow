@@ -4939,7 +4939,6 @@ TEST_F(KeysTest, ScanCaseSingleTest) {
 }
 
 TEST_F(KeysTest, PKExpireScanCaseAllTest) {
-
   int64_t cursor;
   int64_t next_cursor;
   int64_t del_num;
@@ -5001,46 +5000,62 @@ TEST_F(KeysTest, PKExpireScanCaseAllTest) {
   keys.clear();
   cursor = db.PKExpireScan(DataType::kAll, 0, 0, 100, 3, &keys);
   ASSERT_EQ(cursor, 3);
-  ASSERT_EQ(keys.size(), 3);
+  ASSERT_EQ(keys.size(), 6);
   ASSERT_EQ(keys[0], "GP1_PKEXPIRESCAN_CASE_ALL_STRING_KEY1");
-  ASSERT_EQ(keys[1], "GP1_PKEXPIRESCAN_CASE_ALL_STRING_KEY2");
-  ASSERT_EQ(keys[2], "GP1_PKEXPIRESCAN_CASE_ALL_STRING_KEY3");
+  ASSERT_EQ(keys[1], "2");
+  ASSERT_EQ(keys[2], "GP1_PKEXPIRESCAN_CASE_ALL_STRING_KEY2");
+  ASSERT_EQ(keys[3], "4");
+  ASSERT_EQ(keys[4], "GP1_PKEXPIRESCAN_CASE_ALL_STRING_KEY3");
+  ASSERT_EQ(keys[5], "6");
   delete_keys.insert(delete_keys.end(), keys.begin(), keys.end());
 
   keys.clear();
   cursor = db.PKExpireScan(DataType::kAll, 3, 0, 100, 3, &keys);
   ASSERT_EQ(cursor, 6);
-  ASSERT_EQ(keys.size(), 3);
+  ASSERT_EQ(keys.size(), 6);
   ASSERT_EQ(keys[0], "GP1_PKEXPIRESCAN_CASE_ALL_HASH_KEY1");
-  ASSERT_EQ(keys[1], "GP1_PKEXPIRESCAN_CASE_ALL_HASH_KEY2");
-  ASSERT_EQ(keys[2], "GP1_PKEXPIRESCAN_CASE_ALL_HASH_KEY3");
+  ASSERT_EQ(keys[1], "8"); 
+  ASSERT_EQ(keys[2], "GP1_PKEXPIRESCAN_CASE_ALL_HASH_KEY2");
+  ASSERT_EQ(keys[3], "10"); 
+  ASSERT_EQ(keys[4], "GP1_PKEXPIRESCAN_CASE_ALL_HASH_KEY3");
+  ASSERT_EQ(keys[5], "12"); 
   delete_keys.insert(delete_keys.end(), keys.begin(), keys.end());
 
   keys.clear();
-  cursor = db.PKExpireScan(DataType::kAll, 6, 0, 100, 3, &keys);
+  cursor = db.PKExpireScan(DataType::kAll, 6, 0, INT_MAX, 3, &keys);
   ASSERT_EQ(cursor, 9);
-  ASSERT_EQ(keys.size(), 3);
+  ASSERT_EQ(keys.size(), 6);
   ASSERT_EQ(keys[0], "GP1_PKEXPIRESCAN_CASE_ALL_SET_KEY1");
-  ASSERT_EQ(keys[1], "GP1_PKEXPIRESCAN_CASE_ALL_SET_KEY2");
-  ASSERT_EQ(keys[2], "GP1_PKEXPIRESCAN_CASE_ALL_SET_KEY3");
+  ASSERT_EQ(keys[1], "14"); 
+  ASSERT_EQ(keys[2], "GP1_PKEXPIRESCAN_CASE_ALL_SET_KEY2");
+  ASSERT_EQ(keys[3], "16"); 
+  ASSERT_EQ(keys[4], "GP1_PKEXPIRESCAN_CASE_ALL_SET_KEY3");
+  ASSERT_EQ(keys[5], "18"); 
+ 
   delete_keys.insert(delete_keys.end(), keys.begin(), keys.end());
 
   keys.clear();
-  cursor = db.PKExpireScan(DataType::kAll, 9, 0, 100, 3, &keys);
+  cursor = db.PKExpireScan(DataType::kAll, 9, INT_MIN, 100, 3, &keys);
   ASSERT_EQ(cursor, 12);
-  ASSERT_EQ(keys.size(), 3);
+  ASSERT_EQ(keys.size(), 6);
   ASSERT_EQ(keys[0], "GP1_PKEXPIRESCAN_CASE_ALL_LIST_KEY1");
-  ASSERT_EQ(keys[1], "GP1_PKEXPIRESCAN_CASE_ALL_LIST_KEY2");
-  ASSERT_EQ(keys[2], "GP1_PKEXPIRESCAN_CASE_ALL_LIST_KEY3");
+  ASSERT_EQ(keys[1], "20"); 
+  ASSERT_EQ(keys[2], "GP1_PKEXPIRESCAN_CASE_ALL_LIST_KEY2");
+  ASSERT_EQ(keys[3], "22"); 
+  ASSERT_EQ(keys[4], "GP1_PKEXPIRESCAN_CASE_ALL_LIST_KEY3");
+  ASSERT_EQ(keys[5], "24"); 
   delete_keys.insert(delete_keys.end(), keys.begin(), keys.end());
 
   keys.clear();
   cursor = db.PKExpireScan(DataType::kAll, 12, 0, 100, 3, &keys);
   ASSERT_EQ(cursor, 0);
-  ASSERT_EQ(keys.size(), 3);
+  ASSERT_EQ(keys.size(), 6);
   ASSERT_EQ(keys[0], "GP1_PKEXPIRESCAN_CASE_ALL_ZSET_KEY1");
-  ASSERT_EQ(keys[1], "GP1_PKEXPIRESCAN_CASE_ALL_ZSET_KEY2");
-  ASSERT_EQ(keys[2], "GP1_PKEXPIRESCAN_CASE_ALL_ZSET_KEY3");
+  ASSERT_EQ(keys[1], "26"); 
+  ASSERT_EQ(keys[2], "GP1_PKEXPIRESCAN_CASE_ALL_ZSET_KEY2");
+  ASSERT_EQ(keys[3], "28"); 
+  ASSERT_EQ(keys[4], "GP1_PKEXPIRESCAN_CASE_ALL_ZSET_KEY3");
+  ASSERT_EQ(keys[5], "30"); 
   delete_keys.insert(delete_keys.end(), keys.begin(), keys.end());
 
   del_num = db.Del(delete_keys, &type_status);
@@ -5100,64 +5115,79 @@ TEST_F(KeysTest, PKExpireScanCaseAllTest) {
   keys.clear();
   cursor = db.PKExpireScan(DataType::kAll, 0, 0, 100, 2, &keys);
   ASSERT_EQ(cursor, 2);
-  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys.size(), 4);
   ASSERT_EQ(keys[0], "GP2_PKEXPIRESCAN_CASE_ALL_STRING_KEY1");
-  ASSERT_EQ(keys[1], "GP2_PKEXPIRESCAN_CASE_ALL_STRING_KEY2");
+  ASSERT_EQ(keys[1], "2");
+  ASSERT_EQ(keys[2], "GP2_PKEXPIRESCAN_CASE_ALL_STRING_KEY2");
+  ASSERT_EQ(keys[3], "4");
   delete_keys.insert(delete_keys.end(), keys.begin(), keys.end());
 
   keys.clear();
   cursor = db.PKExpireScan(DataType::kAll, 2, 0, 100, 2, &keys);
   ASSERT_EQ(cursor, 4);
-  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys.size(), 4);
   ASSERT_EQ(keys[0], "GP2_PKEXPIRESCAN_CASE_ALL_STRING_KEY3");
-  ASSERT_EQ(keys[1], "GP2_PKEXPIRESCAN_CASE_ALL_HASH_KEY1");
+  ASSERT_EQ(keys[1], "6");
+  ASSERT_EQ(keys[2], "GP2_PKEXPIRESCAN_CASE_ALL_HASH_KEY1");
+  ASSERT_EQ(keys[3], "8");
   delete_keys.insert(delete_keys.end(), keys.begin(), keys.end());
 
   keys.clear();
-  cursor = db.PKExpireScan(DataType::kAll, 4, 0, 100, 2, &keys);
+  cursor = db.PKExpireScan(DataType::kAll, 4, 0, INT_MAX, 2, &keys);
   ASSERT_EQ(cursor, 6);
-  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys.size(), 4);
   ASSERT_EQ(keys[0], "GP2_PKEXPIRESCAN_CASE_ALL_HASH_KEY2");
-  ASSERT_EQ(keys[1], "GP2_PKEXPIRESCAN_CASE_ALL_HASH_KEY3");
+  ASSERT_EQ(keys[1], "10");
+  ASSERT_EQ(keys[2], "GP2_PKEXPIRESCAN_CASE_ALL_HASH_KEY3");
+  ASSERT_EQ(keys[3], "12");
   delete_keys.insert(delete_keys.end(), keys.begin(), keys.end());
 
   keys.clear();
   cursor = db.PKExpireScan(DataType::kAll, 6, 0, 100, 2, &keys);
   ASSERT_EQ(cursor, 8);
-  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys.size(), 4);
   ASSERT_EQ(keys[0], "GP2_PKEXPIRESCAN_CASE_ALL_SET_KEY1");
-  ASSERT_EQ(keys[1], "GP2_PKEXPIRESCAN_CASE_ALL_SET_KEY2");
+  ASSERT_EQ(keys[1], "14");
+  ASSERT_EQ(keys[2], "GP2_PKEXPIRESCAN_CASE_ALL_SET_KEY2");
+  ASSERT_EQ(keys[3], "16");
   delete_keys.insert(delete_keys.end(), keys.begin(), keys.end());
 
   keys.clear();
   cursor = db.PKExpireScan(DataType::kAll, 8, 0, 100, 2, &keys);
   ASSERT_EQ(cursor, 10);
-  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys.size(), 4);
   ASSERT_EQ(keys[0], "GP2_PKEXPIRESCAN_CASE_ALL_SET_KEY3");
-  ASSERT_EQ(keys[1], "GP2_PKEXPIRESCAN_CASE_ALL_LIST_KEY1");
+  ASSERT_EQ(keys[1], "18");
+  ASSERT_EQ(keys[2], "GP2_PKEXPIRESCAN_CASE_ALL_LIST_KEY1");
+  ASSERT_EQ(keys[3], "20");
   delete_keys.insert(delete_keys.end(), keys.begin(), keys.end());
 
   keys.clear();
   cursor = db.PKExpireScan(DataType::kAll, 10, 0, 100, 2, &keys);
   ASSERT_EQ(cursor, 12);
-  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys.size(), 4);
   ASSERT_EQ(keys[0], "GP2_PKEXPIRESCAN_CASE_ALL_LIST_KEY2");
-  ASSERT_EQ(keys[1], "GP2_PKEXPIRESCAN_CASE_ALL_LIST_KEY3");
+  ASSERT_EQ(keys[1], "22");
+  ASSERT_EQ(keys[2], "GP2_PKEXPIRESCAN_CASE_ALL_LIST_KEY3");
+  ASSERT_EQ(keys[3], "24");
   delete_keys.insert(delete_keys.end(), keys.begin(), keys.end());
 
   keys.clear();
   cursor = db.PKExpireScan(DataType::kAll, 12, 0, 100, 2, &keys);
   ASSERT_EQ(cursor, 14);
-  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys.size(), 4);
   ASSERT_EQ(keys[0], "GP2_PKEXPIRESCAN_CASE_ALL_ZSET_KEY1");
-  ASSERT_EQ(keys[1], "GP2_PKEXPIRESCAN_CASE_ALL_ZSET_KEY2");
+  ASSERT_EQ(keys[1], "26");
+  ASSERT_EQ(keys[2], "GP2_PKEXPIRESCAN_CASE_ALL_ZSET_KEY2");
+  ASSERT_EQ(keys[3], "28");
   delete_keys.insert(delete_keys.end(), keys.begin(), keys.end());
 
   keys.clear();
   cursor = db.PKExpireScan(DataType::kAll, 14, 0, 100, 2, &keys);
   ASSERT_EQ(cursor, 0);
-  ASSERT_EQ(keys.size(), 1);
+  ASSERT_EQ(keys.size(), 2);
   ASSERT_EQ(keys[0], "GP2_PKEXPIRESCAN_CASE_ALL_ZSET_KEY3");
+  ASSERT_EQ(keys[1], "30");
   delete_keys.insert(delete_keys.end(), keys.begin(), keys.end());
 
   del_num = db.Del(delete_keys, &type_status);
@@ -5217,34 +5247,49 @@ TEST_F(KeysTest, PKExpireScanCaseAllTest) {
   keys.clear();
   cursor = db.PKExpireScan(DataType::kAll, 0, 0, 100, 5, &keys);
   ASSERT_EQ(cursor, 5);
-  ASSERT_EQ(keys.size(), 5);
+  ASSERT_EQ(keys.size(), 10);
   ASSERT_EQ(keys[0], "GP3_PKEXPIRESCAN_CASE_ALL_STRING_KEY1");
-  ASSERT_EQ(keys[1], "GP3_PKEXPIRESCAN_CASE_ALL_STRING_KEY2");
-  ASSERT_EQ(keys[2], "GP3_PKEXPIRESCAN_CASE_ALL_STRING_KEY3");
-  ASSERT_EQ(keys[3], "GP3_PKEXPIRESCAN_CASE_ALL_HASH_KEY1");
-  ASSERT_EQ(keys[4], "GP3_PKEXPIRESCAN_CASE_ALL_HASH_KEY2");
+  ASSERT_EQ(keys[1], "2");
+  ASSERT_EQ(keys[2], "GP3_PKEXPIRESCAN_CASE_ALL_STRING_KEY2");
+  ASSERT_EQ(keys[3], "4");
+  ASSERT_EQ(keys[4], "GP3_PKEXPIRESCAN_CASE_ALL_STRING_KEY3");
+  ASSERT_EQ(keys[5], "6");
+  ASSERT_EQ(keys[6], "GP3_PKEXPIRESCAN_CASE_ALL_HASH_KEY1");
+  ASSERT_EQ(keys[7], "8");
+  ASSERT_EQ(keys[8], "GP3_PKEXPIRESCAN_CASE_ALL_HASH_KEY2");
+  ASSERT_EQ(keys[9], "10");
   delete_keys.insert(delete_keys.end(), keys.begin(), keys.end());
 
   keys.clear();
-  cursor = db.PKExpireScan(DataType::kAll, 5, 0, 100, 5, &keys);
+  cursor = db.PKExpireScan(DataType::kAll, 5, INT_MIN, 100, 5, &keys);
   ASSERT_EQ(cursor, 10);
-  ASSERT_EQ(keys.size(), 5);
+  ASSERT_EQ(keys.size(), 10);
   ASSERT_EQ(keys[0], "GP3_PKEXPIRESCAN_CASE_ALL_HASH_KEY3");
-  ASSERT_EQ(keys[1], "GP3_PKEXPIRESCAN_CASE_ALL_SET_KEY1");
-  ASSERT_EQ(keys[2], "GP3_PKEXPIRESCAN_CASE_ALL_SET_KEY2");
-  ASSERT_EQ(keys[3], "GP3_PKEXPIRESCAN_CASE_ALL_SET_KEY3");
-  ASSERT_EQ(keys[4], "GP3_PKEXPIRESCAN_CASE_ALL_LIST_KEY1");
+  ASSERT_EQ(keys[1], "12");
+  ASSERT_EQ(keys[2], "GP3_PKEXPIRESCAN_CASE_ALL_SET_KEY1");
+  ASSERT_EQ(keys[3], "14");
+  ASSERT_EQ(keys[4], "GP3_PKEXPIRESCAN_CASE_ALL_SET_KEY2");
+  ASSERT_EQ(keys[5], "16");
+  ASSERT_EQ(keys[6], "GP3_PKEXPIRESCAN_CASE_ALL_SET_KEY3");
+  ASSERT_EQ(keys[7], "18");
+  ASSERT_EQ(keys[8], "GP3_PKEXPIRESCAN_CASE_ALL_LIST_KEY1");
+  ASSERT_EQ(keys[9], "20");
   delete_keys.insert(delete_keys.end(), keys.begin(), keys.end());
 
   keys.clear();
-  cursor = db.PKExpireScan(DataType::kAll, 10, 0, 100, 5, &keys);
+  cursor = db.PKExpireScan(DataType::kAll, 10, 0, INT_MAX, 5, &keys);
   ASSERT_EQ(cursor, 0);
-  ASSERT_EQ(keys.size(), 5);
+  ASSERT_EQ(keys.size(), 10);
   ASSERT_EQ(keys[0], "GP3_PKEXPIRESCAN_CASE_ALL_LIST_KEY2");
-  ASSERT_EQ(keys[1], "GP3_PKEXPIRESCAN_CASE_ALL_LIST_KEY3");
-  ASSERT_EQ(keys[2], "GP3_PKEXPIRESCAN_CASE_ALL_ZSET_KEY1");
-  ASSERT_EQ(keys[3], "GP3_PKEXPIRESCAN_CASE_ALL_ZSET_KEY2");
-  ASSERT_EQ(keys[4], "GP3_PKEXPIRESCAN_CASE_ALL_ZSET_KEY3");
+  ASSERT_EQ(keys[1], "22");
+  ASSERT_EQ(keys[2], "GP3_PKEXPIRESCAN_CASE_ALL_LIST_KEY3");
+  ASSERT_EQ(keys[3], "24");
+  ASSERT_EQ(keys[4], "GP3_PKEXPIRESCAN_CASE_ALL_ZSET_KEY1");
+  ASSERT_EQ(keys[5], "26");
+  ASSERT_EQ(keys[6], "GP3_PKEXPIRESCAN_CASE_ALL_ZSET_KEY2");
+  ASSERT_EQ(keys[7], "28");
+  ASSERT_EQ(keys[8], "GP3_PKEXPIRESCAN_CASE_ALL_ZSET_KEY3");
+  ASSERT_EQ(keys[9], "30");
   delete_keys.insert(delete_keys.end(), keys.begin(), keys.end());
 
   del_num = db.Del(delete_keys, &type_status);
@@ -5303,22 +5348,38 @@ TEST_F(KeysTest, PKExpireScanCaseAllTest) {
   keys.clear();
   cursor = db.PKExpireScan(DataType::kAll, 0, 0, 100, 15, &keys);
   ASSERT_EQ(cursor, 0);
-  ASSERT_EQ(keys.size(), 15);
+  ASSERT_EQ(keys.size(), 30);
   ASSERT_EQ(keys[0], "GP4_PKEXPIRESCAN_CASE_ALL_STRING_KEY1");
-  ASSERT_EQ(keys[1], "GP4_PKEXPIRESCAN_CASE_ALL_STRING_KEY2");
-  ASSERT_EQ(keys[2], "GP4_PKEXPIRESCAN_CASE_ALL_STRING_KEY3");
-  ASSERT_EQ(keys[3], "GP4_PKEXPIRESCAN_CASE_ALL_HASH_KEY1");
-  ASSERT_EQ(keys[4], "GP4_PKEXPIRESCAN_CASE_ALL_HASH_KEY2");
-  ASSERT_EQ(keys[5], "GP4_PKEXPIRESCAN_CASE_ALL_HASH_KEY3");
-  ASSERT_EQ(keys[6], "GP4_PKEXPIRESCAN_CASE_ALL_SET_KEY1");
-  ASSERT_EQ(keys[7], "GP4_PKEXPIRESCAN_CASE_ALL_SET_KEY2");
-  ASSERT_EQ(keys[8], "GP4_PKEXPIRESCAN_CASE_ALL_SET_KEY3");
-  ASSERT_EQ(keys[9], "GP4_PKEXPIRESCAN_CASE_ALL_LIST_KEY1");
-  ASSERT_EQ(keys[10], "GP4_PKEXPIRESCAN_CASE_ALL_LIST_KEY2");
-  ASSERT_EQ(keys[11], "GP4_PKEXPIRESCAN_CASE_ALL_LIST_KEY3");
-  ASSERT_EQ(keys[12], "GP4_PKEXPIRESCAN_CASE_ALL_ZSET_KEY1");
-  ASSERT_EQ(keys[13], "GP4_PKEXPIRESCAN_CASE_ALL_ZSET_KEY2");
-  ASSERT_EQ(keys[14], "GP4_PKEXPIRESCAN_CASE_ALL_ZSET_KEY3");
+  ASSERT_EQ(keys[1], "2");
+  ASSERT_EQ(keys[2], "GP4_PKEXPIRESCAN_CASE_ALL_STRING_KEY2");
+  ASSERT_EQ(keys[3], "4");
+  ASSERT_EQ(keys[4], "GP4_PKEXPIRESCAN_CASE_ALL_STRING_KEY3");
+  ASSERT_EQ(keys[5], "6");
+  ASSERT_EQ(keys[6], "GP4_PKEXPIRESCAN_CASE_ALL_HASH_KEY1");
+  ASSERT_EQ(keys[7], "8");
+  ASSERT_EQ(keys[8], "GP4_PKEXPIRESCAN_CASE_ALL_HASH_KEY2");
+  ASSERT_EQ(keys[9], "10");
+  ASSERT_EQ(keys[10], "GP4_PKEXPIRESCAN_CASE_ALL_HASH_KEY3");
+  ASSERT_EQ(keys[11], "12");
+  ASSERT_EQ(keys[12], "GP4_PKEXPIRESCAN_CASE_ALL_SET_KEY1");
+  ASSERT_EQ(keys[13], "14");
+  ASSERT_EQ(keys[14], "GP4_PKEXPIRESCAN_CASE_ALL_SET_KEY2");
+  ASSERT_EQ(keys[15], "16");
+  ASSERT_EQ(keys[16], "GP4_PKEXPIRESCAN_CASE_ALL_SET_KEY3");
+  ASSERT_EQ(keys[17], "18");
+  ASSERT_EQ(keys[18], "GP4_PKEXPIRESCAN_CASE_ALL_LIST_KEY1");
+  ASSERT_EQ(keys[19], "20");
+  ASSERT_EQ(keys[20], "GP4_PKEXPIRESCAN_CASE_ALL_LIST_KEY2");
+  ASSERT_EQ(keys[21], "22");
+  ASSERT_EQ(keys[22], "GP4_PKEXPIRESCAN_CASE_ALL_LIST_KEY3");
+  ASSERT_EQ(keys[23], "24");
+  ASSERT_EQ(keys[24], "GP4_PKEXPIRESCAN_CASE_ALL_ZSET_KEY1");
+  ASSERT_EQ(keys[25], "26");
+  ASSERT_EQ(keys[26], "GP4_PKEXPIRESCAN_CASE_ALL_ZSET_KEY2");
+  ASSERT_EQ(keys[27], "28");
+  ASSERT_EQ(keys[28], "GP4_PKEXPIRESCAN_CASE_ALL_ZSET_KEY3");
+  ASSERT_EQ(keys[29], "30");
+
   delete_keys.insert(delete_keys.end(), keys.begin(), keys.end());
 
   del_num = db.Del(delete_keys, &type_status);
@@ -5397,10 +5458,13 @@ TEST_F(KeysTest, PKExpireScanCaseAllTest) {
     total_keys.insert(total_keys.end(), keys.begin(), keys.end());
     cursor = next_cursor;
   } while (cursor);
-  ASSERT_EQ(total_keys.size(), 3);
+  ASSERT_EQ(total_keys.size(), 6);
   ASSERT_EQ(total_keys[0], "GP5_PKEXPIRESCAN_CASE_ALL_SET_KEY1");
-  ASSERT_EQ(total_keys[1], "GP5_PKEXPIRESCAN_CASE_ALL_SET_KEY2");
-  ASSERT_EQ(total_keys[2], "GP5_PKEXPIRESCAN_CASE_ALL_SET_KEY3");
+  ASSERT_EQ(total_keys[1], "15"); 
+  ASSERT_EQ(total_keys[2], "GP5_PKEXPIRESCAN_CASE_ALL_SET_KEY2");
+  ASSERT_EQ(total_keys[3], "15"); 
+  ASSERT_EQ(total_keys[4], "GP5_PKEXPIRESCAN_CASE_ALL_SET_KEY3");
+  ASSERT_EQ(total_keys[5], "15"); 
 
   del_num = db.Del(delete_keys, &type_status);
   ASSERT_EQ(del_num, 15);
@@ -5478,12 +5542,17 @@ TEST_F(KeysTest, PKExpireScanCaseAllTest) {
     total_keys.insert(total_keys.end(), keys.begin(), keys.end());
     cursor = next_cursor;
   } while (cursor);
-  ASSERT_EQ(total_keys.size(), 5);
+  ASSERT_EQ(total_keys.size(), 10);
   ASSERT_EQ(total_keys[0], "GP6_PKEXPIRESCAN_CASE_ALL_STRING_KEY1");
-  ASSERT_EQ(total_keys[1], "GP6_PKEXPIRESCAN_CASE_ALL_HASH_KEY1");
-  ASSERT_EQ(total_keys[2], "GP6_PKEXPIRESCAN_CASE_ALL_SET_KEY1");
-  ASSERT_EQ(total_keys[3], "GP6_PKEXPIRESCAN_CASE_ALL_LIST_KEY1");
-  ASSERT_EQ(total_keys[4], "GP6_PKEXPIRESCAN_CASE_ALL_ZSET_KEY1");
+  ASSERT_EQ(total_keys[1], "15"); 
+  ASSERT_EQ(total_keys[2], "GP6_PKEXPIRESCAN_CASE_ALL_HASH_KEY1");
+  ASSERT_EQ(total_keys[3], "15"); 
+  ASSERT_EQ(total_keys[4], "GP6_PKEXPIRESCAN_CASE_ALL_SET_KEY1");
+  ASSERT_EQ(total_keys[5], "15"); 
+  ASSERT_EQ(total_keys[6], "GP6_PKEXPIRESCAN_CASE_ALL_LIST_KEY1");
+  ASSERT_EQ(total_keys[7], "15"); 
+  ASSERT_EQ(total_keys[8], "GP6_PKEXPIRESCAN_CASE_ALL_ZSET_KEY1");
+  ASSERT_EQ(total_keys[9], "15"); 
 
   del_num = db.Del(delete_keys, &type_status);
   ASSERT_EQ(del_num, 15);
@@ -5561,12 +5630,17 @@ TEST_F(KeysTest, PKExpireScanCaseAllTest) {
     total_keys.insert(total_keys.end(), keys.begin(), keys.end());
     cursor = next_cursor;
   } while (cursor);
-  ASSERT_EQ(total_keys.size(), 5);
+  ASSERT_EQ(total_keys.size(), 10);
   ASSERT_EQ(total_keys[0], "GP7_PKEXPIRESCAN_CASE_ALL_STRING_KEY2");
-  ASSERT_EQ(total_keys[1], "GP7_PKEXPIRESCAN_CASE_ALL_HASH_KEY2");
-  ASSERT_EQ(total_keys[2], "GP7_PKEXPIRESCAN_CASE_ALL_SET_KEY2");
-  ASSERT_EQ(total_keys[3], "GP7_PKEXPIRESCAN_CASE_ALL_LIST_KEY2");
-  ASSERT_EQ(total_keys[4], "GP7_PKEXPIRESCAN_CASE_ALL_ZSET_KEY2");
+  ASSERT_EQ(total_keys[1], "15"); 
+  ASSERT_EQ(total_keys[2], "GP7_PKEXPIRESCAN_CASE_ALL_HASH_KEY2");
+  ASSERT_EQ(total_keys[3], "15"); 
+  ASSERT_EQ(total_keys[4], "GP7_PKEXPIRESCAN_CASE_ALL_SET_KEY2");
+  ASSERT_EQ(total_keys[5], "15"); 
+  ASSERT_EQ(total_keys[6], "GP7_PKEXPIRESCAN_CASE_ALL_LIST_KEY2");
+  ASSERT_EQ(total_keys[7], "15"); 
+  ASSERT_EQ(total_keys[8], "GP7_PKEXPIRESCAN_CASE_ALL_ZSET_KEY2");
+  ASSERT_EQ(total_keys[9], "15"); 
 
   del_num = db.Del(delete_keys, &type_status);
   ASSERT_EQ(del_num, 15);
@@ -5644,12 +5718,17 @@ TEST_F(KeysTest, PKExpireScanCaseAllTest) {
     total_keys.insert(total_keys.end(), keys.begin(), keys.end());
     cursor = next_cursor;
   } while (cursor);
-  ASSERT_EQ(total_keys.size(), 5);
+  ASSERT_EQ(total_keys.size(), 10);
   ASSERT_EQ(total_keys[0], "GP8_PKEXPIRESCAN_CASE_ALL_STRING_KEY3");
-  ASSERT_EQ(total_keys[1], "GP8_PKEXPIRESCAN_CASE_ALL_HASH_KEY3");
-  ASSERT_EQ(total_keys[2], "GP8_PKEXPIRESCAN_CASE_ALL_SET_KEY3");
-  ASSERT_EQ(total_keys[3], "GP8_PKEXPIRESCAN_CASE_ALL_LIST_KEY3");
-  ASSERT_EQ(total_keys[4], "GP8_PKEXPIRESCAN_CASE_ALL_ZSET_KEY3");
+  ASSERT_EQ(total_keys[1], "15"); 
+  ASSERT_EQ(total_keys[2], "GP8_PKEXPIRESCAN_CASE_ALL_HASH_KEY3");
+  ASSERT_EQ(total_keys[3], "15"); 
+  ASSERT_EQ(total_keys[4], "GP8_PKEXPIRESCAN_CASE_ALL_SET_KEY3");
+  ASSERT_EQ(total_keys[5], "15"); 
+  ASSERT_EQ(total_keys[6], "GP8_PKEXPIRESCAN_CASE_ALL_LIST_KEY3");
+  ASSERT_EQ(total_keys[7], "15"); 
+  ASSERT_EQ(total_keys[8], "GP8_PKEXPIRESCAN_CASE_ALL_ZSET_KEY3");
+  ASSERT_EQ(total_keys[9], "15"); 
 
   del_num = db.Del(delete_keys, &type_status);
   ASSERT_EQ(del_num, 15);
@@ -5727,22 +5806,37 @@ TEST_F(KeysTest, PKExpireScanCaseAllTest) {
     total_keys.insert(total_keys.end(), keys.begin(), keys.end());
     cursor = next_cursor;
   } while (cursor);
-  ASSERT_EQ(total_keys.size(), 15);
+  ASSERT_EQ(total_keys.size(), 30);
   ASSERT_EQ(total_keys[0],  "GP9_PKEXPIRESCAN_CASE_ALL_STRING_KEY1");
-  ASSERT_EQ(total_keys[1],  "GP9_PKEXPIRESCAN_CASE_ALL_STRING_KEY2");
-  ASSERT_EQ(total_keys[2],  "GP9_PKEXPIRESCAN_CASE_ALL_STRING_KEY3");
-  ASSERT_EQ(total_keys[3],  "GP9_PKEXPIRESCAN_CASE_ALL_HASH_KEY1");
-  ASSERT_EQ(total_keys[4],  "GP9_PKEXPIRESCAN_CASE_ALL_HASH_KEY2");
-  ASSERT_EQ(total_keys[5],  "GP9_PKEXPIRESCAN_CASE_ALL_HASH_KEY3");
-  ASSERT_EQ(total_keys[6],  "GP9_PKEXPIRESCAN_CASE_ALL_SET_KEY1");
-  ASSERT_EQ(total_keys[7],  "GP9_PKEXPIRESCAN_CASE_ALL_SET_KEY2");
-  ASSERT_EQ(total_keys[8],  "GP9_PKEXPIRESCAN_CASE_ALL_SET_KEY3");
-  ASSERT_EQ(total_keys[9],  "GP9_PKEXPIRESCAN_CASE_ALL_LIST_KEY1");
-  ASSERT_EQ(total_keys[10], "GP9_PKEXPIRESCAN_CASE_ALL_LIST_KEY2");
-  ASSERT_EQ(total_keys[11], "GP9_PKEXPIRESCAN_CASE_ALL_LIST_KEY3");
-  ASSERT_EQ(total_keys[12], "GP9_PKEXPIRESCAN_CASE_ALL_ZSET_KEY1");
-  ASSERT_EQ(total_keys[13], "GP9_PKEXPIRESCAN_CASE_ALL_ZSET_KEY2");
-  ASSERT_EQ(total_keys[14], "GP9_PKEXPIRESCAN_CASE_ALL_ZSET_KEY3");
+  ASSERT_EQ(total_keys[1], "5"); 
+  ASSERT_EQ(total_keys[2],  "GP9_PKEXPIRESCAN_CASE_ALL_STRING_KEY2");
+  ASSERT_EQ(total_keys[3], "25"); 
+  ASSERT_EQ(total_keys[4],  "GP9_PKEXPIRESCAN_CASE_ALL_STRING_KEY3");
+  ASSERT_EQ(total_keys[5], "15"); 
+  ASSERT_EQ(total_keys[6],  "GP9_PKEXPIRESCAN_CASE_ALL_HASH_KEY1");
+  ASSERT_EQ(total_keys[7], "6"); 
+  ASSERT_EQ(total_keys[8],  "GP9_PKEXPIRESCAN_CASE_ALL_HASH_KEY2");
+  ASSERT_EQ(total_keys[9], "16"); 
+  ASSERT_EQ(total_keys[10],  "GP9_PKEXPIRESCAN_CASE_ALL_HASH_KEY3");
+  ASSERT_EQ(total_keys[11], "26"); 
+  ASSERT_EQ(total_keys[12],  "GP9_PKEXPIRESCAN_CASE_ALL_SET_KEY1");
+  ASSERT_EQ(total_keys[13], "7"); 
+  ASSERT_EQ(total_keys[14],  "GP9_PKEXPIRESCAN_CASE_ALL_SET_KEY2");
+  ASSERT_EQ(total_keys[15], "17"); 
+  ASSERT_EQ(total_keys[16],  "GP9_PKEXPIRESCAN_CASE_ALL_SET_KEY3");
+  ASSERT_EQ(total_keys[17], "27"); 
+  ASSERT_EQ(total_keys[18],  "GP9_PKEXPIRESCAN_CASE_ALL_LIST_KEY1");
+  ASSERT_EQ(total_keys[19], "8"); 
+  ASSERT_EQ(total_keys[20], "GP9_PKEXPIRESCAN_CASE_ALL_LIST_KEY2");
+  ASSERT_EQ(total_keys[21], "18"); 
+  ASSERT_EQ(total_keys[22], "GP9_PKEXPIRESCAN_CASE_ALL_LIST_KEY3");
+  ASSERT_EQ(total_keys[23], "28"); 
+  ASSERT_EQ(total_keys[24], "GP9_PKEXPIRESCAN_CASE_ALL_ZSET_KEY1");
+  ASSERT_EQ(total_keys[25], "9"); 
+  ASSERT_EQ(total_keys[26], "GP9_PKEXPIRESCAN_CASE_ALL_ZSET_KEY2");
+  ASSERT_EQ(total_keys[27], "19"); 
+  ASSERT_EQ(total_keys[28], "GP9_PKEXPIRESCAN_CASE_ALL_ZSET_KEY3");
+  ASSERT_EQ(total_keys[29], "29"); 
 
   del_num = db.Del(delete_keys, &type_status);
   ASSERT_EQ(del_num, 15);
@@ -5820,10 +5914,13 @@ TEST_F(KeysTest, PKExpireScanCaseAllTest) {
     total_keys.insert(total_keys.end(), keys.begin(), keys.end());
     cursor = next_cursor;
   } while (cursor);
-  ASSERT_EQ(total_keys.size(), 3);
+  ASSERT_EQ(total_keys.size(), 6);
   ASSERT_EQ(total_keys[0], "GP10_PKEXPIRESCAN_CASE_ALL_STRING_KEY1");
-  ASSERT_EQ(total_keys[1], "GP10_PKEXPIRESCAN_CASE_ALL_STRING_KEY2");
-  ASSERT_EQ(total_keys[2], "GP10_PKEXPIRESCAN_CASE_ALL_STRING_KEY3");
+  ASSERT_EQ(total_keys[1], "15"); 
+  ASSERT_EQ(total_keys[2], "GP10_PKEXPIRESCAN_CASE_ALL_STRING_KEY2");
+  ASSERT_EQ(total_keys[3], "15"); 
+  ASSERT_EQ(total_keys[4], "GP10_PKEXPIRESCAN_CASE_ALL_STRING_KEY3");
+  ASSERT_EQ(total_keys[5], "15"); 
 
   del_num = db.Del(delete_keys, &type_status);
   ASSERT_EQ(del_num, 15);
@@ -5901,10 +5998,14 @@ TEST_F(KeysTest, PKExpireScanCaseAllTest) {
     total_keys.insert(total_keys.end(), keys.begin(), keys.end());
     cursor = next_cursor;
   } while (cursor);
-  ASSERT_EQ(total_keys.size(), 3);
+  ASSERT_EQ(total_keys.size(), 6);
   ASSERT_EQ(total_keys[0], "GP11_PKEXPIRESCAN_CASE_ALL_SET_KEY1");
-  ASSERT_EQ(total_keys[1], "GP11_PKEXPIRESCAN_CASE_ALL_SET_KEY2");
-  ASSERT_EQ(total_keys[2], "GP11_PKEXPIRESCAN_CASE_ALL_SET_KEY3");
+  ASSERT_EQ(total_keys[1], "15"); 
+  ASSERT_EQ(total_keys[2], "GP11_PKEXPIRESCAN_CASE_ALL_SET_KEY2");
+  ASSERT_EQ(total_keys[3], "15"); 
+  ASSERT_EQ(total_keys[4], "GP11_PKEXPIRESCAN_CASE_ALL_SET_KEY3");
+  ASSERT_EQ(total_keys[5], "15"); 
+ 
 
   del_num = db.Del(delete_keys, &type_status);
   ASSERT_EQ(del_num, 15);
@@ -5982,10 +6083,13 @@ TEST_F(KeysTest, PKExpireScanCaseAllTest) {
     total_keys.insert(total_keys.end(), keys.begin(), keys.end());
     cursor = next_cursor;
   } while (cursor);
-  ASSERT_EQ(total_keys.size(), 3);
+  ASSERT_EQ(total_keys.size(), 6);
   ASSERT_EQ(total_keys[0], "GP12_PKEXPIRESCAN_CASE_ALL_ZSET_KEY1");
-  ASSERT_EQ(total_keys[1], "GP12_PKEXPIRESCAN_CASE_ALL_ZSET_KEY2");
-  ASSERT_EQ(total_keys[2], "GP12_PKEXPIRESCAN_CASE_ALL_ZSET_KEY3");
+  ASSERT_EQ(total_keys[1], "15"); 
+  ASSERT_EQ(total_keys[2], "GP12_PKEXPIRESCAN_CASE_ALL_ZSET_KEY2");
+  ASSERT_EQ(total_keys[3], "15"); 
+  ASSERT_EQ(total_keys[4], "GP12_PKEXPIRESCAN_CASE_ALL_ZSET_KEY3");
+  ASSERT_EQ(total_keys[5], "15"); 
 
   del_num = db.Del(delete_keys, &type_status);
   ASSERT_EQ(del_num, 15);
@@ -6063,12 +6167,17 @@ TEST_F(KeysTest, PKExpireScanCaseAllTest) {
     total_keys.insert(total_keys.end(), keys.begin(), keys.end());
     cursor = next_cursor;
   } while (cursor);
-  ASSERT_EQ(total_keys.size(), 5);
+  ASSERT_EQ(total_keys.size(), 10);
   ASSERT_EQ(total_keys[0], "GP13_KEY1_PKEXPIRESCAN_CASE_ALL_STRING");
-  ASSERT_EQ(total_keys[1], "GP13_KEY1_PKEXPIRESCAN_CASE_ALL_HASH");
-  ASSERT_EQ(total_keys[2], "GP13_KEY1_PKEXPIRESCAN_CASE_ALL_SET");
-  ASSERT_EQ(total_keys[3], "GP13_KEY1_PKEXPIRESCAN_CASE_ALL_LIST");
-  ASSERT_EQ(total_keys[4], "GP13_KEY1_PKEXPIRESCAN_CASE_ALL_ZSET");
+  ASSERT_EQ(total_keys[1], "15"); 
+  ASSERT_EQ(total_keys[2], "GP13_KEY1_PKEXPIRESCAN_CASE_ALL_HASH");
+  ASSERT_EQ(total_keys[3], "15"); 
+  ASSERT_EQ(total_keys[4], "GP13_KEY1_PKEXPIRESCAN_CASE_ALL_SET");
+  ASSERT_EQ(total_keys[5], "15"); 
+  ASSERT_EQ(total_keys[6], "GP13_KEY1_PKEXPIRESCAN_CASE_ALL_LIST");
+  ASSERT_EQ(total_keys[7], "15"); 
+  ASSERT_EQ(total_keys[8], "GP13_KEY1_PKEXPIRESCAN_CASE_ALL_ZSET");
+  ASSERT_EQ(total_keys[9], "15"); 
 
   del_num = db.Del(delete_keys, &type_status);
   ASSERT_EQ(del_num, 15);
@@ -6146,12 +6255,17 @@ TEST_F(KeysTest, PKExpireScanCaseAllTest) {
     total_keys.insert(total_keys.end(), keys.begin(), keys.end());
     cursor = next_cursor;
   } while (cursor);
-  ASSERT_EQ(total_keys.size(), 5);
+  ASSERT_EQ(total_keys.size(), 10);
   ASSERT_EQ(total_keys[0], "GP14_KEY1_PKEXPIRESCAN_CASE_ALL_STRING");
-  ASSERT_EQ(total_keys[1], "GP14_KEY1_PKEXPIRESCAN_CASE_ALL_HASH");
-  ASSERT_EQ(total_keys[2], "GP14_KEY1_PKEXPIRESCAN_CASE_ALL_SET");
-  ASSERT_EQ(total_keys[3], "GP14_KEY1_PKEXPIRESCAN_CASE_ALL_LIST");
-  ASSERT_EQ(total_keys[4], "GP14_KEY1_PKEXPIRESCAN_CASE_ALL_ZSET");
+  ASSERT_EQ(total_keys[1], "15"); 
+  ASSERT_EQ(total_keys[2], "GP14_KEY1_PKEXPIRESCAN_CASE_ALL_HASH");
+  ASSERT_EQ(total_keys[3], "15"); 
+  ASSERT_EQ(total_keys[4], "GP14_KEY1_PKEXPIRESCAN_CASE_ALL_SET");
+  ASSERT_EQ(total_keys[5], "15"); 
+  ASSERT_EQ(total_keys[6], "GP14_KEY1_PKEXPIRESCAN_CASE_ALL_LIST");
+  ASSERT_EQ(total_keys[7], "15"); 
+  ASSERT_EQ(total_keys[8], "GP14_KEY1_PKEXPIRESCAN_CASE_ALL_ZSET");
+  ASSERT_EQ(total_keys[9], "15"); 
 
   del_num = db.Del(delete_keys, &type_status);
   ASSERT_EQ(del_num, 15);
@@ -6229,12 +6343,17 @@ TEST_F(KeysTest, PKExpireScanCaseAllTest) {
     total_keys.insert(total_keys.end(), keys.begin(), keys.end());
     cursor = next_cursor;
   } while (cursor);
-  ASSERT_EQ(total_keys.size(), 5);
+  ASSERT_EQ(total_keys.size(), 10);
   ASSERT_EQ(total_keys[0], "GP15_KEY2_PKEXPIRESCAN_CASE_ALL_STRING");
-  ASSERT_EQ(total_keys[1], "GP15_KEY2_PKEXPIRESCAN_CASE_ALL_HASH");
-  ASSERT_EQ(total_keys[2], "GP15_KEY2_PKEXPIRESCAN_CASE_ALL_SET");
-  ASSERT_EQ(total_keys[3], "GP15_KEY2_PKEXPIRESCAN_CASE_ALL_LIST");
-  ASSERT_EQ(total_keys[4], "GP15_KEY2_PKEXPIRESCAN_CASE_ALL_ZSET");
+  ASSERT_EQ(total_keys[1], "15"); 
+  ASSERT_EQ(total_keys[2], "GP15_KEY2_PKEXPIRESCAN_CASE_ALL_HASH");
+  ASSERT_EQ(total_keys[3], "15"); 
+  ASSERT_EQ(total_keys[4], "GP15_KEY2_PKEXPIRESCAN_CASE_ALL_SET");
+  ASSERT_EQ(total_keys[5], "15"); 
+  ASSERT_EQ(total_keys[6], "GP15_KEY2_PKEXPIRESCAN_CASE_ALL_LIST");
+  ASSERT_EQ(total_keys[7], "15"); 
+  ASSERT_EQ(total_keys[8], "GP15_KEY2_PKEXPIRESCAN_CASE_ALL_ZSET");
+  ASSERT_EQ(total_keys[9], "15"); 
 
   del_num = db.Del(delete_keys, &type_status);
   ASSERT_EQ(del_num, 15);
@@ -6312,12 +6431,17 @@ TEST_F(KeysTest, PKExpireScanCaseAllTest) {
     total_keys.insert(total_keys.end(), keys.begin(), keys.end());
     cursor = next_cursor;
   } while (cursor);
-  ASSERT_EQ(total_keys.size(), 5);
+  ASSERT_EQ(total_keys.size(), 10);
   ASSERT_EQ(total_keys[0], "GP16_KEY3_PKEXPIRESCAN_CASE_ALL_STRING");
-  ASSERT_EQ(total_keys[1], "GP16_KEY3_PKEXPIRESCAN_CASE_ALL_HASH");
-  ASSERT_EQ(total_keys[2], "GP16_KEY3_PKEXPIRESCAN_CASE_ALL_SET");
-  ASSERT_EQ(total_keys[3], "GP16_KEY3_PKEXPIRESCAN_CASE_ALL_LIST");
-  ASSERT_EQ(total_keys[4], "GP16_KEY3_PKEXPIRESCAN_CASE_ALL_ZSET");
+  ASSERT_EQ(total_keys[1], "15"); 
+  ASSERT_EQ(total_keys[2], "GP16_KEY3_PKEXPIRESCAN_CASE_ALL_HASH");
+  ASSERT_EQ(total_keys[3], "15"); 
+  ASSERT_EQ(total_keys[4], "GP16_KEY3_PKEXPIRESCAN_CASE_ALL_SET");
+  ASSERT_EQ(total_keys[5], "15"); 
+  ASSERT_EQ(total_keys[6], "GP16_KEY3_PKEXPIRESCAN_CASE_ALL_LIST");
+  ASSERT_EQ(total_keys[7], "15"); 
+  ASSERT_EQ(total_keys[8], "GP16_KEY3_PKEXPIRESCAN_CASE_ALL_ZSET");
+  ASSERT_EQ(total_keys[9], "15"); 
 
   del_num = db.Del(delete_keys, &type_status);
   ASSERT_EQ(del_num, 15);
@@ -6420,23 +6544,29 @@ TEST_F(KeysTest, PKExpireScanCaseSingleTest) {
   cursor = 0;
   cursor = db.PKExpireScan(DataType::kStrings, cursor, 10, 20, 2, &keys);
   ASSERT_EQ(cursor, 2);
-  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys.size(), 4);
   ASSERT_EQ(keys[0], "GP1_KEY1_PKEXPIRESCAN_CASE_SINGLE_STRING");
-  ASSERT_EQ(keys[1], "GP1_KEY2_PKEXPIRESCAN_CASE_SINGLE_STRING");
+  ASSERT_EQ(keys[1], "15");
+  ASSERT_EQ(keys[2], "GP1_KEY2_PKEXPIRESCAN_CASE_SINGLE_STRING");
+  ASSERT_EQ(keys[3], "15");
 
   keys.clear();
   cursor = db.PKExpireScan(DataType::kStrings, cursor, 10, 20, 2, &keys);
   ASSERT_EQ(cursor, 4);
-  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys.size(), 4);
   ASSERT_EQ(keys[0], "GP1_KEY3_PKEXPIRESCAN_CASE_SINGLE_STRING");
-  ASSERT_EQ(keys[1], "GP1_KEY4_PKEXPIRESCAN_CASE_SINGLE_STRING");
+  ASSERT_EQ(keys[1], "15");
+  ASSERT_EQ(keys[2], "GP1_KEY4_PKEXPIRESCAN_CASE_SINGLE_STRING");
+  ASSERT_EQ(keys[3], "15");
 
   keys.clear();
   cursor = db.PKExpireScan(DataType::kStrings, cursor, 10, 20, 2, &keys);
   ASSERT_EQ(cursor, 0);
-  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys.size(), 4);
   ASSERT_EQ(keys[0], "GP1_KEY5_PKEXPIRESCAN_CASE_SINGLE_STRING");
-  ASSERT_EQ(keys[1], "GP1_KEY6_PKEXPIRESCAN_CASE_SINGLE_STRING");
+  ASSERT_EQ(keys[1], "15");
+  ASSERT_EQ(keys[2], "GP1_KEY6_PKEXPIRESCAN_CASE_SINGLE_STRING");
+  ASSERT_EQ(keys[3], "15");
 
   del_num = db.Del(delete_keys, &type_status);
   ASSERT_EQ(del_num, 30);
@@ -6527,18 +6657,24 @@ TEST_F(KeysTest, PKExpireScanCaseSingleTest) {
   cursor = 0;
   cursor = db.PKExpireScan(DataType::kStrings, cursor, 10, 20, 4, &keys);
   ASSERT_EQ(cursor, 4);
-  ASSERT_EQ(keys.size(), 4);
+  ASSERT_EQ(keys.size(), 8);
   ASSERT_EQ(keys[0], "GP2_KEY1_PKEXPIRESCAN_CASE_SINGLE_STRING");
-  ASSERT_EQ(keys[1], "GP2_KEY2_PKEXPIRESCAN_CASE_SINGLE_STRING");
-  ASSERT_EQ(keys[2], "GP2_KEY3_PKEXPIRESCAN_CASE_SINGLE_STRING");
-  ASSERT_EQ(keys[3], "GP2_KEY4_PKEXPIRESCAN_CASE_SINGLE_STRING");
+  ASSERT_EQ(keys[1], "15");
+  ASSERT_EQ(keys[2], "GP2_KEY2_PKEXPIRESCAN_CASE_SINGLE_STRING");
+  ASSERT_EQ(keys[3], "15");
+  ASSERT_EQ(keys[4], "GP2_KEY3_PKEXPIRESCAN_CASE_SINGLE_STRING");
+  ASSERT_EQ(keys[5], "15");
+  ASSERT_EQ(keys[6], "GP2_KEY4_PKEXPIRESCAN_CASE_SINGLE_STRING");
+  ASSERT_EQ(keys[7], "15");
 
   keys.clear();
   cursor = db.PKExpireScan(DataType::kStrings, cursor, 10, 20, 4, &keys);
   ASSERT_EQ(cursor, 0);
-  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys.size(), 4);
   ASSERT_EQ(keys[0], "GP2_KEY5_PKEXPIRESCAN_CASE_SINGLE_STRING");
-  ASSERT_EQ(keys[1], "GP2_KEY6_PKEXPIRESCAN_CASE_SINGLE_STRING");
+  ASSERT_EQ(keys[1], "15");
+  ASSERT_EQ(keys[2], "GP2_KEY6_PKEXPIRESCAN_CASE_SINGLE_STRING");
+  ASSERT_EQ(keys[3], "15");
 
   del_num = db.Del(delete_keys, &type_status);
   ASSERT_EQ(del_num, 30);
@@ -6629,13 +6765,19 @@ TEST_F(KeysTest, PKExpireScanCaseSingleTest) {
   cursor = 0;
   cursor = db.PKExpireScan(DataType::kStrings, cursor, 10, 20, 6, &keys);
   ASSERT_EQ(cursor, 0);
-  ASSERT_EQ(keys.size(), 6);
+  ASSERT_EQ(keys.size(), 12);
   ASSERT_EQ(keys[0], "GP3_KEY1_PKEXPIRESCAN_CASE_SINGLE_STRING");
-  ASSERT_EQ(keys[1], "GP3_KEY2_PKEXPIRESCAN_CASE_SINGLE_STRING");
-  ASSERT_EQ(keys[2], "GP3_KEY3_PKEXPIRESCAN_CASE_SINGLE_STRING");
-  ASSERT_EQ(keys[3], "GP3_KEY4_PKEXPIRESCAN_CASE_SINGLE_STRING");
-  ASSERT_EQ(keys[4], "GP3_KEY5_PKEXPIRESCAN_CASE_SINGLE_STRING");
-  ASSERT_EQ(keys[5], "GP3_KEY6_PKEXPIRESCAN_CASE_SINGLE_STRING");
+  ASSERT_EQ(keys[1], "15");
+  ASSERT_EQ(keys[2], "GP3_KEY2_PKEXPIRESCAN_CASE_SINGLE_STRING");
+  ASSERT_EQ(keys[3], "15");
+  ASSERT_EQ(keys[4], "GP3_KEY3_PKEXPIRESCAN_CASE_SINGLE_STRING");
+  ASSERT_EQ(keys[5], "15");
+  ASSERT_EQ(keys[6], "GP3_KEY4_PKEXPIRESCAN_CASE_SINGLE_STRING");
+  ASSERT_EQ(keys[7], "15");
+  ASSERT_EQ(keys[8], "GP3_KEY5_PKEXPIRESCAN_CASE_SINGLE_STRING");
+  ASSERT_EQ(keys[9], "15");
+  ASSERT_EQ(keys[10], "GP3_KEY6_PKEXPIRESCAN_CASE_SINGLE_STRING");
+  ASSERT_EQ(keys[11], "15");
 
   del_num = db.Del(delete_keys, &type_status);
   ASSERT_EQ(del_num, 30);
@@ -6726,13 +6868,19 @@ TEST_F(KeysTest, PKExpireScanCaseSingleTest) {
   cursor = 0;
   cursor = db.PKExpireScan(DataType::kStrings, cursor, 10, 20, 10, &keys);
   ASSERT_EQ(cursor, 0);
-  ASSERT_EQ(keys.size(), 6);
+  ASSERT_EQ(keys.size(), 12);
   ASSERT_EQ(keys[0], "GP4_KEY1_PKEXPIRESCAN_CASE_SINGLE_STRING");
-  ASSERT_EQ(keys[1], "GP4_KEY2_PKEXPIRESCAN_CASE_SINGLE_STRING");
-  ASSERT_EQ(keys[2], "GP4_KEY3_PKEXPIRESCAN_CASE_SINGLE_STRING");
-  ASSERT_EQ(keys[3], "GP4_KEY4_PKEXPIRESCAN_CASE_SINGLE_STRING");
-  ASSERT_EQ(keys[4], "GP4_KEY5_PKEXPIRESCAN_CASE_SINGLE_STRING");
-  ASSERT_EQ(keys[5], "GP4_KEY6_PKEXPIRESCAN_CASE_SINGLE_STRING");
+  ASSERT_EQ(keys[1], "15");
+  ASSERT_EQ(keys[2], "GP4_KEY2_PKEXPIRESCAN_CASE_SINGLE_STRING");
+  ASSERT_EQ(keys[3], "15");
+  ASSERT_EQ(keys[4], "GP4_KEY3_PKEXPIRESCAN_CASE_SINGLE_STRING");
+  ASSERT_EQ(keys[5], "15");
+  ASSERT_EQ(keys[6], "GP4_KEY4_PKEXPIRESCAN_CASE_SINGLE_STRING");
+  ASSERT_EQ(keys[7], "15");
+  ASSERT_EQ(keys[8], "GP4_KEY5_PKEXPIRESCAN_CASE_SINGLE_STRING");
+  ASSERT_EQ(keys[9], "15");
+  ASSERT_EQ(keys[10], "GP4_KEY6_PKEXPIRESCAN_CASE_SINGLE_STRING");
+  ASSERT_EQ(keys[11], "15");
 
   del_num = db.Del(delete_keys, &type_status);
   ASSERT_EQ(del_num, 30);
@@ -6823,23 +6971,29 @@ TEST_F(KeysTest, PKExpireScanCaseSingleTest) {
   cursor = 0;
   cursor = db.PKExpireScan(DataType::kSets, cursor, 10, 20, 2, &keys);
   ASSERT_EQ(cursor, 2);
-  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys.size(), 4);
   ASSERT_EQ(keys[0], "GP5_KEY1_PKEXPIRESCAN_CASE_SINGLE_SET");
-  ASSERT_EQ(keys[1], "GP5_KEY2_PKEXPIRESCAN_CASE_SINGLE_SET");
+  ASSERT_EQ(keys[1], "15");
+  ASSERT_EQ(keys[2], "GP5_KEY2_PKEXPIRESCAN_CASE_SINGLE_SET");
+  ASSERT_EQ(keys[3], "15");
 
   keys.clear();
   cursor = db.PKExpireScan(DataType::kSets, cursor, 10, 20, 2, &keys);
   ASSERT_EQ(cursor, 4);
-  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys.size(), 4);
   ASSERT_EQ(keys[0], "GP5_KEY3_PKEXPIRESCAN_CASE_SINGLE_SET");
-  ASSERT_EQ(keys[1], "GP5_KEY4_PKEXPIRESCAN_CASE_SINGLE_SET");
+  ASSERT_EQ(keys[1], "15");
+  ASSERT_EQ(keys[2], "GP5_KEY4_PKEXPIRESCAN_CASE_SINGLE_SET");
+  ASSERT_EQ(keys[3], "15");
 
   keys.clear();
   cursor = db.PKExpireScan(DataType::kSets, cursor, 10, 20, 2, &keys);
   ASSERT_EQ(cursor, 0);
-  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys.size(), 4);
   ASSERT_EQ(keys[0], "GP5_KEY5_PKEXPIRESCAN_CASE_SINGLE_SET");
-  ASSERT_EQ(keys[1], "GP5_KEY6_PKEXPIRESCAN_CASE_SINGLE_SET");
+  ASSERT_EQ(keys[1], "15");
+  ASSERT_EQ(keys[2], "GP5_KEY6_PKEXPIRESCAN_CASE_SINGLE_SET");
+  ASSERT_EQ(keys[3], "15");
 
   del_num = db.Del(delete_keys, &type_status);
   ASSERT_EQ(del_num, 30);
@@ -6930,18 +7084,24 @@ TEST_F(KeysTest, PKExpireScanCaseSingleTest) {
   cursor = 0;
   cursor = db.PKExpireScan(DataType::kSets, cursor, 10, 20, 4, &keys);
   ASSERT_EQ(cursor, 4);
-  ASSERT_EQ(keys.size(), 4);
+  ASSERT_EQ(keys.size(), 8);
   ASSERT_EQ(keys[0], "GP6_KEY1_PKEXPIRESCAN_CASE_SINGLE_SET");
-  ASSERT_EQ(keys[1], "GP6_KEY2_PKEXPIRESCAN_CASE_SINGLE_SET");
-  ASSERT_EQ(keys[2], "GP6_KEY3_PKEXPIRESCAN_CASE_SINGLE_SET");
-  ASSERT_EQ(keys[3], "GP6_KEY4_PKEXPIRESCAN_CASE_SINGLE_SET");
+  ASSERT_EQ(keys[1], "15");
+  ASSERT_EQ(keys[2], "GP6_KEY2_PKEXPIRESCAN_CASE_SINGLE_SET");
+  ASSERT_EQ(keys[3], "15");
+  ASSERT_EQ(keys[4], "GP6_KEY3_PKEXPIRESCAN_CASE_SINGLE_SET");
+  ASSERT_EQ(keys[5], "15");
+  ASSERT_EQ(keys[6], "GP6_KEY4_PKEXPIRESCAN_CASE_SINGLE_SET");
+  ASSERT_EQ(keys[7], "15");
 
   keys.clear();
   cursor = db.PKExpireScan(DataType::kSets, cursor, 10, 20, 4, &keys);
   ASSERT_EQ(cursor, 0);
-  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys.size(), 4);
   ASSERT_EQ(keys[0], "GP6_KEY5_PKEXPIRESCAN_CASE_SINGLE_SET");
-  ASSERT_EQ(keys[1], "GP6_KEY6_PKEXPIRESCAN_CASE_SINGLE_SET");
+  ASSERT_EQ(keys[1], "15");
+  ASSERT_EQ(keys[2], "GP6_KEY6_PKEXPIRESCAN_CASE_SINGLE_SET");
+  ASSERT_EQ(keys[3], "15");
 
   del_num = db.Del(delete_keys, &type_status);
   ASSERT_EQ(del_num, 30);
@@ -7032,13 +7192,19 @@ TEST_F(KeysTest, PKExpireScanCaseSingleTest) {
   cursor = 0;
   cursor = db.PKExpireScan(DataType::kSets, cursor, 10, 20, 6, &keys);
   ASSERT_EQ(cursor, 0);
-  ASSERT_EQ(keys.size(), 6);
+  ASSERT_EQ(keys.size(), 12);
   ASSERT_EQ(keys[0], "GP7_KEY1_PKEXPIRESCAN_CASE_SINGLE_SET");
-  ASSERT_EQ(keys[1], "GP7_KEY2_PKEXPIRESCAN_CASE_SINGLE_SET");
-  ASSERT_EQ(keys[2], "GP7_KEY3_PKEXPIRESCAN_CASE_SINGLE_SET");
-  ASSERT_EQ(keys[3], "GP7_KEY4_PKEXPIRESCAN_CASE_SINGLE_SET");
-  ASSERT_EQ(keys[4], "GP7_KEY5_PKEXPIRESCAN_CASE_SINGLE_SET");
-  ASSERT_EQ(keys[5], "GP7_KEY6_PKEXPIRESCAN_CASE_SINGLE_SET");
+  ASSERT_EQ(keys[1], "15");
+  ASSERT_EQ(keys[2], "GP7_KEY2_PKEXPIRESCAN_CASE_SINGLE_SET");
+  ASSERT_EQ(keys[3], "15");
+  ASSERT_EQ(keys[4], "GP7_KEY3_PKEXPIRESCAN_CASE_SINGLE_SET");
+  ASSERT_EQ(keys[5], "15");
+  ASSERT_EQ(keys[6], "GP7_KEY4_PKEXPIRESCAN_CASE_SINGLE_SET");
+  ASSERT_EQ(keys[7], "15");
+  ASSERT_EQ(keys[8], "GP7_KEY5_PKEXPIRESCAN_CASE_SINGLE_SET");
+  ASSERT_EQ(keys[9], "15");
+  ASSERT_EQ(keys[10], "GP7_KEY6_PKEXPIRESCAN_CASE_SINGLE_SET");
+  ASSERT_EQ(keys[11], "15");
 
   del_num = db.Del(delete_keys, &type_status);
   ASSERT_EQ(del_num, 30);
@@ -7129,13 +7295,19 @@ TEST_F(KeysTest, PKExpireScanCaseSingleTest) {
   cursor = 0;
   cursor = db.PKExpireScan(DataType::kSets, cursor, 10, 20, 10, &keys);
   ASSERT_EQ(cursor, 0);
-  ASSERT_EQ(keys.size(), 6);
+  ASSERT_EQ(keys.size(), 12);
   ASSERT_EQ(keys[0], "GP8_KEY1_PKEXPIRESCAN_CASE_SINGLE_SET");
-  ASSERT_EQ(keys[1], "GP8_KEY2_PKEXPIRESCAN_CASE_SINGLE_SET");
-  ASSERT_EQ(keys[2], "GP8_KEY3_PKEXPIRESCAN_CASE_SINGLE_SET");
-  ASSERT_EQ(keys[3], "GP8_KEY4_PKEXPIRESCAN_CASE_SINGLE_SET");
-  ASSERT_EQ(keys[4], "GP8_KEY5_PKEXPIRESCAN_CASE_SINGLE_SET");
-  ASSERT_EQ(keys[5], "GP8_KEY6_PKEXPIRESCAN_CASE_SINGLE_SET");
+  ASSERT_EQ(keys[1], "15");
+  ASSERT_EQ(keys[2], "GP8_KEY2_PKEXPIRESCAN_CASE_SINGLE_SET");
+  ASSERT_EQ(keys[3], "15");
+  ASSERT_EQ(keys[4], "GP8_KEY3_PKEXPIRESCAN_CASE_SINGLE_SET");
+  ASSERT_EQ(keys[5], "15");
+  ASSERT_EQ(keys[6], "GP8_KEY4_PKEXPIRESCAN_CASE_SINGLE_SET");
+  ASSERT_EQ(keys[7], "15");
+  ASSERT_EQ(keys[8], "GP8_KEY5_PKEXPIRESCAN_CASE_SINGLE_SET");
+  ASSERT_EQ(keys[7], "15");
+  ASSERT_EQ(keys[10], "GP8_KEY6_PKEXPIRESCAN_CASE_SINGLE_SET");
+  ASSERT_EQ(keys[11], "15");
 
   del_num = db.Del(delete_keys, &type_status);
   ASSERT_EQ(del_num, 30);
@@ -7226,23 +7398,29 @@ TEST_F(KeysTest, PKExpireScanCaseSingleTest) {
   cursor = 0;
   cursor = db.PKExpireScan(DataType::kZSets, cursor, 10, 20, 2, &keys);
   ASSERT_EQ(cursor, 2);
-  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys.size(), 4);
   ASSERT_EQ(keys[0], "GP9_KEY1_PKEXPIRESCAN_CASE_SINGLE_ZSET");
-  ASSERT_EQ(keys[1], "GP9_KEY2_PKEXPIRESCAN_CASE_SINGLE_ZSET");
+  ASSERT_EQ(keys[1], "15");
+  ASSERT_EQ(keys[2], "GP9_KEY2_PKEXPIRESCAN_CASE_SINGLE_ZSET");
+  ASSERT_EQ(keys[3], "15");
 
   keys.clear();
   cursor = db.PKExpireScan(DataType::kZSets, cursor, 10, 20, 2, &keys);
   ASSERT_EQ(cursor, 4);
-  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys.size(), 4);
   ASSERT_EQ(keys[0], "GP9_KEY3_PKEXPIRESCAN_CASE_SINGLE_ZSET");
-  ASSERT_EQ(keys[1], "GP9_KEY4_PKEXPIRESCAN_CASE_SINGLE_ZSET");
+  ASSERT_EQ(keys[1], "15");
+  ASSERT_EQ(keys[2], "GP9_KEY4_PKEXPIRESCAN_CASE_SINGLE_ZSET");
+  ASSERT_EQ(keys[3], "15");
 
   keys.clear();
   cursor = db.PKExpireScan(DataType::kZSets, cursor, 10, 20, 2, &keys);
   ASSERT_EQ(cursor, 0);
-  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys.size(), 4);
   ASSERT_EQ(keys[0], "GP9_KEY5_PKEXPIRESCAN_CASE_SINGLE_ZSET");
-  ASSERT_EQ(keys[1], "GP9_KEY6_PKEXPIRESCAN_CASE_SINGLE_ZSET");
+  ASSERT_EQ(keys[1], "15");
+  ASSERT_EQ(keys[2], "GP9_KEY6_PKEXPIRESCAN_CASE_SINGLE_ZSET");
+  ASSERT_EQ(keys[3], "15");
 
   del_num = db.Del(delete_keys, &type_status);
   ASSERT_EQ(del_num, 30);
@@ -7333,18 +7511,24 @@ TEST_F(KeysTest, PKExpireScanCaseSingleTest) {
   cursor = 0;
   cursor = db.PKExpireScan(DataType::kZSets, cursor, 10, 20, 4, &keys);
   ASSERT_EQ(cursor, 4);
-  ASSERT_EQ(keys.size(), 4);
+  ASSERT_EQ(keys.size(), 8);
   ASSERT_EQ(keys[0], "GP10_KEY1_PKEXPIRESCAN_CASE_SINGLE_ZSET");
-  ASSERT_EQ(keys[1], "GP10_KEY2_PKEXPIRESCAN_CASE_SINGLE_ZSET");
-  ASSERT_EQ(keys[2], "GP10_KEY3_PKEXPIRESCAN_CASE_SINGLE_ZSET");
-  ASSERT_EQ(keys[3], "GP10_KEY4_PKEXPIRESCAN_CASE_SINGLE_ZSET");
+  ASSERT_EQ(keys[1], "15");
+  ASSERT_EQ(keys[2], "GP10_KEY2_PKEXPIRESCAN_CASE_SINGLE_ZSET");
+  ASSERT_EQ(keys[3], "15");
+  ASSERT_EQ(keys[4], "GP10_KEY3_PKEXPIRESCAN_CASE_SINGLE_ZSET");
+  ASSERT_EQ(keys[5], "15");
+  ASSERT_EQ(keys[6], "GP10_KEY4_PKEXPIRESCAN_CASE_SINGLE_ZSET");
+  ASSERT_EQ(keys[7], "15");
 
   keys.clear();
   cursor = db.PKExpireScan(DataType::kZSets, cursor, 10, 20, 4, &keys);
   ASSERT_EQ(cursor, 0);
-  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys.size(), 4);
   ASSERT_EQ(keys[0], "GP10_KEY5_PKEXPIRESCAN_CASE_SINGLE_ZSET");
-  ASSERT_EQ(keys[1], "GP10_KEY6_PKEXPIRESCAN_CASE_SINGLE_ZSET");
+  ASSERT_EQ(keys[1], "15");
+  ASSERT_EQ(keys[2], "GP10_KEY6_PKEXPIRESCAN_CASE_SINGLE_ZSET");
+  ASSERT_EQ(keys[3], "15");
 
   del_num = db.Del(delete_keys, &type_status);
   ASSERT_EQ(del_num, 30);
@@ -7435,13 +7619,19 @@ TEST_F(KeysTest, PKExpireScanCaseSingleTest) {
   cursor = 0;
   cursor = db.PKExpireScan(DataType::kZSets, cursor, 10, 20, 6, &keys);
   ASSERT_EQ(cursor, 0);
-  ASSERT_EQ(keys.size(), 6);
+  ASSERT_EQ(keys.size(), 12);
   ASSERT_EQ(keys[0], "GP11_KEY1_PKEXPIRESCAN_CASE_SINGLE_ZSET");
-  ASSERT_EQ(keys[1], "GP11_KEY2_PKEXPIRESCAN_CASE_SINGLE_ZSET");
-  ASSERT_EQ(keys[2], "GP11_KEY3_PKEXPIRESCAN_CASE_SINGLE_ZSET");
-  ASSERT_EQ(keys[3], "GP11_KEY4_PKEXPIRESCAN_CASE_SINGLE_ZSET");
-  ASSERT_EQ(keys[4], "GP11_KEY5_PKEXPIRESCAN_CASE_SINGLE_ZSET");
-  ASSERT_EQ(keys[5], "GP11_KEY6_PKEXPIRESCAN_CASE_SINGLE_ZSET");
+  ASSERT_EQ(keys[1], "15");
+  ASSERT_EQ(keys[2], "GP11_KEY2_PKEXPIRESCAN_CASE_SINGLE_ZSET");
+  ASSERT_EQ(keys[3], "15");
+  ASSERT_EQ(keys[4], "GP11_KEY3_PKEXPIRESCAN_CASE_SINGLE_ZSET");
+  ASSERT_EQ(keys[5], "15");
+  ASSERT_EQ(keys[6], "GP11_KEY4_PKEXPIRESCAN_CASE_SINGLE_ZSET");
+  ASSERT_EQ(keys[7], "15");
+  ASSERT_EQ(keys[8], "GP11_KEY5_PKEXPIRESCAN_CASE_SINGLE_ZSET");
+  ASSERT_EQ(keys[9], "15");
+  ASSERT_EQ(keys[10], "GP11_KEY6_PKEXPIRESCAN_CASE_SINGLE_ZSET");
+  ASSERT_EQ(keys[11], "15");
 
   del_num = db.Del(delete_keys, &type_status);
   ASSERT_EQ(del_num, 30);
@@ -7532,16 +7722,2918 @@ TEST_F(KeysTest, PKExpireScanCaseSingleTest) {
   cursor = 0;
   cursor = db.PKExpireScan(DataType::kZSets, cursor, 10, 20, 10, &keys);
   ASSERT_EQ(cursor, 0);
-  ASSERT_EQ(keys.size(), 6);
+  ASSERT_EQ(keys.size(), 12);
   ASSERT_EQ(keys[0], "GP12_KEY1_PKEXPIRESCAN_CASE_SINGLE_ZSET");
-  ASSERT_EQ(keys[1], "GP12_KEY2_PKEXPIRESCAN_CASE_SINGLE_ZSET");
-  ASSERT_EQ(keys[2], "GP12_KEY3_PKEXPIRESCAN_CASE_SINGLE_ZSET");
-  ASSERT_EQ(keys[3], "GP12_KEY4_PKEXPIRESCAN_CASE_SINGLE_ZSET");
-  ASSERT_EQ(keys[4], "GP12_KEY5_PKEXPIRESCAN_CASE_SINGLE_ZSET");
-  ASSERT_EQ(keys[5], "GP12_KEY6_PKEXPIRESCAN_CASE_SINGLE_ZSET");
+  ASSERT_EQ(keys[1], "15");
+  ASSERT_EQ(keys[2], "GP12_KEY2_PKEXPIRESCAN_CASE_SINGLE_ZSET");
+  ASSERT_EQ(keys[3], "15");
+  ASSERT_EQ(keys[4], "GP12_KEY3_PKEXPIRESCAN_CASE_SINGLE_ZSET");
+  ASSERT_EQ(keys[5], "15");
+  ASSERT_EQ(keys[6], "GP12_KEY4_PKEXPIRESCAN_CASE_SINGLE_ZSET");
+  ASSERT_EQ(keys[7], "15");
+  ASSERT_EQ(keys[8], "GP12_KEY5_PKEXPIRESCAN_CASE_SINGLE_ZSET");
+  ASSERT_EQ(keys[9], "15");
+  ASSERT_EQ(keys[10], "GP12_KEY6_PKEXPIRESCAN_CASE_SINGLE_ZSET");
+  ASSERT_EQ(keys[11], "15");
 
   del_num = db.Del(delete_keys, &type_status);
   ASSERT_EQ(del_num, 30);
+  sleep(2);
+  db.Compact(DataType::kAll, true);
+}
+
+//PKExpireReset
+TEST_F(KeysTest, PKExpireResetAllTest) {
+  int64_t cursor;
+  int64_t next_cursor;
+  int64_t del_num;
+  int32_t int32_ret;
+  uint64_t uint64_ret;
+  std::vector<std::string> keys;
+  std::vector<std::string> total_keys;
+  std::vector<std::string> delete_keys;
+  std::map<blackwidow::DataType, Status> type_status;
+  Status s;
+
+  // ***************** Group 1 Test *****************
+  delete_keys.clear();
+  //String
+  s = db.Set("GP1_PKEXPIRERESET_CASE_ALL_STRING_KEY1", "GP1_PKEXPIRERESET_CASE_ALL_STRING_VALUE1");
+  s = db.Set("GP1_PKEXPIRERESET_CASE_ALL_STRING_KEY2", "GP1_PKEXPIRERESET_CASE_ALL_STRING_VALUE2");
+  s = db.Set("GP1_PKEXPIRERESET_CASE_ALL_STRING_KEY3", "GP1_PKEXPIRERESET_CASE_ALL_STRING_VALUE3");
+  delete_keys.push_back("GP1_PKEXPIRERESET_CASE_ALL_STRING_KEY1");
+  delete_keys.push_back("GP1_PKEXPIRERESET_CASE_ALL_STRING_KEY2");
+  delete_keys.push_back("GP1_PKEXPIRERESET_CASE_ALL_STRING_KEY3");
+
+  //Hash
+  s = db.HSet("GP1_PKEXPIRERESET_CASE_ALL_HASH_KEY1", "GP1_PKEXPIRERESET_CASE_ALL_HASH_FIELD1", "GP1_PKEXPIRERESET_CASE_ALL_HASH_VALUE1", &int32_ret);
+  s = db.HSet("GP1_PKEXPIRERESET_CASE_ALL_HASH_KEY2", "GP1_PKEXPIRERESET_CASE_ALL_HASH_FIELD2", "GP1_PKEXPIRERESET_CASE_ALL_HASH_VALUE2", &int32_ret);
+  s = db.HSet("GP1_PKEXPIRERESET_CASE_ALL_HASH_KEY3", "GP1_PKEXPIRERESET_CASE_ALL_HASH_FIELD3", "GP1_PKEXPIRERESET_CASE_ALL_HASH_VALUE3", &int32_ret);
+  delete_keys.push_back("GP1_PKEXPIRERESET_CASE_ALL_HASH_KEY1");
+  delete_keys.push_back("GP1_PKEXPIRERESET_CASE_ALL_HASH_KEY2");
+  delete_keys.push_back("GP1_PKEXPIRERESET_CASE_ALL_HASH_KEY3");
+
+  //Set
+  s = db.SAdd("GP1_PKEXPIRERESET_CASE_ALL_SET_KEY1", {"GP1_PKEXPIRERESET_CASE_ALL_SET_MEMBER1"}, &int32_ret);
+  s = db.SAdd("GP1_PKEXPIRERESET_CASE_ALL_SET_KEY2", {"GP1_PKEXPIRERESET_CASE_ALL_SET_MEMBER2"}, &int32_ret);
+  s = db.SAdd("GP1_PKEXPIRERESET_CASE_ALL_SET_KEY3", {"GP1_PKEXPIRERESET_CASE_ALL_SET_MEMBER3"}, &int32_ret);
+  delete_keys.push_back("GP1_PKEXPIRERESET_CASE_ALL_SET_KEY1");
+  delete_keys.push_back("GP1_PKEXPIRERESET_CASE_ALL_SET_KEY2");
+  delete_keys.push_back("GP1_PKEXPIRERESET_CASE_ALL_SET_KEY3");
+
+  //List
+  s = db.LPush("GP1_PKEXPIRERESET_CASE_ALL_LIST_KEY1", {"GP1_PKEXPIRERESET_CASE_ALL_LIST_NODE1"}, &uint64_ret);
+  s = db.LPush("GP1_PKEXPIRERESET_CASE_ALL_LIST_KEY2", {"GP1_PKEXPIRERESET_CASE_ALL_LIST_NODE2"}, &uint64_ret);
+  s = db.LPush("GP1_PKEXPIRERESET_CASE_ALL_LIST_KEY3", {"GP1_PKEXPIRERESET_CASE_ALL_LIST_NODE3"}, &uint64_ret);
+  delete_keys.push_back("GP1_PKEXPIRERESET_CASE_ALL_LIST_KEY1");
+  delete_keys.push_back("GP1_PKEXPIRERESET_CASE_ALL_LIST_KEY2");
+  delete_keys.push_back("GP1_PKEXPIRERESET_CASE_ALL_LIST_KEY3");
+
+  //ZSet
+  s = db.ZAdd("GP1_PKEXPIRERESET_CASE_ALL_ZSET_KEY1", {{1, "GP1_PKEXPIRERESET_CASE_ALL_LIST_MEMBER1"}}, &int32_ret);
+  s = db.ZAdd("GP1_PKEXPIRERESET_CASE_ALL_ZSET_KEY2", {{1, "GP1_PKEXPIRERESET_CASE_ALL_LIST_MEMBER2"}}, &int32_ret);
+  s = db.ZAdd("GP1_PKEXPIRERESET_CASE_ALL_ZSET_KEY3", {{1, "GP1_PKEXPIRERESET_CASE_ALL_LIST_MEMBER3"}}, &int32_ret);
+  delete_keys.push_back("GP1_PKEXPIRERESET_CASE_ALL_ZSET_KEY1");
+  delete_keys.push_back("GP1_PKEXPIRERESET_CASE_ALL_ZSET_KEY2");
+  delete_keys.push_back("GP1_PKEXPIRERESET_CASE_ALL_ZSET_KEY3");
+
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_ALL_STRING_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_ALL_STRING_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_ALL_STRING_KEY3", 6));
+
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_ALL_HASH_KEY1", 8));
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_ALL_HASH_KEY2", 10));
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_ALL_HASH_KEY3", 12));
+
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_ALL_SET_KEY1", 14));
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_ALL_SET_KEY2", 16));
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_ALL_SET_KEY3", 18));
+
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_ALL_LIST_KEY1", 20));
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_ALL_LIST_KEY2", 22));
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_ALL_LIST_KEY3", 24));
+
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_ALL_ZSET_KEY1", 26));
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_ALL_ZSET_KEY2", 28));
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_ALL_ZSET_KEY3", 30));
+
+  keys.clear();
+  s = db.PKExpireReset(DataType::kAll, 0, 100, 30);
+  ASSERT_TRUE(s.ok());
+  cursor = db.PKExpireScan(DataType::kAll, 0, 0, 100, 100, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 30);
+  ASSERT_EQ(keys[0], "GP1_PKEXPIRERESET_CASE_ALL_STRING_KEY1");
+  ASSERT_EQ(keys[1], "30");
+  ASSERT_EQ(keys[2], "GP1_PKEXPIRERESET_CASE_ALL_STRING_KEY2");
+  ASSERT_EQ(keys[3], "30");
+  ASSERT_EQ(keys[4], "GP1_PKEXPIRERESET_CASE_ALL_STRING_KEY3");
+  ASSERT_EQ(keys[5], "30");
+  ASSERT_EQ(keys[6], "GP1_PKEXPIRERESET_CASE_ALL_HASH_KEY1");
+  ASSERT_EQ(keys[7], "30"); 
+  ASSERT_EQ(keys[8], "GP1_PKEXPIRERESET_CASE_ALL_HASH_KEY2");
+  ASSERT_EQ(keys[9], "30"); 
+  ASSERT_EQ(keys[10], "GP1_PKEXPIRERESET_CASE_ALL_HASH_KEY3");
+  ASSERT_EQ(keys[11], "30"); 
+  ASSERT_EQ(keys[12], "GP1_PKEXPIRERESET_CASE_ALL_SET_KEY1");
+  ASSERT_EQ(keys[13], "30"); 
+  ASSERT_EQ(keys[14], "GP1_PKEXPIRERESET_CASE_ALL_SET_KEY2");
+  ASSERT_EQ(keys[15], "30"); 
+  ASSERT_EQ(keys[16], "GP1_PKEXPIRERESET_CASE_ALL_SET_KEY3");
+  ASSERT_EQ(keys[17], "30"); 
+  ASSERT_EQ(keys[18], "GP1_PKEXPIRERESET_CASE_ALL_LIST_KEY1");
+  ASSERT_EQ(keys[19], "30"); 
+  ASSERT_EQ(keys[20], "GP1_PKEXPIRERESET_CASE_ALL_LIST_KEY2");
+  ASSERT_EQ(keys[21], "30"); 
+  ASSERT_EQ(keys[22], "GP1_PKEXPIRERESET_CASE_ALL_LIST_KEY3");
+  ASSERT_EQ(keys[23], "30"); 
+  ASSERT_EQ(keys[24], "GP1_PKEXPIRERESET_CASE_ALL_ZSET_KEY1");
+  ASSERT_EQ(keys[25], "30"); 
+  ASSERT_EQ(keys[26], "GP1_PKEXPIRERESET_CASE_ALL_ZSET_KEY2");
+  ASSERT_EQ(keys[27], "30"); 
+  ASSERT_EQ(keys[28], "GP1_PKEXPIRERESET_CASE_ALL_ZSET_KEY3");
+  ASSERT_EQ(keys[29], "30"); 
+
+  del_num = db.Del(delete_keys, &type_status);
+  ASSERT_EQ(del_num, 15);
+  sleep(2);
+  db.Compact(DataType::kAll, true);
+
+
+  // ***************** Group 2 Test *****************
+  delete_keys.clear();
+  //String
+  s = db.Set("GP2_PKEXPIRERESET_CASE_ALL_STRING_KEY1", "GP2_PKEXPIRERESET_CASE_ALL_STRING_VALUE1");
+  s = db.Set("GP2_PKEXPIRERESET_CASE_ALL_STRING_KEY2", "GP2_PKEXPIRERESET_CASE_ALL_STRING_VALUE2");
+  s = db.Set("GP2_PKEXPIRERESET_CASE_ALL_STRING_KEY3", "GP2_PKEXPIRERESET_CASE_ALL_STRING_VALUE3");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_ALL_STRING_KEY1");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_ALL_STRING_KEY2");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_ALL_STRING_KEY3");
+
+  //Hash
+  s = db.HSet("GP2_PKEXPIRERESET_CASE_ALL_HASH_KEY1", "GP2_PKEXPIRERESET_CASE_ALL_HASH_FIELD1", "GP2_PKEXPIRERESET_CASE_ALL_HASH_VALUE1", &int32_ret);
+  s = db.HSet("GP2_PKEXPIRERESET_CASE_ALL_HASH_KEY2", "GP2_PKEXPIRERESET_CASE_ALL_HASH_FIELD2", "GP2_PKEXPIRERESET_CASE_ALL_HASH_VALUE2", &int32_ret);
+  s = db.HSet("GP2_PKEXPIRERESET_CASE_ALL_HASH_KEY3", "GP2_PKEXPIRERESET_CASE_ALL_HASH_FIELD3", "GP2_PKEXPIRERESET_CASE_ALL_HASH_VALUE3", &int32_ret);
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_ALL_HASH_KEY1");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_ALL_HASH_KEY2");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_ALL_HASH_KEY3");
+
+  //Set
+  s = db.SAdd("GP2_PKEXPIRERESET_CASE_ALL_SET_KEY1", {"GP2_PKEXPIRERESET_CASE_ALL_SET_MEMBER1"}, &int32_ret);
+  s = db.SAdd("GP2_PKEXPIRERESET_CASE_ALL_SET_KEY2", {"GP2_PKEXPIRERESET_CASE_ALL_SET_MEMBER2"}, &int32_ret);
+  s = db.SAdd("GP2_PKEXPIRERESET_CASE_ALL_SET_KEY3", {"GP2_PKEXPIRERESET_CASE_ALL_SET_MEMBER3"}, &int32_ret);
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_ALL_SET_KEY1");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_ALL_SET_KEY2");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_ALL_SET_KEY3");
+
+  //List
+  s = db.LPush("GP2_PKEXPIRERESET_CASE_ALL_LIST_KEY1", {"GP2_PKEXPIRERESET_CASE_ALL_LIST_NODE1"}, &uint64_ret);
+  s = db.LPush("GP2_PKEXPIRERESET_CASE_ALL_LIST_KEY2", {"GP2_PKEXPIRERESET_CASE_ALL_LIST_NODE2"}, &uint64_ret);
+  s = db.LPush("GP2_PKEXPIRERESET_CASE_ALL_LIST_KEY3", {"GP2_PKEXPIRERESET_CASE_ALL_LIST_NODE3"}, &uint64_ret);
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_ALL_LIST_KEY1");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_ALL_LIST_KEY2");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_ALL_LIST_KEY3");
+
+  //ZSet
+  s = db.ZAdd("GP2_PKEXPIRERESET_CASE_ALL_ZSET_KEY1", {{1, "GP2_PKEXPIRERESET_CASE_ALL_LIST_MEMBER1"}}, &int32_ret);
+  s = db.ZAdd("GP2_PKEXPIRERESET_CASE_ALL_ZSET_KEY2", {{1, "GP2_PKEXPIRERESET_CASE_ALL_LIST_MEMBER2"}}, &int32_ret);
+  s = db.ZAdd("GP2_PKEXPIRERESET_CASE_ALL_ZSET_KEY3", {{1, "GP2_PKEXPIRERESET_CASE_ALL_LIST_MEMBER3"}}, &int32_ret);
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_ALL_ZSET_KEY1");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_ALL_ZSET_KEY2");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_ALL_ZSET_KEY3");
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_ALL_STRING_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_ALL_STRING_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_ALL_STRING_KEY3", 6));
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_ALL_HASH_KEY1", 8));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_ALL_HASH_KEY2", 10));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_ALL_HASH_KEY3", 12));
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_ALL_SET_KEY1", 14));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_ALL_SET_KEY2", 16));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_ALL_SET_KEY3", 18));
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_ALL_LIST_KEY1", 20));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_ALL_LIST_KEY2", 22));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_ALL_LIST_KEY3", 24));
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_ALL_ZSET_KEY1", 26));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_ALL_ZSET_KEY2", 28));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_ALL_ZSET_KEY3", 30));
+
+  keys.clear();
+  s = db.PKExpireReset(DataType::kAll, 0, 14, 66);
+  ASSERT_TRUE(s.ok());
+  cursor = db.PKExpireScan(DataType::kAll, 0, 50, 100, 100, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 12);
+  ASSERT_EQ(keys[0], "GP2_PKEXPIRERESET_CASE_ALL_STRING_KEY1");
+  ASSERT_EQ(keys[1], "66");
+  ASSERT_EQ(keys[2], "GP2_PKEXPIRERESET_CASE_ALL_STRING_KEY2");
+  ASSERT_EQ(keys[3], "66");
+  ASSERT_EQ(keys[4], "GP2_PKEXPIRERESET_CASE_ALL_STRING_KEY3");
+  ASSERT_EQ(keys[5], "66");
+  ASSERT_EQ(keys[6], "GP2_PKEXPIRERESET_CASE_ALL_HASH_KEY1");
+  ASSERT_EQ(keys[7], "66"); 
+  ASSERT_EQ(keys[8], "GP2_PKEXPIRERESET_CASE_ALL_HASH_KEY2");
+  ASSERT_EQ(keys[9], "66"); 
+  ASSERT_EQ(keys[10], "GP2_PKEXPIRERESET_CASE_ALL_HASH_KEY3");
+  ASSERT_EQ(keys[11], "66"); 
+
+  del_num = db.Del(delete_keys, &type_status);
+  ASSERT_EQ(del_num, 15);
+  sleep(2);
+  db.Compact(DataType::kAll, true);
+
+
+  // ***************** Group 3 Test *****************
+  delete_keys.clear();
+  //String
+  s = db.Set("GP3_PKEXPIRERESET_CASE_ALL_STRING_KEY1", "GP3_PKEXPIRERESET_CASE_ALL_STRING_VALUE1");
+  s = db.Set("GP3_PKEXPIRERESET_CASE_ALL_STRING_KEY2", "GP3_PKEXPIRERESET_CASE_ALL_STRING_VALUE2");
+  s = db.Set("GP3_PKEXPIRERESET_CASE_ALL_STRING_KEY3", "GP3_PKEXPIRERESET_CASE_ALL_STRING_VALUE3");
+  delete_keys.push_back("GP3_PKEXPIRERESET_CASE_ALL_STRING_KEY1");
+  delete_keys.push_back("GP3_PKEXPIRERESET_CASE_ALL_STRING_KEY2");
+  delete_keys.push_back("GP3_PKEXPIRERESET_CASE_ALL_STRING_KEY3");
+
+  //Hash
+  s = db.HSet("GP3_PKEXPIRERESET_CASE_ALL_HASH_KEY1", "GP3_PKEXPIRERESET_CASE_ALL_HASH_FIELD1", "GP3_PKEXPIRERESET_CASE_ALL_HASH_VALUE1", &int32_ret);
+  s = db.HSet("GP3_PKEXPIRERESET_CASE_ALL_HASH_KEY2", "GP3_PKEXPIRERESET_CASE_ALL_HASH_FIELD2", "GP3_PKEXPIRERESET_CASE_ALL_HASH_VALUE2", &int32_ret);
+  s = db.HSet("GP3_PKEXPIRERESET_CASE_ALL_HASH_KEY3", "GP3_PKEXPIRERESET_CASE_ALL_HASH_FIELD3", "GP3_PKEXPIRERESET_CASE_ALL_HASH_VALUE3", &int32_ret);
+  delete_keys.push_back("GP3_PKEXPIRERESET_CASE_ALL_HASH_KEY1");
+  delete_keys.push_back("GP3_PKEXPIRERESET_CASE_ALL_HASH_KEY2");
+  delete_keys.push_back("GP3_PKEXPIRERESET_CASE_ALL_HASH_KEY3");
+
+  //Set
+  s = db.SAdd("GP3_PKEXPIRERESET_CASE_ALL_SET_KEY1", {"GP3_PKEXPIRERESET_CASE_ALL_SET_MEMBER1"}, &int32_ret);
+  s = db.SAdd("GP3_PKEXPIRERESET_CASE_ALL_SET_KEY2", {"GP3_PKEXPIRERESET_CASE_ALL_SET_MEMBER2"}, &int32_ret);
+  s = db.SAdd("GP3_PKEXPIRERESET_CASE_ALL_SET_KEY3", {"GP3_PKEXPIRERESET_CASE_ALL_SET_MEMBER3"}, &int32_ret);
+  delete_keys.push_back("GP3_PKEXPIRERESET_CASE_ALL_SET_KEY1");
+  delete_keys.push_back("GP3_PKEXPIRERESET_CASE_ALL_SET_KEY2");
+  delete_keys.push_back("GP3_PKEXPIRERESET_CASE_ALL_SET_KEY3");
+
+  //List
+  s = db.LPush("GP3_PKEXPIRERESET_CASE_ALL_LIST_KEY1", {"GP3_PKEXPIRERESET_CASE_ALL_LIST_NODE1"}, &uint64_ret);
+  s = db.LPush("GP3_PKEXPIRERESET_CASE_ALL_LIST_KEY2", {"GP3_PKEXPIRERESET_CASE_ALL_LIST_NODE2"}, &uint64_ret);
+  s = db.LPush("GP3_PKEXPIRERESET_CASE_ALL_LIST_KEY3", {"GP3_PKEXPIRERESET_CASE_ALL_LIST_NODE3"}, &uint64_ret);
+  delete_keys.push_back("GP3_PKEXPIRERESET_CASE_ALL_LIST_KEY1");
+  delete_keys.push_back("GP3_PKEXPIRERESET_CASE_ALL_LIST_KEY2");
+  delete_keys.push_back("GP3_PKEXPIRERESET_CASE_ALL_LIST_KEY3");
+
+  //ZSet
+  s = db.ZAdd("GP3_PKEXPIRERESET_CASE_ALL_ZSET_KEY1", {{1, "GP3_PKEXPIRERESET_CASE_ALL_LIST_MEMBER1"}}, &int32_ret);
+  s = db.ZAdd("GP3_PKEXPIRERESET_CASE_ALL_ZSET_KEY2", {{1, "GP3_PKEXPIRERESET_CASE_ALL_LIST_MEMBER2"}}, &int32_ret);
+  s = db.ZAdd("GP3_PKEXPIRERESET_CASE_ALL_ZSET_KEY3", {{1, "GP3_PKEXPIRERESET_CASE_ALL_LIST_MEMBER3"}}, &int32_ret);
+  delete_keys.push_back("GP3_PKEXPIRERESET_CASE_ALL_ZSET_KEY1");
+  delete_keys.push_back("GP3_PKEXPIRERESET_CASE_ALL_ZSET_KEY2");
+  delete_keys.push_back("GP3_PKEXPIRERESET_CASE_ALL_ZSET_KEY3");
+
+  ASSERT_TRUE(set_timeout(&db, "GP3_PKEXPIRERESET_CASE_ALL_STRING_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP3_PKEXPIRERESET_CASE_ALL_STRING_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP3_PKEXPIRERESET_CASE_ALL_STRING_KEY3", 6));
+
+  ASSERT_TRUE(set_timeout(&db, "GP3_PKEXPIRERESET_CASE_ALL_HASH_KEY1", 8));
+  ASSERT_TRUE(set_timeout(&db, "GP3_PKEXPIRERESET_CASE_ALL_HASH_KEY2", 10));
+  ASSERT_TRUE(set_timeout(&db, "GP3_PKEXPIRERESET_CASE_ALL_HASH_KEY3", 12));
+
+  ASSERT_TRUE(set_timeout(&db, "GP3_PKEXPIRERESET_CASE_ALL_SET_KEY1", 14));
+  ASSERT_TRUE(set_timeout(&db, "GP3_PKEXPIRERESET_CASE_ALL_SET_KEY2", 16));
+  ASSERT_TRUE(set_timeout(&db, "GP3_PKEXPIRERESET_CASE_ALL_SET_KEY3", 18));
+
+  ASSERT_TRUE(set_timeout(&db, "GP3_PKEXPIRERESET_CASE_ALL_LIST_KEY1", 20));
+  ASSERT_TRUE(set_timeout(&db, "GP3_PKEXPIRERESET_CASE_ALL_LIST_KEY2", 22));
+  ASSERT_TRUE(set_timeout(&db, "GP3_PKEXPIRERESET_CASE_ALL_LIST_KEY3", 24));
+
+  ASSERT_TRUE(set_timeout(&db, "GP3_PKEXPIRERESET_CASE_ALL_ZSET_KEY1", 26));
+  ASSERT_TRUE(set_timeout(&db, "GP3_PKEXPIRERESET_CASE_ALL_ZSET_KEY2", 28));
+  ASSERT_TRUE(set_timeout(&db, "GP3_PKEXPIRERESET_CASE_ALL_ZSET_KEY3", 30));
+
+  keys.clear();
+  s = db.PKExpireReset(DataType::kAll, 18, 35, 66);
+  ASSERT_TRUE(s.ok());
+  cursor = db.PKExpireScan(DataType::kAll, 0, 50, 100, 100, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 12);
+  ASSERT_EQ(keys[0], "GP3_PKEXPIRERESET_CASE_ALL_LIST_KEY1");
+  ASSERT_EQ(keys[1], "66");
+  ASSERT_EQ(keys[2], "GP3_PKEXPIRERESET_CASE_ALL_LIST_KEY2");
+  ASSERT_EQ(keys[3], "66");
+  ASSERT_EQ(keys[4], "GP3_PKEXPIRERESET_CASE_ALL_LIST_KEY3");
+  ASSERT_EQ(keys[5], "66");
+  ASSERT_EQ(keys[6], "GP3_PKEXPIRERESET_CASE_ALL_ZSET_KEY1");
+  ASSERT_EQ(keys[7], "66"); 
+  ASSERT_EQ(keys[8], "GP3_PKEXPIRERESET_CASE_ALL_ZSET_KEY2");
+  ASSERT_EQ(keys[9], "66"); 
+  ASSERT_EQ(keys[10], "GP3_PKEXPIRERESET_CASE_ALL_ZSET_KEY3");
+  ASSERT_EQ(keys[11], "66"); 
+
+  del_num = db.Del(delete_keys, &type_status);
+  ASSERT_EQ(del_num, 15);
+  sleep(2);
+  db.Compact(DataType::kAll, true);
+
+
+  // ***************** Group 4 Test *****************
+  delete_keys.clear();
+  //String
+  s = db.Set("GP4_PKEXPIRERESET_CASE_ALL_STRING_KEY1", "GP4_PKEXPIRERESET_CASE_ALL_STRING_VALUE1");
+  s = db.Set("GP4_PKEXPIRERESET_CASE_ALL_STRING_KEY2", "GP4_PKEXPIRERESET_CASE_ALL_STRING_VALUE2");
+  s = db.Set("GP4_PKEXPIRERESET_CASE_ALL_STRING_KEY3", "GP4_PKEXPIRERESET_CASE_ALL_STRING_VALUE3");
+  delete_keys.push_back("GP4_PKEXPIRERESET_CASE_ALL_STRING_KEY1");
+  delete_keys.push_back("GP4_PKEXPIRERESET_CASE_ALL_STRING_KEY2");
+  delete_keys.push_back("GP4_PKEXPIRERESET_CASE_ALL_STRING_KEY3");
+
+  //Hash
+  s = db.HSet("GP4_PKEXPIRERESET_CASE_ALL_HASH_KEY1", "GP4_PKEXPIRERESET_CASE_ALL_HASH_FIELD1", "GP4_PKEXPIRERESET_CASE_ALL_HASH_VALUE1", &int32_ret);
+  s = db.HSet("GP4_PKEXPIRERESET_CASE_ALL_HASH_KEY2", "GP4_PKEXPIRERESET_CASE_ALL_HASH_FIELD2", "GP4_PKEXPIRERESET_CASE_ALL_HASH_VALUE2", &int32_ret);
+  s = db.HSet("GP4_PKEXPIRERESET_CASE_ALL_HASH_KEY3", "GP4_PKEXPIRERESET_CASE_ALL_HASH_FIELD3", "GP4_PKEXPIRERESET_CASE_ALL_HASH_VALUE3", &int32_ret);
+  delete_keys.push_back("GP4_PKEXPIRERESET_CASE_ALL_HASH_KEY1");
+  delete_keys.push_back("GP4_PKEXPIRERESET_CASE_ALL_HASH_KEY2");
+  delete_keys.push_back("GP4_PKEXPIRERESET_CASE_ALL_HASH_KEY3");
+
+  //Set
+  s = db.SAdd("GP4_PKEXPIRERESET_CASE_ALL_SET_KEY1", {"GP4_PKEXPIRERESET_CASE_ALL_SET_MEMBER1"}, &int32_ret);
+  s = db.SAdd("GP4_PKEXPIRERESET_CASE_ALL_SET_KEY2", {"GP4_PKEXPIRERESET_CASE_ALL_SET_MEMBER2"}, &int32_ret);
+  s = db.SAdd("GP4_PKEXPIRERESET_CASE_ALL_SET_KEY3", {"GP4_PKEXPIRERESET_CASE_ALL_SET_MEMBER3"}, &int32_ret);
+  delete_keys.push_back("GP4_PKEXPIRERESET_CASE_ALL_SET_KEY1");
+  delete_keys.push_back("GP4_PKEXPIRERESET_CASE_ALL_SET_KEY2");
+  delete_keys.push_back("GP4_PKEXPIRERESET_CASE_ALL_SET_KEY3");
+
+  //List
+  s = db.LPush("GP4_PKEXPIRERESET_CASE_ALL_LIST_KEY1", {"GP4_PKEXPIRERESET_CASE_ALL_LIST_NODE1"}, &uint64_ret);
+  s = db.LPush("GP4_PKEXPIRERESET_CASE_ALL_LIST_KEY2", {"GP4_PKEXPIRERESET_CASE_ALL_LIST_NODE2"}, &uint64_ret);
+  s = db.LPush("GP4_PKEXPIRERESET_CASE_ALL_LIST_KEY3", {"GP4_PKEXPIRERESET_CASE_ALL_LIST_NODE3"}, &uint64_ret);
+  delete_keys.push_back("GP4_PKEXPIRERESET_CASE_ALL_LIST_KEY1");
+  delete_keys.push_back("GP4_PKEXPIRERESET_CASE_ALL_LIST_KEY2");
+  delete_keys.push_back("GP4_PKEXPIRERESET_CASE_ALL_LIST_KEY3");
+
+  //ZSet
+  s = db.ZAdd("GP4_PKEXPIRERESET_CASE_ALL_ZSET_KEY1", {{1, "GP4_PKEXPIRERESET_CASE_ALL_LIST_MEMBER1"}}, &int32_ret);
+  s = db.ZAdd("GP4_PKEXPIRERESET_CASE_ALL_ZSET_KEY2", {{1, "GP4_PKEXPIRERESET_CASE_ALL_LIST_MEMBER2"}}, &int32_ret);
+  s = db.ZAdd("GP4_PKEXPIRERESET_CASE_ALL_ZSET_KEY3", {{1, "GP4_PKEXPIRERESET_CASE_ALL_LIST_MEMBER3"}}, &int32_ret);
+  delete_keys.push_back("GP4_PKEXPIRERESET_CASE_ALL_ZSET_KEY1");
+  delete_keys.push_back("GP4_PKEXPIRERESET_CASE_ALL_ZSET_KEY2");
+  delete_keys.push_back("GP4_PKEXPIRERESET_CASE_ALL_ZSET_KEY3");
+
+  ASSERT_TRUE(set_timeout(&db, "GP4_PKEXPIRERESET_CASE_ALL_STRING_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP4_PKEXPIRERESET_CASE_ALL_STRING_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP4_PKEXPIRERESET_CASE_ALL_STRING_KEY3", 6));
+
+  ASSERT_TRUE(set_timeout(&db, "GP4_PKEXPIRERESET_CASE_ALL_HASH_KEY1", 8));
+  ASSERT_TRUE(set_timeout(&db, "GP4_PKEXPIRERESET_CASE_ALL_HASH_KEY2", 10));
+  ASSERT_TRUE(set_timeout(&db, "GP4_PKEXPIRERESET_CASE_ALL_HASH_KEY3", 12));
+
+  ASSERT_TRUE(set_timeout(&db, "GP4_PKEXPIRERESET_CASE_ALL_SET_KEY1", 14));
+  ASSERT_TRUE(set_timeout(&db, "GP4_PKEXPIRERESET_CASE_ALL_SET_KEY2", 16));
+  ASSERT_TRUE(set_timeout(&db, "GP4_PKEXPIRERESET_CASE_ALL_SET_KEY3", 18));
+
+  ASSERT_TRUE(set_timeout(&db, "GP4_PKEXPIRERESET_CASE_ALL_LIST_KEY1", 20));
+  ASSERT_TRUE(set_timeout(&db, "GP4_PKEXPIRERESET_CASE_ALL_LIST_KEY2", 22));
+  ASSERT_TRUE(set_timeout(&db, "GP4_PKEXPIRERESET_CASE_ALL_LIST_KEY3", 24));
+
+  ASSERT_TRUE(set_timeout(&db, "GP4_PKEXPIRERESET_CASE_ALL_ZSET_KEY1", 26));
+  ASSERT_TRUE(set_timeout(&db, "GP4_PKEXPIRERESET_CASE_ALL_ZSET_KEY2", 28));
+  ASSERT_TRUE(set_timeout(&db, "GP4_PKEXPIRERESET_CASE_ALL_ZSET_KEY3", 30));
+
+  keys.clear();
+  s = db.PKExpireReset(DataType::kAll, 12, 26, 66);
+  ASSERT_TRUE(s.ok());
+  cursor = db.PKExpireScan(DataType::kAll, 0, 50, 100, 100, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 12);
+  ASSERT_EQ(keys[0], "GP4_PKEXPIRERESET_CASE_ALL_SET_KEY1");
+  ASSERT_EQ(keys[1], "66");
+  ASSERT_EQ(keys[2], "GP4_PKEXPIRERESET_CASE_ALL_SET_KEY2");
+  ASSERT_EQ(keys[3], "66");
+  ASSERT_EQ(keys[4], "GP4_PKEXPIRERESET_CASE_ALL_SET_KEY3");
+  ASSERT_EQ(keys[5], "66");
+  ASSERT_EQ(keys[6], "GP4_PKEXPIRERESET_CASE_ALL_LIST_KEY1");
+  ASSERT_EQ(keys[7], "66"); 
+  ASSERT_EQ(keys[8], "GP4_PKEXPIRERESET_CASE_ALL_LIST_KEY2");
+  ASSERT_EQ(keys[9], "66"); 
+  ASSERT_EQ(keys[10], "GP4_PKEXPIRERESET_CASE_ALL_LIST_KEY3");
+  ASSERT_EQ(keys[11], "66"); 
+
+  del_num = db.Del(delete_keys, &type_status);
+  ASSERT_EQ(del_num, 15);
+  sleep(2);
+  db.Compact(DataType::kAll, true);
+
+
+  // ***************** Group 5 Test *****************
+  delete_keys.clear();
+  //String
+  s = db.Set("GP5_PKEXPIRERESET_CASE_ALL_STRING_KEY1", "GP5_PKEXPIRERESET_CASE_ALL_STRING_VALUE1");
+  s = db.Set("GP5_PKEXPIRERESET_CASE_ALL_STRING_KEY2", "GP5_PKEXPIRERESET_CASE_ALL_STRING_VALUE2");
+  s = db.Set("GP5_PKEXPIRERESET_CASE_ALL_STRING_KEY3", "GP5_PKEXPIRERESET_CASE_ALL_STRING_VALUE3");
+  delete_keys.push_back("GP5_PKEXPIRERESET_CASE_ALL_STRING_KEY1");
+  delete_keys.push_back("GP5_PKEXPIRERESET_CASE_ALL_STRING_KEY2");
+  delete_keys.push_back("GP5_PKEXPIRERESET_CASE_ALL_STRING_KEY3");
+
+  //Hash
+  s = db.HSet("GP5_PKEXPIRERESET_CASE_ALL_HASH_KEY1", "GP5_PKEXPIRERESET_CASE_ALL_HASH_FIELD1", "GP5_PKEXPIRERESET_CASE_ALL_HASH_VALUE1", &int32_ret);
+  s = db.HSet("GP5_PKEXPIRERESET_CASE_ALL_HASH_KEY2", "GP5_PKEXPIRERESET_CASE_ALL_HASH_FIELD2", "GP5_PKEXPIRERESET_CASE_ALL_HASH_VALUE2", &int32_ret);
+  s = db.HSet("GP5_PKEXPIRERESET_CASE_ALL_HASH_KEY3", "GP5_PKEXPIRERESET_CASE_ALL_HASH_FIELD3", "GP5_PKEXPIRERESET_CASE_ALL_HASH_VALUE3", &int32_ret);
+  delete_keys.push_back("GP5_PKEXPIRERESET_CASE_ALL_HASH_KEY1");
+  delete_keys.push_back("GP5_PKEXPIRERESET_CASE_ALL_HASH_KEY2");
+  delete_keys.push_back("GP5_PKEXPIRERESET_CASE_ALL_HASH_KEY3");
+
+  //Set
+  s = db.SAdd("GP5_PKEXPIRERESET_CASE_ALL_SET_KEY1", {"GP5_PKEXPIRERESET_CASE_ALL_SET_MEMBER1"}, &int32_ret);
+  s = db.SAdd("GP5_PKEXPIRERESET_CASE_ALL_SET_KEY2", {"GP5_PKEXPIRERESET_CASE_ALL_SET_MEMBER2"}, &int32_ret);
+  s = db.SAdd("GP5_PKEXPIRERESET_CASE_ALL_SET_KEY3", {"GP5_PKEXPIRERESET_CASE_ALL_SET_MEMBER3"}, &int32_ret);
+  delete_keys.push_back("GP5_PKEXPIRERESET_CASE_ALL_SET_KEY1");
+  delete_keys.push_back("GP5_PKEXPIRERESET_CASE_ALL_SET_KEY2");
+  delete_keys.push_back("GP5_PKEXPIRERESET_CASE_ALL_SET_KEY3");
+
+  //List
+  s = db.LPush("GP5_PKEXPIRERESET_CASE_ALL_LIST_KEY1", {"GP5_PKEXPIRERESET_CASE_ALL_LIST_NODE1"}, &uint64_ret);
+  s = db.LPush("GP5_PKEXPIRERESET_CASE_ALL_LIST_KEY2", {"GP5_PKEXPIRERESET_CASE_ALL_LIST_NODE2"}, &uint64_ret);
+  s = db.LPush("GP5_PKEXPIRERESET_CASE_ALL_LIST_KEY3", {"GP5_PKEXPIRERESET_CASE_ALL_LIST_NODE3"}, &uint64_ret);
+  delete_keys.push_back("GP5_PKEXPIRERESET_CASE_ALL_LIST_KEY1");
+  delete_keys.push_back("GP5_PKEXPIRERESET_CASE_ALL_LIST_KEY2");
+  delete_keys.push_back("GP5_PKEXPIRERESET_CASE_ALL_LIST_KEY3");
+
+  //ZSet
+  s = db.ZAdd("GP5_PKEXPIRERESET_CASE_ALL_ZSET_KEY1", {{1, "GP5_PKEXPIRERESET_CASE_ALL_LIST_MEMBER1"}}, &int32_ret);
+  s = db.ZAdd("GP5_PKEXPIRERESET_CASE_ALL_ZSET_KEY2", {{1, "GP5_PKEXPIRERESET_CASE_ALL_LIST_MEMBER2"}}, &int32_ret);
+  s = db.ZAdd("GP5_PKEXPIRERESET_CASE_ALL_ZSET_KEY3", {{1, "GP5_PKEXPIRERESET_CASE_ALL_LIST_MEMBER3"}}, &int32_ret);
+  delete_keys.push_back("GP5_PKEXPIRERESET_CASE_ALL_ZSET_KEY1");
+  delete_keys.push_back("GP5_PKEXPIRERESET_CASE_ALL_ZSET_KEY2");
+  delete_keys.push_back("GP5_PKEXPIRERESET_CASE_ALL_ZSET_KEY3");
+
+  ASSERT_TRUE(set_timeout(&db, "GP5_PKEXPIRERESET_CASE_ALL_STRING_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP5_PKEXPIRERESET_CASE_ALL_STRING_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP5_PKEXPIRERESET_CASE_ALL_STRING_KEY3", 6));
+
+  ASSERT_TRUE(set_timeout(&db, "GP5_PKEXPIRERESET_CASE_ALL_HASH_KEY1", 8));
+  ASSERT_TRUE(set_timeout(&db, "GP5_PKEXPIRERESET_CASE_ALL_HASH_KEY2", 10));
+  ASSERT_TRUE(set_timeout(&db, "GP5_PKEXPIRERESET_CASE_ALL_HASH_KEY3", 12));
+
+  ASSERT_TRUE(set_timeout(&db, "GP5_PKEXPIRERESET_CASE_ALL_SET_KEY1", 14));
+  ASSERT_TRUE(set_timeout(&db, "GP5_PKEXPIRERESET_CASE_ALL_SET_KEY2", 16));
+  ASSERT_TRUE(set_timeout(&db, "GP5_PKEXPIRERESET_CASE_ALL_SET_KEY3", 18));
+
+  ASSERT_TRUE(set_timeout(&db, "GP5_PKEXPIRERESET_CASE_ALL_LIST_KEY1", 20));
+  ASSERT_TRUE(set_timeout(&db, "GP5_PKEXPIRERESET_CASE_ALL_LIST_KEY2", 22));
+  ASSERT_TRUE(set_timeout(&db, "GP5_PKEXPIRERESET_CASE_ALL_LIST_KEY3", 24));
+
+  ASSERT_TRUE(set_timeout(&db, "GP5_PKEXPIRERESET_CASE_ALL_ZSET_KEY1", 26));
+  ASSERT_TRUE(set_timeout(&db, "GP5_PKEXPIRERESET_CASE_ALL_ZSET_KEY2", 28));
+  ASSERT_TRUE(set_timeout(&db, "GP5_PKEXPIRERESET_CASE_ALL_ZSET_KEY3", 30));
+
+  keys.clear();
+  s = db.PKExpireReset(DataType::kAll, INT_MIN, 14, 66);
+  ASSERT_TRUE(s.ok());
+  cursor = db.PKExpireScan(DataType::kAll, 0, 50, 100, 100, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 12);
+  ASSERT_EQ(keys[0], "GP5_PKEXPIRERESET_CASE_ALL_STRING_KEY1");
+  ASSERT_EQ(keys[1], "66");
+  ASSERT_EQ(keys[2], "GP5_PKEXPIRERESET_CASE_ALL_STRING_KEY2");
+  ASSERT_EQ(keys[3], "66");
+  ASSERT_EQ(keys[4], "GP5_PKEXPIRERESET_CASE_ALL_STRING_KEY3");
+  ASSERT_EQ(keys[5], "66");
+  ASSERT_EQ(keys[6], "GP5_PKEXPIRERESET_CASE_ALL_HASH_KEY1");
+  ASSERT_EQ(keys[7], "66"); 
+  ASSERT_EQ(keys[8], "GP5_PKEXPIRERESET_CASE_ALL_HASH_KEY2");
+  ASSERT_EQ(keys[9], "66"); 
+  ASSERT_EQ(keys[10], "GP5_PKEXPIRERESET_CASE_ALL_HASH_KEY3");
+  ASSERT_EQ(keys[11], "66"); 
+
+  del_num = db.Del(delete_keys, &type_status);
+  ASSERT_EQ(del_num, 15);
+  sleep(2);
+  db.Compact(DataType::kAll, true);
+
+
+  // ***************** Group 6 Test *****************
+  delete_keys.clear();
+  //String
+  s = db.Set("GP6_PKEXPIRERESET_CASE_ALL_STRING_KEY1", "GP6_PKEXPIRERESET_CASE_ALL_STRING_VALUE1");
+  s = db.Set("GP6_PKEXPIRERESET_CASE_ALL_STRING_KEY2", "GP6_PKEXPIRERESET_CASE_ALL_STRING_VALUE2");
+  s = db.Set("GP6_PKEXPIRERESET_CASE_ALL_STRING_KEY3", "GP6_PKEXPIRERESET_CASE_ALL_STRING_VALUE3");
+  delete_keys.push_back("GP6_PKEXPIRERESET_CASE_ALL_STRING_KEY1");
+  delete_keys.push_back("GP6_PKEXPIRERESET_CASE_ALL_STRING_KEY2");
+  delete_keys.push_back("GP6_PKEXPIRERESET_CASE_ALL_STRING_KEY3");
+
+  //Hash
+  s = db.HSet("GP6_PKEXPIRERESET_CASE_ALL_HASH_KEY1", "GP6_PKEXPIRERESET_CASE_ALL_HASH_FIELD1", "GP6_PKEXPIRERESET_CASE_ALL_HASH_VALUE1", &int32_ret);
+  s = db.HSet("GP6_PKEXPIRERESET_CASE_ALL_HASH_KEY2", "GP6_PKEXPIRERESET_CASE_ALL_HASH_FIELD2", "GP6_PKEXPIRERESET_CASE_ALL_HASH_VALUE2", &int32_ret);
+  s = db.HSet("GP6_PKEXPIRERESET_CASE_ALL_HASH_KEY3", "GP6_PKEXPIRERESET_CASE_ALL_HASH_FIELD3", "GP6_PKEXPIRERESET_CASE_ALL_HASH_VALUE3", &int32_ret);
+  delete_keys.push_back("GP6_PKEXPIRERESET_CASE_ALL_HASH_KEY1");
+  delete_keys.push_back("GP6_PKEXPIRERESET_CASE_ALL_HASH_KEY2");
+  delete_keys.push_back("GP6_PKEXPIRERESET_CASE_ALL_HASH_KEY3");
+
+  //Set
+  s = db.SAdd("GP6_PKEXPIRERESET_CASE_ALL_SET_KEY1", {"GP6_PKEXPIRERESET_CASE_ALL_SET_MEMBER1"}, &int32_ret);
+  s = db.SAdd("GP6_PKEXPIRERESET_CASE_ALL_SET_KEY2", {"GP6_PKEXPIRERESET_CASE_ALL_SET_MEMBER2"}, &int32_ret);
+  s = db.SAdd("GP6_PKEXPIRERESET_CASE_ALL_SET_KEY3", {"GP6_PKEXPIRERESET_CASE_ALL_SET_MEMBER3"}, &int32_ret);
+  delete_keys.push_back("GP6_PKEXPIRERESET_CASE_ALL_SET_KEY1");
+  delete_keys.push_back("GP6_PKEXPIRERESET_CASE_ALL_SET_KEY2");
+  delete_keys.push_back("GP6_PKEXPIRERESET_CASE_ALL_SET_KEY3");
+
+  //List
+  s = db.LPush("GP6_PKEXPIRERESET_CASE_ALL_LIST_KEY1", {"GP6_PKEXPIRERESET_CASE_ALL_LIST_NODE1"}, &uint64_ret);
+  s = db.LPush("GP6_PKEXPIRERESET_CASE_ALL_LIST_KEY2", {"GP6_PKEXPIRERESET_CASE_ALL_LIST_NODE2"}, &uint64_ret);
+  s = db.LPush("GP6_PKEXPIRERESET_CASE_ALL_LIST_KEY3", {"GP6_PKEXPIRERESET_CASE_ALL_LIST_NODE3"}, &uint64_ret);
+  delete_keys.push_back("GP6_PKEXPIRERESET_CASE_ALL_LIST_KEY1");
+  delete_keys.push_back("GP6_PKEXPIRERESET_CASE_ALL_LIST_KEY2");
+  delete_keys.push_back("GP6_PKEXPIRERESET_CASE_ALL_LIST_KEY3");
+
+  //ZSet
+  s = db.ZAdd("GP6_PKEXPIRERESET_CASE_ALL_ZSET_KEY1", {{1, "GP6_PKEXPIRERESET_CASE_ALL_LIST_MEMBER1"}}, &int32_ret);
+  s = db.ZAdd("GP6_PKEXPIRERESET_CASE_ALL_ZSET_KEY2", {{1, "GP6_PKEXPIRERESET_CASE_ALL_LIST_MEMBER2"}}, &int32_ret);
+  s = db.ZAdd("GP6_PKEXPIRERESET_CASE_ALL_ZSET_KEY3", {{1, "GP6_PKEXPIRERESET_CASE_ALL_LIST_MEMBER3"}}, &int32_ret);
+  delete_keys.push_back("GP6_PKEXPIRERESET_CASE_ALL_ZSET_KEY1");
+  delete_keys.push_back("GP6_PKEXPIRERESET_CASE_ALL_ZSET_KEY2");
+  delete_keys.push_back("GP6_PKEXPIRERESET_CASE_ALL_ZSET_KEY3");
+
+  ASSERT_TRUE(set_timeout(&db, "GP6_PKEXPIRERESET_CASE_ALL_STRING_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP6_PKEXPIRERESET_CASE_ALL_STRING_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP6_PKEXPIRERESET_CASE_ALL_STRING_KEY3", 6));
+
+  ASSERT_TRUE(set_timeout(&db, "GP6_PKEXPIRERESET_CASE_ALL_HASH_KEY1", 8));
+  ASSERT_TRUE(set_timeout(&db, "GP6_PKEXPIRERESET_CASE_ALL_HASH_KEY2", 10));
+  ASSERT_TRUE(set_timeout(&db, "GP6_PKEXPIRERESET_CASE_ALL_HASH_KEY3", 12));
+
+  ASSERT_TRUE(set_timeout(&db, "GP6_PKEXPIRERESET_CASE_ALL_SET_KEY1", 14));
+  ASSERT_TRUE(set_timeout(&db, "GP6_PKEXPIRERESET_CASE_ALL_SET_KEY2", 16));
+  ASSERT_TRUE(set_timeout(&db, "GP6_PKEXPIRERESET_CASE_ALL_SET_KEY3", 18));
+
+  ASSERT_TRUE(set_timeout(&db, "GP6_PKEXPIRERESET_CASE_ALL_LIST_KEY1", 20));
+  ASSERT_TRUE(set_timeout(&db, "GP6_PKEXPIRERESET_CASE_ALL_LIST_KEY2", 22));
+  ASSERT_TRUE(set_timeout(&db, "GP6_PKEXPIRERESET_CASE_ALL_LIST_KEY3", 24));
+
+  ASSERT_TRUE(set_timeout(&db, "GP6_PKEXPIRERESET_CASE_ALL_ZSET_KEY1", 26));
+  ASSERT_TRUE(set_timeout(&db, "GP6_PKEXPIRERESET_CASE_ALL_ZSET_KEY2", 28));
+  ASSERT_TRUE(set_timeout(&db, "GP6_PKEXPIRERESET_CASE_ALL_ZSET_KEY3", 30));
+
+  keys.clear();
+  s = db.PKExpireReset(DataType::kAll, 18, INT_MAX, 66);
+  ASSERT_TRUE(s.ok());
+  cursor = db.PKExpireScan(DataType::kAll, 0, 50, 100, 100, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 12);
+  ASSERT_EQ(keys[0], "GP6_PKEXPIRERESET_CASE_ALL_LIST_KEY1");
+  ASSERT_EQ(keys[1], "66");
+  ASSERT_EQ(keys[2], "GP6_PKEXPIRERESET_CASE_ALL_LIST_KEY2");
+  ASSERT_EQ(keys[3], "66");
+  ASSERT_EQ(keys[4], "GP6_PKEXPIRERESET_CASE_ALL_LIST_KEY3");
+  ASSERT_EQ(keys[5], "66");
+  ASSERT_EQ(keys[6], "GP6_PKEXPIRERESET_CASE_ALL_ZSET_KEY1");
+  ASSERT_EQ(keys[7], "66"); 
+  ASSERT_EQ(keys[8], "GP6_PKEXPIRERESET_CASE_ALL_ZSET_KEY2");
+  ASSERT_EQ(keys[9], "66"); 
+  ASSERT_EQ(keys[10], "GP6_PKEXPIRERESET_CASE_ALL_ZSET_KEY3");
+  ASSERT_EQ(keys[11], "66"); 
+
+  del_num = db.Del(delete_keys, &type_status);
+  ASSERT_EQ(del_num, 15);
+  sleep(2);
+  db.Compact(DataType::kAll, true);
+}
+
+//PKExpireReset
+TEST_F(KeysTest, PKExpireResetSingleTest) {
+  int64_t cursor;
+  int64_t next_cursor;
+  int64_t del_num;
+  int32_t int32_ret;
+  uint64_t uint64_ret;
+  std::vector<std::string> keys;
+  std::vector<std::string> total_keys;
+  std::vector<std::string> delete_keys;
+  std::map<blackwidow::DataType, Status> type_status;
+  Status s;
+
+  // ***************** Group 1 Test *****************
+  delete_keys.clear();
+  //String
+  s = db.Set("GP1_PKEXPIRERESET_CASE_SINGLE_STRING_KEY1", "GP1_PKEXPIRERESET_CASE_SINGLE_STRING_VALUE1");
+  s = db.Set("GP1_PKEXPIRERESET_CASE_SINGLE_STRING_KEY2", "GP1_PKEXPIRERESET_CASE_SINGLE_STRING_VALUE2");
+  s = db.Set("GP1_PKEXPIRERESET_CASE_SINGLE_STRING_KEY3", "GP1_PKEXPIRERESET_CASE_SINGLE_STRING_VALUE3");
+  delete_keys.push_back("GP1_PKEXPIRERESET_CASE_SINGLE_STRING_KEY1");
+  delete_keys.push_back("GP1_PKEXPIRERESET_CASE_SINGLE_STRING_KEY2");
+  delete_keys.push_back("GP1_PKEXPIRERESET_CASE_SINGLE_STRING_KEY3");
+
+  //Hash
+  s = db.HSet("GP1_PKEXPIRERESET_CASE_SINGLE_HASH_KEY1", "GP1_PKEXPIRERESET_CASE_SINGLE_HASH_FIELD1", "GP1_PKEXPIRERESET_CASE_SINGLE_HASH_VALUE1", &int32_ret);
+  s = db.HSet("GP1_PKEXPIRERESET_CASE_SINGLE_HASH_KEY2", "GP1_PKEXPIRERESET_CASE_SINGLE_HASH_FIELD2", "GP1_PKEXPIRERESET_CASE_SINGLE_HASH_VALUE2", &int32_ret);
+  s = db.HSet("GP1_PKEXPIRERESET_CASE_SINGLE_HASH_KEY3", "GP1_PKEXPIRERESET_CASE_SINGLE_HASH_FIELD3", "GP1_PKEXPIRERESET_CASE_SINGLE_HASH_VALUE3", &int32_ret);
+  delete_keys.push_back("GP1_PKEXPIRERESET_CASE_SINGLE_HASH_KEY1");
+  delete_keys.push_back("GP1_PKEXPIRERESET_CASE_SINGLE_HASH_KEY2");
+  delete_keys.push_back("GP1_PKEXPIRERESET_CASE_SINGLE_HASH_KEY3");
+
+  //Set
+  s = db.SAdd("GP1_PKEXPIRERESET_CASE_SINGLE_SET_KEY1", {"GP1_PKEXPIRERESET_CASE_SINGLE_SET_MEMBER1"}, &int32_ret);
+  s = db.SAdd("GP1_PKEXPIRERESET_CASE_SINGLE_SET_KEY2", {"GP1_PKEXPIRERESET_CASE_SINGLE_SET_MEMBER2"}, &int32_ret);
+  s = db.SAdd("GP1_PKEXPIRERESET_CASE_SINGLE_SET_KEY3", {"GP1_PKEXPIRERESET_CASE_SINGLE_SET_MEMBER3"}, &int32_ret);
+  delete_keys.push_back("GP1_PKEXPIRERESET_CASE_SINGLE_SET_KEY1");
+  delete_keys.push_back("GP1_PKEXPIRERESET_CASE_SINGLE_SET_KEY2");
+  delete_keys.push_back("GP1_PKEXPIRERESET_CASE_SINGLE_SET_KEY3");
+
+  //List
+  s = db.LPush("GP1_PKEXPIRERESET_CASE_SINGLE_LIST_KEY1", {"GP1_PKEXPIRERESET_CASE_SINGLE_LIST_NODE1"}, &uint64_ret);
+  s = db.LPush("GP1_PKEXPIRERESET_CASE_SINGLE_LIST_KEY2", {"GP1_PKEXPIRERESET_CASE_SINGLE_LIST_NODE2"}, &uint64_ret);
+  s = db.LPush("GP1_PKEXPIRERESET_CASE_SINGLE_LIST_KEY3", {"GP1_PKEXPIRERESET_CASE_SINGLE_LIST_NODE3"}, &uint64_ret);
+  delete_keys.push_back("GP1_PKEXPIRERESET_CASE_SINGLE_LIST_KEY1");
+  delete_keys.push_back("GP1_PKEXPIRERESET_CASE_SINGLE_LIST_KEY2");
+  delete_keys.push_back("GP1_PKEXPIRERESET_CASE_SINGLE_LIST_KEY3");
+
+  //ZSet
+  s = db.ZAdd("GP1_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY1", {{1, "GP1_PKEXPIRERESET_CASE_SINGLE_LIST_MEMBER1"}}, &int32_ret);
+  s = db.ZAdd("GP1_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY2", {{1, "GP1_PKEXPIRERESET_CASE_SINGLE_LIST_MEMBER2"}}, &int32_ret);
+  s = db.ZAdd("GP1_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY3", {{1, "GP1_PKEXPIRERESET_CASE_SINGLE_LIST_MEMBER3"}}, &int32_ret);
+  delete_keys.push_back("GP1_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY1");
+  delete_keys.push_back("GP1_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY2");
+  delete_keys.push_back("GP1_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY3");
+
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_SINGLE_STRING_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_SINGLE_STRING_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_SINGLE_STRING_KEY3", 6));
+
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_SINGLE_HASH_KEY1", 8));
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_SINGLE_HASH_KEY2", 10));
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_SINGLE_HASH_KEY3", 12));
+
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_SINGLE_SET_KEY1", 14));
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_SINGLE_SET_KEY2", 16));
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_SINGLE_SET_KEY3", 18));
+
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_SINGLE_LIST_KEY1", 20));
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_SINGLE_LIST_KEY2", 22));
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_SINGLE_LIST_KEY3", 24));
+
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY1", 26));
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY2", 28));
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY3", 30));
+
+  keys.clear();
+  s = db.PKExpireReset(DataType::kStrings, 0, 100, 30);
+  ASSERT_TRUE(s.ok());
+  cursor = db.PKExpireScan(DataType::kStrings, 0, 0, 100, 100, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 6);
+  ASSERT_EQ(keys[0], "GP1_PKEXPIRERESET_CASE_SINGLE_STRING_KEY1");
+  ASSERT_EQ(keys[1], "30");
+  ASSERT_EQ(keys[2], "GP1_PKEXPIRERESET_CASE_SINGLE_STRING_KEY2");
+  ASSERT_EQ(keys[3], "30");
+  ASSERT_EQ(keys[4], "GP1_PKEXPIRERESET_CASE_SINGLE_STRING_KEY3");
+  ASSERT_EQ(keys[5], "30");
+
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_SINGLE_STRING_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_SINGLE_STRING_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_SINGLE_STRING_KEY3", 6));
+
+  s = db.PKExpireReset(DataType::kStrings, 0, 4, 66); 
+  ASSERT_TRUE(s.ok());
+  cursor = db.PKExpireScan(DataType::kStrings, 0, 50, 100, 100, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys[0], "GP1_PKEXPIRERESET_CASE_SINGLE_STRING_KEY1");
+  ASSERT_EQ(keys[1], "66");
+  
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_SINGLE_STRING_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_SINGLE_STRING_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_SINGLE_STRING_KEY3", 6));
+
+  s = db.PKExpireReset(DataType::kStrings, 4, 10, 66); 
+  ASSERT_TRUE(s.ok());
+  cursor = db.PKExpireScan(DataType::kStrings, 0, 50, 100, 100, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys[0], "GP1_PKEXPIRERESET_CASE_SINGLE_STRING_KEY3");
+  ASSERT_EQ(keys[1], "66");
+
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_SINGLE_STRING_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_SINGLE_STRING_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_SINGLE_STRING_KEY3", 6));
+
+  s = db.PKExpireReset(DataType::kStrings, 2, 6, 66); 
+  ASSERT_TRUE(s.ok());
+  cursor = db.PKExpireScan(DataType::kStrings, 0, 50, 100, 100, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys[0], "GP1_PKEXPIRERESET_CASE_SINGLE_STRING_KEY2");
+  ASSERT_EQ(keys[1], "66");
+
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_SINGLE_STRING_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_SINGLE_STRING_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_SINGLE_STRING_KEY3", 6));
+
+  s = db.PKExpireReset(DataType::kStrings, INT_MIN, 4, 66); 
+  ASSERT_TRUE(s.ok());
+  cursor = db.PKExpireScan(DataType::kStrings, 0, 50, 100, 100, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys[0], "GP1_PKEXPIRERESET_CASE_SINGLE_STRING_KEY1");
+  ASSERT_EQ(keys[1], "66");
+
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_SINGLE_STRING_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_SINGLE_STRING_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP1_PKEXPIRERESET_CASE_SINGLE_STRING_KEY3", 6));
+
+  s = db.PKExpireReset(DataType::kStrings, 4, INT_MAX, 66); 
+  ASSERT_TRUE(s.ok());
+  cursor = db.PKExpireScan(DataType::kStrings, 0, 50, 100, 100, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys[0], "GP1_PKEXPIRERESET_CASE_SINGLE_STRING_KEY3");
+  ASSERT_EQ(keys[1], "66");
+
+  del_num = db.Del(delete_keys, &type_status);
+  ASSERT_EQ(del_num, 15);
+  sleep(2);
+  db.Compact(DataType::kAll, true);
+
+
+  // ***************** Group 2 Test *****************
+  delete_keys.clear();
+  //String
+  s = db.Set("GP2_PKEXPIRERESET_CASE_SINGLE_STRING_KEY1", "GP2_PKEXPIRERESET_CASE_SINGLE_STRING_VALUE1");
+  s = db.Set("GP2_PKEXPIRERESET_CASE_SINGLE_STRING_KEY2", "GP2_PKEXPIRERESET_CASE_SINGLE_STRING_VALUE2");
+  s = db.Set("GP2_PKEXPIRERESET_CASE_SINGLE_STRING_KEY3", "GP2_PKEXPIRERESET_CASE_SINGLE_STRING_VALUE3");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_STRING_KEY1");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_STRING_KEY2");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_STRING_KEY3");
+
+  //Hash
+  s = db.HSet("GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY1", "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_FIELD1", "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_VALUE1", &int32_ret);
+  s = db.HSet("GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY2", "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_FIELD2", "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_VALUE2", &int32_ret);
+  s = db.HSet("GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY3", "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_FIELD3", "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_VALUE3", &int32_ret);
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY1");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY2");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY3");
+
+  //Set
+  s = db.SAdd("GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY1", {"GP2_PKEXPIRERESET_CASE_SINGLE_SET_MEMBER1"}, &int32_ret);
+  s = db.SAdd("GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY2", {"GP2_PKEXPIRERESET_CASE_SINGLE_SET_MEMBER2"}, &int32_ret);
+  s = db.SAdd("GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY3", {"GP2_PKEXPIRERESET_CASE_SINGLE_SET_MEMBER3"}, &int32_ret);
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY1");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY2");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY3");
+
+  //List
+  s = db.LPush("GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY1", {"GP2_PKEXPIRERESET_CASE_SINGLE_LIST_NODE1"}, &uint64_ret);
+  s = db.LPush("GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY2", {"GP2_PKEXPIRERESET_CASE_SINGLE_LIST_NODE2"}, &uint64_ret);
+  s = db.LPush("GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY3", {"GP2_PKEXPIRERESET_CASE_SINGLE_LIST_NODE3"}, &uint64_ret);
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY1");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY2");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY3");
+
+  //ZSet
+  s = db.ZAdd("GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY1", {{1, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_MEMBER1"}}, &int32_ret);
+  s = db.ZAdd("GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY2", {{1, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_MEMBER2"}}, &int32_ret);
+  s = db.ZAdd("GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY3", {{1, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_MEMBER3"}}, &int32_ret);
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY1");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY2");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY3");
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_STRING_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_STRING_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_STRING_KEY3", 6));
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY3", 6));
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY1", 14));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY2", 16));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY3", 18));
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY1", 20));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY2", 22));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY3", 24));
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY1", 26));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY2", 28));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY3", 30));
+
+  keys.clear();
+  s = db.PKExpireReset(DataType::kHashes, 0, 100, 30);
+  ASSERT_TRUE(s.ok());
+  cursor = db.PKExpireScan(DataType::kHashes, 0, 0, 100, 100, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 6);
+  ASSERT_EQ(keys[0], "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY1");
+  ASSERT_EQ(keys[1], "30");
+  ASSERT_EQ(keys[2], "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY2");
+  ASSERT_EQ(keys[3], "30");
+  ASSERT_EQ(keys[4], "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY3");
+  ASSERT_EQ(keys[5], "30");
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY3", 6));
+
+  s = db.PKExpireReset(DataType::kHashes, 0, 4, 66); 
+  ASSERT_TRUE(s.ok());
+  cursor = db.PKExpireScan(DataType::kHashes, 0, 50, 100, 100, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys[0], "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY1");
+  ASSERT_EQ(keys[1], "66");
+  
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY3", 6));
+
+  s = db.PKExpireReset(DataType::kHashes, 4, 10, 66); 
+  ASSERT_TRUE(s.ok());
+  cursor = db.PKExpireScan(DataType::kHashes, 0, 50, 100, 100, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys[0], "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY3");
+  ASSERT_EQ(keys[1], "66");
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY3", 6));
+
+  s = db.PKExpireReset(DataType::kHashes, 2, 6, 66); 
+  ASSERT_TRUE(s.ok());
+  cursor = db.PKExpireScan(DataType::kHashes, 0, 50, 100, 100, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys[0], "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY2");
+  ASSERT_EQ(keys[1], "66");
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY3", 6));
+
+  s = db.PKExpireReset(DataType::kHashes, INT_MIN, 4, 66); 
+  ASSERT_TRUE(s.ok());
+  cursor = db.PKExpireScan(DataType::kHashes, 0, 50, 100, 100, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys[0], "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY1");
+  ASSERT_EQ(keys[1], "66");
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY3", 6));
+
+  s = db.PKExpireReset(DataType::kHashes, 4, INT_MAX, 66); 
+  ASSERT_TRUE(s.ok());
+  cursor = db.PKExpireScan(DataType::kHashes, 0, 50, 100, 100, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys[0], "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY3");
+  ASSERT_EQ(keys[1], "66");
+
+  del_num = db.Del(delete_keys, &type_status);
+  ASSERT_EQ(del_num, 15);
+  sleep(2);
+  db.Compact(DataType::kAll, true);
+
+
+  // ***************** Group 3 Test *****************
+  delete_keys.clear();
+  //String
+  s = db.Set("GP2_PKEXPIRERESET_CASE_SINGLE_STRING_KEY1", "GP2_PKEXPIRERESET_CASE_SINGLE_STRING_VALUE1");
+  s = db.Set("GP2_PKEXPIRERESET_CASE_SINGLE_STRING_KEY2", "GP2_PKEXPIRERESET_CASE_SINGLE_STRING_VALUE2");
+  s = db.Set("GP2_PKEXPIRERESET_CASE_SINGLE_STRING_KEY3", "GP2_PKEXPIRERESET_CASE_SINGLE_STRING_VALUE3");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_STRING_KEY1");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_STRING_KEY2");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_STRING_KEY3");
+
+  //Hash
+  s = db.HSet("GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY1", "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_FIELD1", "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_VALUE1", &int32_ret);
+  s = db.HSet("GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY2", "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_FIELD2", "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_VALUE2", &int32_ret);
+  s = db.HSet("GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY3", "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_FIELD3", "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_VALUE3", &int32_ret);
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY1");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY2");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY3");
+
+  //Set
+  s = db.SAdd("GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY1", {"GP2_PKEXPIRERESET_CASE_SINGLE_SET_MEMBER1"}, &int32_ret);
+  s = db.SAdd("GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY2", {"GP2_PKEXPIRERESET_CASE_SINGLE_SET_MEMBER2"}, &int32_ret);
+  s = db.SAdd("GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY3", {"GP2_PKEXPIRERESET_CASE_SINGLE_SET_MEMBER3"}, &int32_ret);
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY1");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY2");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY3");
+
+  //List
+  s = db.LPush("GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY1", {"GP2_PKEXPIRERESET_CASE_SINGLE_LIST_NODE1"}, &uint64_ret);
+  s = db.LPush("GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY2", {"GP2_PKEXPIRERESET_CASE_SINGLE_LIST_NODE2"}, &uint64_ret);
+  s = db.LPush("GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY3", {"GP2_PKEXPIRERESET_CASE_SINGLE_LIST_NODE3"}, &uint64_ret);
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY1");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY2");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY3");
+
+  //ZSet
+  s = db.ZAdd("GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY1", {{1, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_MEMBER1"}}, &int32_ret);
+  s = db.ZAdd("GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY2", {{1, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_MEMBER2"}}, &int32_ret);
+  s = db.ZAdd("GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY3", {{1, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_MEMBER3"}}, &int32_ret);
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY1");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY2");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY3");
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_STRING_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_STRING_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_STRING_KEY3", 6));
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY3", 6));
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY3", 6));
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY3", 6));
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY3", 6));
+
+  keys.clear();
+  s = db.PKExpireReset(DataType::kSets, 0, 100, 30);
+  ASSERT_TRUE(s.ok());
+  cursor = db.PKExpireScan(DataType::kSets, 0, 0, 100, 100, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 6);
+  ASSERT_EQ(keys[0], "GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY1");
+  ASSERT_EQ(keys[1], "30");
+  ASSERT_EQ(keys[2], "GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY2");
+  ASSERT_EQ(keys[3], "30");
+  ASSERT_EQ(keys[4], "GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY3");
+  ASSERT_EQ(keys[5], "30");
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY3", 6));
+
+  s = db.PKExpireReset(DataType::kSets, 0, 4, 66); 
+  ASSERT_TRUE(s.ok());
+  cursor = db.PKExpireScan(DataType::kSets, 0, 50, 100, 100, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys[0], "GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY1");
+  ASSERT_EQ(keys[1], "66");
+  
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY3", 6));
+
+  s = db.PKExpireReset(DataType::kSets, 4, 10, 66); 
+  ASSERT_TRUE(s.ok());
+  cursor = db.PKExpireScan(DataType::kSets, 0, 50, 100, 100, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys[0], "GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY3");
+  ASSERT_EQ(keys[1], "66");
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY3", 6));
+
+  s = db.PKExpireReset(DataType::kSets, 2, 6, 66); 
+  ASSERT_TRUE(s.ok());
+  cursor = db.PKExpireScan(DataType::kSets, 0, 50, 100, 100, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys[0], "GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY2");
+  ASSERT_EQ(keys[1], "66");
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY3", 6));
+
+  s = db.PKExpireReset(DataType::kSets, INT_MIN, 4, 66); 
+  ASSERT_TRUE(s.ok());
+  cursor = db.PKExpireScan(DataType::kSets, 0, 50, 100, 100, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys[0], "GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY1");
+  ASSERT_EQ(keys[1], "66");
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY3", 6));
+
+  s = db.PKExpireReset(DataType::kSets, 4, INT_MAX, 66); 
+  ASSERT_TRUE(s.ok());
+  cursor = db.PKExpireScan(DataType::kSets, 0, 50, 100, 100, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys[0], "GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY3");
+  ASSERT_EQ(keys[1], "66");
+
+  del_num = db.Del(delete_keys, &type_status);
+  ASSERT_EQ(del_num, 15);
+  sleep(2);
+  db.Compact(DataType::kAll, true);
+
+
+  // ***************** Group 4 Test *****************
+  delete_keys.clear();
+  //String
+  s = db.Set("GP2_PKEXPIRERESET_CASE_SINGLE_STRING_KEY1", "GP2_PKEXPIRERESET_CASE_SINGLE_STRING_VALUE1");
+  s = db.Set("GP2_PKEXPIRERESET_CASE_SINGLE_STRING_KEY2", "GP2_PKEXPIRERESET_CASE_SINGLE_STRING_VALUE2");
+  s = db.Set("GP2_PKEXPIRERESET_CASE_SINGLE_STRING_KEY3", "GP2_PKEXPIRERESET_CASE_SINGLE_STRING_VALUE3");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_STRING_KEY1");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_STRING_KEY2");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_STRING_KEY3");
+
+  //Hash
+  s = db.HSet("GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY1", "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_FIELD1", "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_VALUE1", &int32_ret);
+  s = db.HSet("GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY2", "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_FIELD2", "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_VALUE2", &int32_ret);
+  s = db.HSet("GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY3", "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_FIELD3", "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_VALUE3", &int32_ret);
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY1");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY2");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY3");
+
+  //Set
+  s = db.SAdd("GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY1", {"GP2_PKEXPIRERESET_CASE_SINGLE_SET_MEMBER1"}, &int32_ret);
+  s = db.SAdd("GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY2", {"GP2_PKEXPIRERESET_CASE_SINGLE_SET_MEMBER2"}, &int32_ret);
+  s = db.SAdd("GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY3", {"GP2_PKEXPIRERESET_CASE_SINGLE_SET_MEMBER3"}, &int32_ret);
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY1");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY2");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY3");
+
+  //List
+  s = db.LPush("GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY1", {"GP2_PKEXPIRERESET_CASE_SINGLE_LIST_NODE1"}, &uint64_ret);
+  s = db.LPush("GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY2", {"GP2_PKEXPIRERESET_CASE_SINGLE_LIST_NODE2"}, &uint64_ret);
+  s = db.LPush("GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY3", {"GP2_PKEXPIRERESET_CASE_SINGLE_LIST_NODE3"}, &uint64_ret);
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY1");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY2");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY3");
+
+  //ZSet
+  s = db.ZAdd("GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY1", {{1, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_MEMBER1"}}, &int32_ret);
+  s = db.ZAdd("GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY2", {{1, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_MEMBER2"}}, &int32_ret);
+  s = db.ZAdd("GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY3", {{1, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_MEMBER3"}}, &int32_ret);
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY1");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY2");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY3");
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_STRING_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_STRING_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_STRING_KEY3", 6));
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY3", 6));
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY3", 6));
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY3", 6));
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY3", 6));
+
+  keys.clear();
+  s = db.PKExpireReset(DataType::kLists, 0, 100, 30);
+  ASSERT_TRUE(s.ok());
+  cursor = db.PKExpireScan(DataType::kLists, 0, 0, 100, 100, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 6);
+  ASSERT_EQ(keys[0], "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY1");
+  ASSERT_EQ(keys[1], "30");
+  ASSERT_EQ(keys[2], "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY2");
+  ASSERT_EQ(keys[3], "30");
+  ASSERT_EQ(keys[4], "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY3");
+  ASSERT_EQ(keys[5], "30");
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY3", 6));
+
+  s = db.PKExpireReset(DataType::kLists, 0, 4, 66); 
+  ASSERT_TRUE(s.ok());
+  cursor = db.PKExpireScan(DataType::kLists, 0, 50, 100, 100, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys[0], "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY1");
+  ASSERT_EQ(keys[1], "66");
+  
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY3", 6));
+
+  s = db.PKExpireReset(DataType::kLists, 4, 10, 66); 
+  ASSERT_TRUE(s.ok());
+  cursor = db.PKExpireScan(DataType::kLists, 0, 50, 100, 100, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys[0], "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY3");
+  ASSERT_EQ(keys[1], "66");
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY3", 6));
+
+  s = db.PKExpireReset(DataType::kLists, 2, 6, 66); 
+  ASSERT_TRUE(s.ok());
+  cursor = db.PKExpireScan(DataType::kLists, 0, 50, 100, 100, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys[0], "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY2");
+  ASSERT_EQ(keys[1], "66");
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY3", 6));
+
+  s = db.PKExpireReset(DataType::kLists, INT_MIN, 4, 66); 
+  ASSERT_TRUE(s.ok());
+  cursor = db.PKExpireScan(DataType::kLists, 0, 50, 100, 100, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys[0], "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY1");
+  ASSERT_EQ(keys[1], "66");
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY3", 6));
+
+  s = db.PKExpireReset(DataType::kLists, 4, INT_MAX, 66); 
+  ASSERT_TRUE(s.ok());
+  cursor = db.PKExpireScan(DataType::kLists, 0, 50, 100, 100, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys[0], "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY3");
+  ASSERT_EQ(keys[1], "66");
+
+  del_num = db.Del(delete_keys, &type_status);
+  ASSERT_EQ(del_num, 15);
+  sleep(2);
+  db.Compact(DataType::kAll, true);
+
+
+  // ***************** Group 5 Test *****************
+  delete_keys.clear();
+  //String
+  s = db.Set("GP2_PKEXPIRERESET_CASE_SINGLE_STRING_KEY1", "GP2_PKEXPIRERESET_CASE_SINGLE_STRING_VALUE1");
+  s = db.Set("GP2_PKEXPIRERESET_CASE_SINGLE_STRING_KEY2", "GP2_PKEXPIRERESET_CASE_SINGLE_STRING_VALUE2");
+  s = db.Set("GP2_PKEXPIRERESET_CASE_SINGLE_STRING_KEY3", "GP2_PKEXPIRERESET_CASE_SINGLE_STRING_VALUE3");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_STRING_KEY1");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_STRING_KEY2");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_STRING_KEY3");
+
+  //Hash
+  s = db.HSet("GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY1", "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_FIELD1", "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_VALUE1", &int32_ret);
+  s = db.HSet("GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY2", "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_FIELD2", "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_VALUE2", &int32_ret);
+  s = db.HSet("GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY3", "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_FIELD3", "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_VALUE3", &int32_ret);
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY1");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY2");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY3");
+
+  //Set
+  s = db.SAdd("GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY1", {"GP2_PKEXPIRERESET_CASE_SINGLE_SET_MEMBER1"}, &int32_ret);
+  s = db.SAdd("GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY2", {"GP2_PKEXPIRERESET_CASE_SINGLE_SET_MEMBER2"}, &int32_ret);
+  s = db.SAdd("GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY3", {"GP2_PKEXPIRERESET_CASE_SINGLE_SET_MEMBER3"}, &int32_ret);
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY1");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY2");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY3");
+
+  //List
+  s = db.LPush("GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY1", {"GP2_PKEXPIRERESET_CASE_SINGLE_LIST_NODE1"}, &uint64_ret);
+  s = db.LPush("GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY2", {"GP2_PKEXPIRERESET_CASE_SINGLE_LIST_NODE2"}, &uint64_ret);
+  s = db.LPush("GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY3", {"GP2_PKEXPIRERESET_CASE_SINGLE_LIST_NODE3"}, &uint64_ret);
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY1");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY2");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY3");
+
+  //ZSet
+  s = db.ZAdd("GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY1", {{1, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_MEMBER1"}}, &int32_ret);
+  s = db.ZAdd("GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY2", {{1, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_MEMBER2"}}, &int32_ret);
+  s = db.ZAdd("GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY3", {{1, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_MEMBER3"}}, &int32_ret);
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY1");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY2");
+  delete_keys.push_back("GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY3");
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_STRING_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_STRING_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_STRING_KEY3", 6));
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_HASH_KEY3", 6));
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_SET_KEY3", 6));
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_LIST_KEY3", 6));
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY3", 6));
+
+  keys.clear();
+  s = db.PKExpireReset(DataType::kZSets, 0, 100, 30);
+  ASSERT_TRUE(s.ok());
+  cursor = db.PKExpireScan(DataType::kZSets, 0, 0, 100, 100, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 6);
+  ASSERT_EQ(keys[0], "GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY1");
+  ASSERT_EQ(keys[1], "30");
+  ASSERT_EQ(keys[2], "GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY2");
+  ASSERT_EQ(keys[3], "30");
+  ASSERT_EQ(keys[4], "GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY3");
+  ASSERT_EQ(keys[5], "30");
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY3", 6));
+
+  s = db.PKExpireReset(DataType::kZSets, 0, 4, 66); 
+  ASSERT_TRUE(s.ok());
+  cursor = db.PKExpireScan(DataType::kZSets, 0, 50, 100, 100, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys[0], "GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY1");
+  ASSERT_EQ(keys[1], "66");
+  
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY3", 6));
+
+  s = db.PKExpireReset(DataType::kZSets, 4, 10, 66); 
+  ASSERT_TRUE(s.ok());
+  cursor = db.PKExpireScan(DataType::kZSets, 0, 50, 100, 100, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys[0], "GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY3");
+  ASSERT_EQ(keys[1], "66");
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY3", 6));
+
+  s = db.PKExpireReset(DataType::kZSets, 2, 6, 66); 
+  ASSERT_TRUE(s.ok());
+  cursor = db.PKExpireScan(DataType::kZSets, 0, 50, 100, 100, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys[0], "GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY2");
+  ASSERT_EQ(keys[1], "66");
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY3", 6));
+
+  s = db.PKExpireReset(DataType::kZSets, INT_MIN, 4, 66); 
+  ASSERT_TRUE(s.ok());
+  cursor = db.PKExpireScan(DataType::kZSets, 0, 50, 100, 100, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys[0], "GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY1");
+  ASSERT_EQ(keys[1], "66");
+
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY1", 2));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY2", 4));
+  ASSERT_TRUE(set_timeout(&db, "GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY3", 6));
+
+  s = db.PKExpireReset(DataType::kZSets, 4, INT_MAX, 66); 
+  ASSERT_TRUE(s.ok());
+  cursor = db.PKExpireScan(DataType::kZSets, 0, 50, 100, 100, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 2);
+  ASSERT_EQ(keys[0], "GP2_PKEXPIRERESET_CASE_SINGLE_ZSET_KEY3");
+  ASSERT_EQ(keys[1], "66");
+
+  del_num = db.Del(delete_keys, &type_status);
+  ASSERT_EQ(del_num, 15);
+  sleep(2);
+  db.Compact(DataType::kAll, true);
+} 	
+
+//PKFieldScan
+TEST_F(KeysTest, PKFieldScanAllTest) {
+  int64_t cursor;
+  int64_t next_cursor;
+  int64_t del_num;
+  int32_t int32_ret;
+  uint64_t uint64_ret;
+  std::vector<std::string> keys;
+  std::vector<std::string> total_keys;
+  std::vector<std::string> delete_keys;
+  std::map<blackwidow::DataType, Status> type_status;
+  Status s;
+  int nums[6] = {0, 5, 10, 15, 20, 25}; 
+  std::string str_num[] = {"0", "5", "10", "15", "20", "25"};
+
+  // ***************** Group 1 Test *****************
+  delete_keys.clear();
+
+  //String
+  s = db.Set("GP1_PKFIELDSCAN_CASE_ALL_STRING_KEY1", "GP1_PKFIELDSCAN_CASE_ALL_STRING_VALUE1");
+  s = db.Set("GP1_PKFIELDSCAN_CASE_ALL_STRING_KEY2", "GP1_PKFIELDSCAN_CASE_ALL_STRING_VALUE2");
+  s = db.Set("GP1_PKFIELDSCAN_CASE_ALL_STRING_KEY3", "GP1_PKFIELDSCAN_CASE_ALL_STRING_VALUE3");
+  delete_keys.push_back("GP1_PKFIELDSCAN_CASE_ALL_STRING_KEY1");
+  delete_keys.push_back("GP1_PKFIELDSCAN_CASE_ALL_STRING_KEY2");
+  delete_keys.push_back("GP1_PKFIELDSCAN_CASE_ALL_STRING_KEY3");
+
+  //Hash
+  std::string hash_key = "GP1_PKFIELDSCAN_CASE_ALL_HASH_KEY";
+  std::string hash_field = "GP1_PKFIELDSCAN_CASE_ALL_HASH_FIELD";
+  std::string hash_value = "GP1_PKFIELDSCAN_CASE_ALL_HASH_VALUE";
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = hash_key + ch;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_field = hash_field + ch;
+      std::string tmp_value = hash_value + ch;
+      db.HSet(tmp_key, tmp_field, tmp_value, &int32_ret); 
+    } 
+    delete_keys.push_back(tmp_key);
+  }
+
+  //Set
+  std::string set_key = "GP1_PKFIELDSCAN_CASE_ALL_SET_KEY"; 
+  std::string set_member = "GP1_PKFIELDSCAN_CASE_ALL_SET_MEMBER"; 
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = set_key + ch;
+    std::vector<std::string> members;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_member = set_member + ch;
+      members.push_back(tmp_member);
+    }
+    db.SAdd(tmp_key, members, &int32_ret); 
+    delete_keys.push_back(tmp_key);
+  }
+  
+  //List
+  std::string list_key = "GP1_PKFIELDSCAN_CASE_ALL_LIST_KEY";
+  std::string list_node = "GP1_PKFIELDSCAN_CASE_ALL_LIST_NODE";
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = list_key + ch;
+    std::vector<std::string> members;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_member = list_node + ch;
+      members.push_back(tmp_member);
+    }
+    db.LPush(tmp_key, members, &uint64_ret); 
+    delete_keys.push_back(tmp_key);
+  }
+  
+  //ZSet
+  std::string zset_key = "GP1_PKFIELDSCAN_CASE_ALL_ZSET_KEY";
+  std::string zset_member = "GP1_PKFIELDSCAN_CASE_ALL_LIST_MEMBER";
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = zset_key + ch;
+    std::vector<blackwidow::ScoreMember> scoremembers;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_member = zset_member + ch;
+      scoremembers.push_back({j, tmp_member});
+    }
+    db.ZAdd(tmp_key, scoremembers, &int32_ret); 
+    delete_keys.push_back(tmp_key);
+  }
+
+  cursor = 0;     
+  std::string key_vec[]= {"", hash_key, set_key, list_key, zset_key};
+  cursor = db.PKFieldScan(blackwidow::DataType::kAll, cursor, 0, 100, 1000, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 40);
+  for (int k = 1; k <= 4; k++) {
+    for (int i = 1; i <= 5; i++) {
+      char ch = '0' + i;
+      std::string key = key_vec[k] + ch;
+      ASSERT_EQ(key, keys[(k - 1) * 10 + 2 * i - 2]);
+      ASSERT_EQ(str_num[i], keys[(k - 1) * 10 + 2 * i - 1]);   
+    }
+  } 
+
+  del_num = db.Del(delete_keys, &type_status);
+  ASSERT_EQ(del_num, 23);
+  sleep(2);
+  db.Compact(DataType::kAll, true);
+
+
+  // ***************** Group 2 Test *****************
+  delete_keys.clear();
+  //String
+  s = db.Set("GP2_PKFIELDSCAN_CASE_ALL_STRING_KEY1", "GP2_PKFIELDSCAN_CASE_ALL_STRING_VALUE1");
+  s = db.Set("GP2_PKFIELDSCAN_CASE_ALL_STRING_KEY2", "GP2_PKFIELDSCAN_CASE_ALL_STRING_VALUE2");
+  s = db.Set("GP2_PKFIELDSCAN_CASE_ALL_STRING_KEY3", "GP2_PKFIELDSCAN_CASE_ALL_STRING_VALUE3");
+  delete_keys.push_back("GP2_PKFIELDSCAN_CASE_ALL_STRING_KEY1");
+  delete_keys.push_back("GP2_PKFIELDSCAN_CASE_ALL_STRING_KEY2");
+  delete_keys.push_back("GP2_PKFIELDSCAN_CASE_ALL_STRING_KEY3");
+
+  //Hash
+  hash_key = "GP2_PKFIELDSCAN_CASE_ALL_HASH_KEY";
+  hash_field = "GP2_PKFIELDSCAN_CASE_ALL_HASH_FIELD";
+  hash_value = "GP2_PKFIELDSCAN_CASE_ALL_HASH_VALUE";
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = hash_key + ch;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_field = hash_field + ch;
+      std::string tmp_value = hash_value + ch;
+      db.HSet(tmp_key, tmp_field, tmp_value, &int32_ret); 
+    } 
+    delete_keys.push_back(tmp_key);
+  }
+
+  //Set
+  set_key = "GP2_PKFIELDSCAN_CASE_ALL_SET_KEY"; 
+  set_member = "GP2_PKFIELDSCAN_CASE_ALL_SET_MEMBER"; 
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = set_key + ch;
+    std::vector<std::string> members;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_member = set_member + ch;
+      members.push_back(tmp_member);
+    }
+    db.SAdd(tmp_key, members, &int32_ret); 
+    delete_keys.push_back(tmp_key);
+  }
+  
+  //List
+  list_key = "GP2_PKFIELDSCAN_CASE_ALL_LIST_KEY";
+  list_node = "GP2_PKFIELDSCAN_CASE_ALL_LIST_NODE";
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = list_key + ch;
+    std::vector<std::string> members;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_member = list_node + ch;
+      members.push_back(tmp_member);
+    }
+    db.LPush(tmp_key, members, &uint64_ret); 
+    delete_keys.push_back(tmp_key);
+  }
+
+  //ZSet
+  zset_key = "GP2_PKFIELDSCAN_CASE_ALL_ZSET_KEY";
+  zset_member = "GP2_PKFIELDSCAN_CASE_ALL_LIST_MEMBER";
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = zset_key + ch;
+    std::vector<blackwidow::ScoreMember> scoremembers;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_member = zset_member + ch;
+      scoremembers.push_back({j, tmp_member});
+    }
+    db.ZAdd(tmp_key, scoremembers, &int32_ret); 
+    delete_keys.push_back(tmp_key);
+  }
+
+  cursor = 0;     
+  key_vec[1] = hash_key;
+  key_vec[2] = set_key;
+  key_vec[3] = list_key;
+  key_vec[4] = zset_key;
+  cursor = db.PKFieldScan(blackwidow::DataType::kAll, cursor, 0, 15, 1000, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 16);
+  for (int k = 1; k <= 4; k++) {
+    for (int i = 1; i <= 2; i++) {
+      char ch = '0' + i;
+      std::string key = key_vec[k] + ch;
+      ASSERT_EQ(key, keys[(k - 1) * 4 + 2 * i - 2]);
+      ASSERT_EQ(str_num[i], keys[(k - 1) * 4 + 2 * i - 1]);   
+    }
+  } 
+
+  del_num = db.Del(delete_keys, &type_status);
+  ASSERT_EQ(del_num, 23);
+  sleep(2);
+  db.Compact(DataType::kAll, true);
+
+
+  // ***************** Group 3 Test *****************
+  delete_keys.clear();
+  //String
+  s = db.Set("GP3_PKFIELDSCAN_CASE_ALL_STRING_KEY1", "GP3_PKFIELDSCAN_CASE_ALL_STRING_VALUE1");
+  s = db.Set("GP3_PKFIELDSCAN_CASE_ALL_STRING_KEY2", "GP3_PKFIELDSCAN_CASE_ALL_STRING_VALUE2");
+  s = db.Set("GP3_PKFIELDSCAN_CASE_ALL_STRING_KEY3", "GP3_PKFIELDSCAN_CASE_ALL_STRING_VALUE3");
+  delete_keys.push_back("GP3_PKFIELDSCAN_CASE_ALL_STRING_KEY1");
+  delete_keys.push_back("GP3_PKFIELDSCAN_CASE_ALL_STRING_KEY2");
+  delete_keys.push_back("GP3_PKFIELDSCAN_CASE_ALL_STRING_KEY3");
+
+  //Hash
+  hash_key = "GP3_PKFIELDSCAN_CASE_ALL_HASH_KEY";
+  hash_field = "GP3_PKFIELDSCAN_CASE_ALL_HASH_FIELD";
+  hash_value = "GP3_PKFIELDSCAN_CASE_ALL_HASH_VALUE";
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = hash_key + ch;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_field = hash_field + ch;
+      std::string tmp_value = hash_value + ch;
+      db.HSet(tmp_key, tmp_field, tmp_value, &int32_ret); 
+    } 
+    delete_keys.push_back(tmp_key);
+  }
+
+  //Set
+  set_key = "GP3_PKFIELDSCAN_CASE_ALL_SET_KEY"; 
+  set_member = "GP3_PKFIELDSCAN_CASE_ALL_SET_MEMBER"; 
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = set_key + ch;
+    std::vector<std::string> members;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_member = set_member + ch;
+      members.push_back(tmp_member);
+    }
+    db.SAdd(tmp_key, members, &int32_ret); 
+    delete_keys.push_back(tmp_key);
+  }
+  
+  //List
+  list_key = "GP3_PKFIELDSCAN_CASE_ALL_LIST_KEY";
+  list_node = "GP3_PKFIELDSCAN_CASE_ALL_LIST_NODE";
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = list_key + ch;
+    std::vector<std::string> members;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_member = list_node + ch;
+      members.push_back(tmp_member);
+    }
+    db.LPush(tmp_key, members, &uint64_ret); 
+    delete_keys.push_back(tmp_key);
+  }
+
+  //ZSet
+  zset_key = "GP3_PKFIELDSCAN_CASE_ALL_ZSET_KEY";
+  zset_member = "GP3_PKFIELDSCAN_CASE_ALL_LIST_MEMBER";
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = zset_key + ch;
+    std::vector<blackwidow::ScoreMember> scoremembers;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_member = zset_member + ch;
+      scoremembers.push_back({j, tmp_member});
+    }
+    db.ZAdd(tmp_key, scoremembers, &int32_ret); 
+    delete_keys.push_back(tmp_key);
+  }
+
+  cursor = 0;     
+  key_vec[1] = hash_key;
+  key_vec[2] = set_key;
+  key_vec[3] = list_key;
+  key_vec[4] = zset_key;
+  cursor = db.PKFieldScan(blackwidow::DataType::kAll, cursor, 15, 40, 1000, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 16);
+  for (int k = 1; k <= 4; k++) {
+    for (int i = 4; i <= 5; i++) {
+      char ch = '0' + i;
+      std::string key = key_vec[k] + ch;
+      ASSERT_EQ(key, keys[(k - 1) * 4 + 2 * (i - 3) - 2]);
+      ASSERT_EQ(str_num[i], keys[(k - 1) * 4 + 2 * (i - 3)- 1]);   
+    }
+  } 
+
+  del_num = db.Del(delete_keys, &type_status);
+  ASSERT_EQ(del_num, 23);
+  sleep(2);
+  db.Compact(DataType::kAll, true);
+
+
+  // ***************** Group 4 Test *****************
+  delete_keys.clear();
+  //String
+  s = db.Set("GP4_PKFIELDSCAN_CASE_ALL_STRING_KEY1", "GP4_PKFIELDSCAN_CASE_ALL_STRING_VALUE1");
+  s = db.Set("GP4_PKFIELDSCAN_CASE_ALL_STRING_KEY2", "GP4_PKFIELDSCAN_CASE_ALL_STRING_VALUE2");
+  s = db.Set("GP4_PKFIELDSCAN_CASE_ALL_STRING_KEY3", "GP4_PKFIELDSCAN_CASE_ALL_STRING_VALUE3");
+  delete_keys.push_back("GP4_PKFIELDSCAN_CASE_ALL_STRING_KEY1");
+  delete_keys.push_back("GP4_PKFIELDSCAN_CASE_ALL_STRING_KEY2");
+  delete_keys.push_back("GP4_PKFIELDSCAN_CASE_ALL_STRING_KEY3");
+
+  //Hash
+  hash_key = "GP4_PKFIELDSCAN_CASE_ALL_HASH_KEY";
+  hash_field = "GP4_PKFIELDSCAN_CASE_ALL_HASH_FIELD";
+  hash_value = "GP4_PKFIELDSCAN_CASE_ALL_HASH_VALUE";
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = hash_key + ch;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_field = hash_field + ch;
+      std::string tmp_value = hash_value + ch;
+      db.HSet(tmp_key, tmp_field, tmp_value, &int32_ret); 
+    } 
+    delete_keys.push_back(tmp_key);
+  }
+
+  //Set
+  set_key = "GP4_PKFIELDSCAN_CASE_ALL_SET_KEY"; 
+  set_member = "GP4_PKFIELDSCAN_CASE_ALL_SET_MEMBER"; 
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = set_key + ch;
+    std::vector<std::string> members;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_member = set_member + ch;
+      members.push_back(tmp_member);
+    }
+    db.SAdd(tmp_key, members, &int32_ret); 
+    delete_keys.push_back(tmp_key);
+  }
+  
+  //List
+  list_key = "GP4_PKFIELDSCAN_CASE_ALL_LIST_KEY";
+  list_node = "GP4_PKFIELDSCAN_CASE_ALL_LIST_NODE";
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = list_key + ch;
+    std::vector<std::string> members;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_member = list_node + ch;
+      members.push_back(tmp_member);
+    }
+    db.LPush(tmp_key, members, &uint64_ret); 
+    delete_keys.push_back(tmp_key);
+  }
+
+  //ZSet
+  zset_key = "GP4_PKFIELDSCAN_CASE_ALL_ZSET_KEY";
+  zset_member = "GP4_PKFIELDSCAN_CASE_ALL_LIST_MEMBER";
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = zset_key + ch;
+    std::vector<blackwidow::ScoreMember> scoremembers;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_member = zset_member + ch;
+      scoremembers.push_back({j, tmp_member});
+    }
+    db.ZAdd(tmp_key, scoremembers, &int32_ret); 
+    delete_keys.push_back(tmp_key);
+  }
+
+  cursor = 0;     
+  key_vec[1] = hash_key;
+  key_vec[2] = set_key;
+  key_vec[3] = list_key;
+  key_vec[4] = zset_key;
+  cursor = db.PKFieldScan(blackwidow::DataType::kAll, cursor, 5, 25, 1000, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 24);
+  for (int k = 1; k <= 4; k++) {
+    for (int i = 2; i <= 4; i++) {
+      char ch = '0' + i;
+      std::string key = key_vec[k] + ch;
+      ASSERT_EQ(key, keys[(k - 1) * 6 + 2 * (i - 1) - 2]);
+      ASSERT_EQ(str_num[i], keys[(k - 1) * 6 + 2 * (i - 1) - 1]);   
+    }
+  } 
+
+  del_num = db.Del(delete_keys, &type_status);
+  ASSERT_EQ(del_num, 23);
+  sleep(2);
+  db.Compact(DataType::kAll, true);
+
+
+  // ***************** Group 5 Test *****************
+  delete_keys.clear();
+  //String
+  s = db.Set("GP5_PKFIELDSCAN_CASE_ALL_STRING_KEY1", "GP5_PKFIELDSCAN_CASE_ALL_STRING_VALUE1");
+  s = db.Set("GP5_PKFIELDSCAN_CASE_ALL_STRING_KEY2", "GP5_PKFIELDSCAN_CASE_ALL_STRING_VALUE2");
+  s = db.Set("GP5_PKFIELDSCAN_CASE_ALL_STRING_KEY3", "GP5_PKFIELDSCAN_CASE_ALL_STRING_VALUE3");
+  delete_keys.push_back("GP5_PKFIELDSCAN_CASE_ALL_STRING_KEY1");
+  delete_keys.push_back("GP5_PKFIELDSCAN_CASE_ALL_STRING_KEY2");
+  delete_keys.push_back("GP5_PKFIELDSCAN_CASE_ALL_STRING_KEY3");
+
+  //Hash
+  hash_key = "GP5_PKFIELDSCAN_CASE_ALL_HASH_KEY";
+  hash_field = "GP5_PKFIELDSCAN_CASE_ALL_HASH_FIELD";
+  hash_value = "GP5_PKFIELDSCAN_CASE_ALL_HASH_VALUE";
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = hash_key + ch;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_field = hash_field + ch;
+      std::string tmp_value = hash_value + ch;
+      db.HSet(tmp_key, tmp_field, tmp_value, &int32_ret); 
+    } 
+    delete_keys.push_back(tmp_key);
+  }
+
+  //Set
+  set_key = "GP5_PKFIELDSCAN_CASE_ALL_SET_KEY"; 
+  set_member = "GP5_PKFIELDSCAN_CASE_ALL_SET_MEMBER"; 
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = set_key + ch;
+    std::vector<std::string> members;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_member = set_member + ch;
+      members.push_back(tmp_member);
+    }
+    db.SAdd(tmp_key, members, &int32_ret); 
+    delete_keys.push_back(tmp_key);
+  }
+  
+  //List
+  list_key = "GP5_PKFIELDSCAN_CASE_ALL_LIST_KEY";
+  list_node = "GP5_PKFIELDSCAN_CASE_ALL_LIST_NODE";
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = list_key + ch;
+    std::vector<std::string> members;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_member = list_node + ch;
+      members.push_back(tmp_member);
+    }
+    db.LPush(tmp_key, members, &uint64_ret); 
+    delete_keys.push_back(tmp_key);
+  }
+  
+  //ZSet
+  zset_key = "GP5_PKFIELDSCAN_CASE_ALL_ZSET_KEY";
+  zset_member = "GP5_PKFIELDSCAN_CASE_ALL_LIST_MEMBER";
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = zset_key + ch;
+    std::vector<blackwidow::ScoreMember> scoremembers;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_member = zset_member + ch;
+      scoremembers.push_back({j, tmp_member});
+    }
+    db.ZAdd(tmp_key, scoremembers, &int32_ret); 
+    delete_keys.push_back(tmp_key);
+  }
+
+  cursor = 0;     
+  key_vec[1] = hash_key;
+  key_vec[2] = set_key;
+  key_vec[3] = list_key;
+  key_vec[4] = zset_key;
+  cursor = db.PKFieldScan(blackwidow::DataType::kAll, cursor, 14, 16, 1000, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 8);
+  for (int k = 1; k <= 4; k++) {
+    for (int i = 3; i <= 3; i++) {
+      char ch = '0' + i;
+      std::string key = key_vec[k] + ch;
+      ASSERT_EQ(key, keys[(k - 1) * 2 + 2 * (i - 2) - 2]);
+      ASSERT_EQ(str_num[i], keys[(k - 1) * 2 + 2 * (i - 2) - 1]);   
+    }
+  } 
+
+  del_num = db.Del(delete_keys, &type_status);
+  ASSERT_EQ(del_num, 23);
+  sleep(2);
+  db.Compact(DataType::kAll, true);
+
+
+  // ***************** Group 6 Test *****************
+  delete_keys.clear();
+  //String
+  s = db.Set("GP6_PKFIELDSCAN_CASE_ALL_STRING_KEY1", "GP6_PKFIELDSCAN_CASE_ALL_STRING_VALUE1");
+  s = db.Set("GP6_PKFIELDSCAN_CASE_ALL_STRING_KEY2", "GP6_PKFIELDSCAN_CASE_ALL_STRING_VALUE2");
+  s = db.Set("GP6_PKFIELDSCAN_CASE_ALL_STRING_KEY3", "GP6_PKFIELDSCAN_CASE_ALL_STRING_VALUE3");
+  delete_keys.push_back("GP6_PKFIELDSCAN_CASE_ALL_STRING_KEY1");
+  delete_keys.push_back("GP6_PKFIELDSCAN_CASE_ALL_STRING_KEY2");
+  delete_keys.push_back("GP6_PKFIELDSCAN_CASE_ALL_STRING_KEY3");
+
+  //Hash
+  hash_key = "GP6_PKFIELDSCAN_CASE_ALL_HASH_KEY";
+  hash_field = "GP6_PKFIELDSCAN_CASE_ALL_HASH_FIELD";
+  hash_value = "GP6_PKFIELDSCAN_CASE_ALL_HASH_VALUE";
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = hash_key + ch;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_field = hash_field + ch;
+      std::string tmp_value = hash_value + ch;
+      db.HSet(tmp_key, tmp_field, tmp_value, &int32_ret); 
+    } 
+    delete_keys.push_back(tmp_key);
+  }
+
+  //Set
+  set_key = "GP6_PKFIELDSCAN_CASE_ALL_SET_KEY"; 
+  set_member = "GP6_PKFIELDSCAN_CASE_ALL_SET_MEMBER"; 
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = set_key + ch;
+    std::vector<std::string> members;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_member = set_member + ch;
+      members.push_back(tmp_member);
+    }
+    db.SAdd(tmp_key, members, &int32_ret); 
+    delete_keys.push_back(tmp_key);
+  }
+  
+  //List
+  list_key = "GP6_PKFIELDSCAN_CASE_ALL_LIST_KEY";
+  list_node = "GP6_PKFIELDSCAN_CASE_ALL_LIST_NODE";
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = list_key + ch;
+    std::vector<std::string> members;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_member = list_node + ch;
+      members.push_back(tmp_member);
+    }
+    db.LPush(tmp_key, members, &uint64_ret); 
+    delete_keys.push_back(tmp_key);
+  }
+
+  //ZSet
+  zset_key = "GP6_PKFIELDSCAN_CASE_ALL_ZSET_KEY";
+  zset_member = "GP6_PKFIELDSCAN_CASE_ALL_LIST_MEMBER";
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = zset_key + ch;
+    std::vector<blackwidow::ScoreMember> scoremembers;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_member = zset_member + ch;
+      scoremembers.push_back({j, tmp_member});
+    }
+    db.ZAdd(tmp_key, scoremembers, &int32_ret); 
+    delete_keys.push_back(tmp_key);
+  }
+
+  cursor = 0;     
+  key_vec[1] = hash_key;
+  key_vec[2] = set_key;
+  key_vec[3] = list_key;
+  key_vec[4] = zset_key;
+  for (int k = 1; k <= 4; k++) {
+    for (int i = 1; i <= 5; i++) {
+      char ch = '0' + i;
+      std::string key = key_vec[k] + ch;
+      ASSERT_TRUE(set_timeout(&db, key, -1));
+    } 
+  }
+  cursor = db.PKFieldScan(blackwidow::DataType::kAll, cursor, 0, 100, 1000, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 0);
+
+  del_num = db.Del(delete_keys, &type_status);
+  ASSERT_EQ(del_num, 3);
+  sleep(2);
+  db.Compact(DataType::kAll, true);
+
+
+  // ***************** Group 7 Test *****************
+  delete_keys.clear();
+  //String
+  s = db.Set("GP7_PKFIELDSCAN_CASE_ALL_STRING_KEY1", "GP7_PKFIELDSCAN_CASE_ALL_STRING_VALUE1");
+  s = db.Set("GP7_PKFIELDSCAN_CASE_ALL_STRING_KEY2", "GP7_PKFIELDSCAN_CASE_ALL_STRING_VALUE2");
+  s = db.Set("GP7_PKFIELDSCAN_CASE_ALL_STRING_KEY3", "GP7_PKFIELDSCAN_CASE_ALL_STRING_VALUE3");
+  delete_keys.push_back("GP7_PKFIELDSCAN_CASE_ALL_STRING_KEY1");
+  delete_keys.push_back("GP7_PKFIELDSCAN_CASE_ALL_STRING_KEY2");
+  delete_keys.push_back("GP7_PKFIELDSCAN_CASE_ALL_STRING_KEY3");
+
+  //Hash
+  hash_key = "GP7_PKFIELDSCAN_CASE_ALL_HASH_KEY";
+  hash_field = "GP7_PKFIELDSCAN_CASE_ALL_HASH_FIELD";
+  hash_value = "GP7_PKFIELDSCAN_CASE_ALL_HASH_VALUE";
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = hash_key + ch;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_field = hash_field + ch;
+      std::string tmp_value = hash_value + ch;
+      db.HSet(tmp_key, tmp_field, tmp_value, &int32_ret); 
+    } 
+    delete_keys.push_back(tmp_key);
+  }
+
+  //Set
+  set_key = "GP7_PKFIELDSCAN_CASE_ALL_SET_KEY"; 
+  set_member = "GP7_PKFIELDSCAN_CASE_ALL_SET_MEMBER"; 
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = set_key + ch;
+    std::vector<std::string> members;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_member = set_member + ch;
+      members.push_back(tmp_member);
+    }
+    db.SAdd(tmp_key, members, &int32_ret); 
+    delete_keys.push_back(tmp_key);
+  }
+  
+  //List
+  list_key = "GP7_PKFIELDSCAN_CASE_ALL_LIST_KEY";
+  list_node = "GP7_PKFIELDSCAN_CASE_ALL_LIST_NODE";
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = list_key + ch;
+    std::vector<std::string> members;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_member = list_node + ch;
+      members.push_back(tmp_member);
+    }
+    db.LPush(tmp_key, members, &uint64_ret); 
+    delete_keys.push_back(tmp_key);
+  }
+
+  //ZSet
+  zset_key = "GP7_PKFIELDSCAN_CASE_ALL_ZSET_KEY";
+  zset_member = "GP7_PKFIELDSCAN_CASE_ALL_LIST_MEMBER";
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = zset_key + ch;
+    std::vector<blackwidow::ScoreMember> scoremembers;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_member = zset_member + ch;
+      scoremembers.push_back({j, tmp_member});
+    }
+    db.ZAdd(tmp_key, scoremembers, &int32_ret); 
+    delete_keys.push_back(tmp_key);
+  }
+
+  cursor = 0;     
+  key_vec[1] = hash_key;
+  key_vec[2] = set_key;
+  key_vec[3] = list_key;
+  key_vec[4] = zset_key;
+  cursor = db.PKFieldScan(blackwidow::DataType::kAll, cursor, 0, 100, 5, &keys);
+  ASSERT_EQ(cursor, 5); 
+  ASSERT_EQ(keys.size(), 10);
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = key_vec[1] + ch;
+    ASSERT_EQ(keys[2 * i - 2], tmp_key); 
+    ASSERT_EQ(keys[2 * i - 1], str_num[i]);
+  }
+  cursor = db.PKFieldScan(blackwidow::DataType::kAll, cursor, 0, 100, 5, &keys);
+  ASSERT_EQ(cursor, 10);
+  ASSERT_EQ(keys.size(), 10);
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = key_vec[2] + ch;
+    ASSERT_EQ(keys[2 * i - 2], tmp_key); 
+    ASSERT_EQ(keys[2 * i - 1], str_num[i]);
+  }
+  cursor = db.PKFieldScan(blackwidow::DataType::kAll, cursor, 0, 100, 5, &keys);
+  ASSERT_EQ(cursor, 15);
+  ASSERT_EQ(keys.size(), 10);
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = key_vec[3] + ch;
+    ASSERT_EQ(keys[2 * i - 2], tmp_key); 
+    ASSERT_EQ(keys[2 * i - 1], str_num[i]);
+  }
+  cursor = db.PKFieldScan(blackwidow::DataType::kAll, cursor, 0, 100, 5, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 10); 
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = key_vec[4] + ch;
+    ASSERT_EQ(keys[2 * i - 2], tmp_key); 
+    ASSERT_EQ(keys[2 * i - 1], str_num[i]);
+  }
+
+  del_num = db.Del(delete_keys, &type_status);
+  ASSERT_EQ(del_num, 23);
+  sleep(2);
+  db.Compact(DataType::kAll, true);
+
+
+  // ***************** Group 8 Test *****************
+  delete_keys.clear();
+  //String
+  s = db.Set("GP8_PKFIELDSCAN_CASE_ALL_STRING_KEY1", "GP8_PKFIELDSCAN_CASE_ALL_STRING_VALUE1");
+  s = db.Set("GP8_PKFIELDSCAN_CASE_ALL_STRING_KEY2", "GP8_PKFIELDSCAN_CASE_ALL_STRING_VALUE2");
+  s = db.Set("GP8_PKFIELDSCAN_CASE_ALL_STRING_KEY3", "GP8_PKFIELDSCAN_CASE_ALL_STRING_VALUE3");
+  delete_keys.push_back("GP8_PKFIELDSCAN_CASE_ALL_STRING_KEY1");
+  delete_keys.push_back("GP8_PKFIELDSCAN_CASE_ALL_STRING_KEY2");
+  delete_keys.push_back("GP8_PKFIELDSCAN_CASE_ALL_STRING_KEY3");
+
+  //Hash
+  hash_key = "GP8_PKFIELDSCAN_CASE_ALL_HASH_KEY";
+  hash_field = "GP8_PKFIELDSCAN_CASE_ALL_HASH_FIELD";
+  hash_value = "GP8_PKFIELDSCAN_CASE_ALL_HASH_VALUE";
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = hash_key + ch;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_field = hash_field + ch;
+      std::string tmp_value = hash_value + ch;
+      db.HSet(tmp_key, tmp_field, tmp_value, &int32_ret); 
+    } 
+    delete_keys.push_back(tmp_key);
+  }
+
+  //Set
+  set_key = "GP8_PKFIELDSCAN_CASE_ALL_SET_KEY"; 
+  set_member = "GP8_PKFIELDSCAN_CASE_ALL_SET_MEMBER"; 
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = set_key + ch;
+    std::vector<std::string> members;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_member = set_member + ch;
+      members.push_back(tmp_member);
+    }
+    db.SAdd(tmp_key, members, &int32_ret); 
+    delete_keys.push_back(tmp_key);
+  }
+  
+  //List
+  list_key = "GP8_PKFIELDSCAN_CASE_ALL_LIST_KEY";
+  list_node = "GP8_PKFIELDSCAN_CASE_ALL_LIST_NODE";
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = list_key + ch;
+    std::vector<std::string> members;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_member = list_node + ch;
+      members.push_back(tmp_member);
+    }
+    db.LPush(tmp_key, members, &uint64_ret); 
+    delete_keys.push_back(tmp_key);
+  }
+
+  //ZSet
+  zset_key = "GP8_PKFIELDSCAN_CASE_ALL_ZSET_KEY";
+  zset_member = "GP8_PKFIELDSCAN_CASE_ALL_LIST_MEMBER";
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = zset_key + ch;
+    std::vector<blackwidow::ScoreMember> scoremembers;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_member = zset_member + ch;
+      scoremembers.push_back({j, tmp_member});
+    }
+    db.ZAdd(tmp_key, scoremembers, &int32_ret); 
+    delete_keys.push_back(tmp_key);
+  }
+
+  cursor = 0;     
+  key_vec[1] = hash_key;
+  key_vec[2] = set_key;
+  key_vec[3] = list_key;
+  key_vec[4] = zset_key;
+  cursor = db.PKFieldScan(blackwidow::DataType::kAll, cursor, 0, 100, 2, &keys);
+  ASSERT_EQ(cursor, 2); 
+  ASSERT_EQ(keys.size(), 4);
+  for (int i = 1; i <= 2; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = key_vec[1] + ch;
+    ASSERT_EQ(keys[2 * i - 2], tmp_key); 
+    ASSERT_EQ(keys[2 * i - 1], str_num[i]);
+  }
+
+  cursor = db.PKFieldScan(blackwidow::DataType::kAll, cursor, 0, 100, 2, &keys);
+  ASSERT_EQ(cursor, 4);
+  ASSERT_EQ(keys.size(), 4);
+  for (int i = 3; i <= 4; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = key_vec[1] + ch;
+    ASSERT_EQ(keys[2 * (i - 2) - 2], tmp_key); 
+    ASSERT_EQ(keys[2 * (i - 2)- 1], str_num[i]);
+  }
+  cursor = db.PKFieldScan(blackwidow::DataType::kAll, cursor, 0, 100, 2, &keys);
+  ASSERT_EQ(cursor, 6);
+  ASSERT_EQ(keys.size(), 4);
+  for (int i = 5; i <= 5; i++) {
+    char ch = '0' + i; 
+    std::string tmp_key = key_vec[1] + ch;
+    ASSERT_EQ(keys[2 * (i - 4) - 2], tmp_key); 
+    ASSERT_EQ(keys[2 * (i - 4) - 1], str_num[i]);
+  }
+  for (int i = 1; i <= 1; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = key_vec[2] + ch;
+    ASSERT_EQ(keys[2 * (i + 1) - 2], tmp_key); 
+    ASSERT_EQ(keys[2 * (i + 1) - 1], str_num[i]);
+  }
+  cursor = db.PKFieldScan(blackwidow::DataType::kAll, cursor, 0, 100, 2, &keys);
+  ASSERT_EQ(cursor, 8);
+  ASSERT_EQ(keys.size(), 4);
+  for (int i = 2; i <= 3; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = key_vec[2] + ch;
+    ASSERT_EQ(keys[2 * (i - 1) - 2], tmp_key);
+    ASSERT_EQ(keys[2 * (i - 1) - 1], str_num[i]);
+  }
+  cursor = db.PKFieldScan(blackwidow::DataType::kAll, cursor, 0, 100, 2, &keys);
+  ASSERT_EQ(cursor, 10);
+  ASSERT_EQ(keys.size(), 4);
+  for (int i = 4; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = key_vec[2] + ch;
+    ASSERT_EQ(keys[2 * (i - 3) - 2], tmp_key);
+    ASSERT_EQ(keys[2 * (i - 3) - 1], str_num[i]);
+  }
+  cursor = db.PKFieldScan(blackwidow::DataType::kAll, cursor, 0, 100, 2, &keys);
+  ASSERT_EQ(cursor, 12);
+  ASSERT_EQ(keys.size(), 4);
+  for (int i = 1; i <= 2; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = key_vec[3] + ch;
+    ASSERT_EQ(keys[2 * i - 2], tmp_key);
+    ASSERT_EQ(keys[2 * i - 1], str_num[i]);
+  }
+  cursor = db.PKFieldScan(blackwidow::DataType::kAll, cursor, 0, 100, 2, &keys);
+  ASSERT_EQ(cursor, 14);
+  ASSERT_EQ(keys.size(), 4);
+  for (int i = 3; i <= 4; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = key_vec[3] + ch;
+    ASSERT_EQ(keys[2 * (i - 2) - 2], tmp_key);
+    ASSERT_EQ(keys[2 * (i - 2) - 1], str_num[i]);
+  }
+  cursor = db.PKFieldScan(blackwidow::DataType::kAll, cursor, 0, 100, 2, &keys);
+  ASSERT_EQ(cursor, 16);
+  ASSERT_EQ(keys.size(), 4);
+  for (int i = 5; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = key_vec[3] + ch;
+    ASSERT_EQ(keys[2 * (i - 4) - 2], tmp_key);
+    ASSERT_EQ(keys[2 * (i - 4) - 1], str_num[i]);
+  }
+  for (int i = 1; i <= 1; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = key_vec[4] + ch;
+    ASSERT_EQ(keys[2 * (i + 1) - 2], tmp_key);
+    ASSERT_EQ(keys[2 * (i + 1) - 1], str_num[i]);
+  }
+  cursor = db.PKFieldScan(blackwidow::DataType::kAll, cursor, 0, 100, 2, &keys);
+  ASSERT_EQ(cursor, 18);
+  ASSERT_EQ(keys.size(), 4);
+  for (int i = 2; i <= 3; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = key_vec[4] + ch;
+    ASSERT_EQ(keys[2 * (i - 1) - 2], tmp_key);
+    ASSERT_EQ(keys[2 * (i - 1) - 1], str_num[i]);
+  }
+  
+  cursor = db.PKFieldScan(blackwidow::DataType::kAll, cursor, 0, 100, 2, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 4);
+  for (int i = 4; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = key_vec[4] + ch;
+    ASSERT_EQ(keys[2 * (i - 3) - 2], tmp_key);
+    ASSERT_EQ(keys[2 * (i - 3) - 1], str_num[i]);
+  }
+  del_num = db.Del(delete_keys, &type_status);
+  ASSERT_EQ(del_num, 23);
+  sleep(2);
+  db.Compact(DataType::kAll, true);
+}
+
+//PKFieldScan
+TEST_F(KeysTest, PKFieldScanSingleTest) {
+  int64_t cursor;
+  int64_t next_cursor;
+  int64_t del_num;
+  int32_t int32_ret;
+  uint64_t uint64_ret;
+  std::vector<std::string> keys;
+  std::vector<std::string> total_keys;
+  std::vector<std::string> delete_keys;
+  std::map<blackwidow::DataType, Status> type_status;
+  Status s;
+  int nums[6] = {0, 5, 10, 15, 20, 25}; 
+  std::string str_num[] = {"0", "5", "10", "15", "20", "25"};
+
+  // ***************** Group 1 Test *****************
+  delete_keys.clear();
+  //String
+  s = db.Set("GP1_PKFIELDSCAN_CASE_SINGLE_STRING_KEY1", "GP1_PKFIELDSCAN_CASE_SINGLE_STRING_VALUE1");
+  s = db.Set("GP1_PKFIELDSCAN_CASE_SINGLE_STRING_KEY2", "GP1_PKFIELDSCAN_CASE_SINGLE_STRING_VALUE2");
+  s = db.Set("GP1_PKFIELDSCAN_CASE_SINGLE_STRING_KEY3", "GP1_PKFIELDSCAN_CASE_SINGLE_STRING_VALUE3");
+  delete_keys.push_back("GP1_PKFIELDSCAN_CASE_SINGLE_STRING_KEY1");
+  delete_keys.push_back("GP1_PKFIELDSCAN_CASE_SINGLE_STRING_KEY2");
+  delete_keys.push_back("GP1_PKFIELDSCAN_CASE_SINGLE_STRING_KEY3");
+
+  //Hash
+  std::string hash_key = "GP1_PKFIELDSCAN_CASE_SINGLE_HASH_KEY";
+  std::string hash_field = "GP1_PKFIELDSCAN_CASE_SINGLE_HASH_FIELD";
+  std::string hash_value = "GP1_PKFIELDSCAN_CASE_SINGLE_HASH_VALUE";
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = hash_key + ch;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_field = hash_field + ch;
+      std::string tmp_value = hash_value + ch;
+      db.HSet(tmp_key, tmp_field, tmp_value, &int32_ret); 
+    } 
+    delete_keys.push_back(tmp_key);
+  }
+
+  //Set
+  std::string set_key = "GP1_PKFIELDSCAN_CASE_SINGLE_SET_KEY"; 
+  std::string set_member = "GP1_PKFIELDSCAN_CASE_SINGLE_SET_MEMBER"; 
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = set_key + ch;
+    std::vector<std::string> members;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_member = set_member + ch;
+      members.push_back(tmp_member);
+    }
+    db.SAdd(tmp_key, members, &int32_ret); 
+    delete_keys.push_back(tmp_key);
+  }
+  
+  //List
+  std::string list_key = "GP1_PKFIELDSCAN_CASE_SINGLE_LIST_KEY";
+  std::string list_node = "GP1_PKFIELDSCAN_CASE_SINGLE_LIST_NODE";
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = list_key + ch;
+    std::vector<std::string> members;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_member = list_node + ch;
+      members.push_back(tmp_member);
+    }
+    db.LPush(tmp_key, members, &uint64_ret); 
+    delete_keys.push_back(tmp_key);
+  }
+
+  //ZSet
+  std::string zset_key = "GP1_PKFIELDSCAN_CASE_SINGLE_ZSET_KEY";
+  std::string zset_member = "GP1_PKFIELDSCAN_CASE_SINGLE_LIST_MEMBER";
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = zset_key + ch;
+    std::vector<blackwidow::ScoreMember> scoremembers;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_member = zset_member + ch;
+      scoremembers.push_back({j, tmp_member});
+    }
+    db.ZAdd(tmp_key, scoremembers, &int32_ret); 
+    delete_keys.push_back(tmp_key);
+  }
+
+  cursor = 0;     
+  std::string key_vec[]= {"", hash_key, set_key, list_key, zset_key};
+  cursor = db.PKFieldScan(blackwidow::DataType::kHashes, cursor, 0, 100, 5, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 10);
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string key = key_vec[1] + ch;
+    ASSERT_EQ(key, keys[2 * i - 2]);
+    ASSERT_EQ(str_num[i], keys[2 * i - 1]);   
+  }
+  cursor = 0;
+  cursor = db.PKFieldScan(blackwidow::DataType::kHashes, cursor, 0, 100, 3, &keys);
+  ASSERT_EQ(cursor, 3);
+  ASSERT_EQ(keys.size(), 6);
+  for (int i = 1; i <= 3; i++) {
+    char ch = '0' + i;
+    std::string key = key_vec[1] + ch;
+    ASSERT_EQ(key, keys[2 * i - 2]);
+    ASSERT_EQ(str_num[i], keys[2 * i - 1]);   
+  }
+  cursor = db.PKFieldScan(blackwidow::DataType::kHashes, cursor, 0, 100, 3, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 4);
+  for (int i = 4; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string key = key_vec[1] + ch;
+    ASSERT_EQ(key, keys[2 * (i - 3) - 2]);
+    ASSERT_EQ(str_num[i], keys[2 * (i - 3) - 1]);   
+  }
+  cursor = 0;
+  cursor = db.PKFieldScan(blackwidow::DataType::kHashes, cursor, 0, 20, 3, &keys);
+  ASSERT_EQ(cursor, 3);
+  ASSERT_EQ(keys.size(), 6);
+  for (int i = 1; i <= 3; i++) {
+    char ch = '0' + i;
+    std::string key = key_vec[1] + ch;
+    ASSERT_EQ(key, keys[2 * i - 2]);
+    ASSERT_EQ(str_num[i], keys[2 * i - 1]);
+  }
+  cursor = db.PKFieldScan(blackwidow::DataType::kHashes, cursor, 0, 20, cursor, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 0);
+  cursor = 0;
+  cursor = db.PKFieldScan(blackwidow::DataType::kHashes, cursor, 15, 30, 1, &keys);
+  ASSERT_EQ(cursor, 1);
+  ASSERT_EQ(keys.size(), 2);
+  for (int i = 4; i <= 4; i++) {
+    char ch = '0' + i; 
+    std::string key = key_vec[1] + ch;
+    ASSERT_EQ(key, keys[2 * (i - 3) - 2]);
+    ASSERT_EQ(str_num[i], keys[2 * (i - 3) - 1]);
+  }
+  cursor = db.PKFieldScan(blackwidow::DataType::kHashes, cursor, 15, 30, 1, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 2);
+  for (int i = 5; i <= 5; i++) {
+    char ch = '0' + i; 
+    std::string key = key_vec[1] + ch;
+    ASSERT_EQ(key, keys[2 * (i - 4) - 2]);
+    ASSERT_EQ(str_num[i], keys[2 * (i - 4) - 1]);
+  }
+
+  cursor = 0;
+  cursor = db.PKFieldScan(blackwidow::DataType::kHashes, cursor, 10, 25, 2, &keys);
+  ASSERT_EQ(cursor, 2);
+  ASSERT_EQ(keys.size(), 4);
+  for (int i = 3; i <= 4; i++) {
+    char ch = '0' + i; 
+    std::string key = key_vec[1] + ch;
+    ASSERT_EQ(key, keys[2 * (i - 2) - 2]);
+    ASSERT_EQ(str_num[i], keys[2 * (i - 2) - 1]);
+  }
+
+  cursor = 0;
+  cursor = db.PKFieldScan(blackwidow::DataType::kHashes, cursor, 10, 25, 1, &keys);
+  ASSERT_EQ(cursor, 1);
+  ASSERT_EQ(keys.size(), 2);
+  for (int i = 3; i <= 3; i++) {
+    char ch = '0' + i; 
+    std::string key = key_vec[1] + ch;
+    ASSERT_EQ(key, keys[2 * (i - 2) - 2]);
+    ASSERT_EQ(str_num[i], keys[2 * (i - 2) - 1]);
+  }
+  cursor = db.PKFieldScan(blackwidow::DataType::kHashes, cursor, 10, 25, 1, &keys);
+  ASSERT_EQ(cursor, 2);
+  ASSERT_EQ(keys.size(), 2);
+  for (int i = 4; i <= 4; i++) {
+    char ch = '0' + i; 
+    std::string key = key_vec[1] + ch;
+    ASSERT_EQ(key, keys[2 * (i - 3) - 2]);
+    ASSERT_EQ(str_num[i], keys[2 * (i - 3) - 1]);
+  }
+
+  del_num = db.Del(delete_keys, &type_status);
+  ASSERT_EQ(del_num, 23);
+  sleep(2);
+  db.Compact(DataType::kAll, true);
+
+
+  // ***************** Group 2 Test *****************
+  delete_keys.clear();
+  //String
+  s = db.Set("GP2_PKFIELDSCAN_CASE_SINGLE_STRING_KEY1", "GP2_PKFIELDSCAN_CASE_SINGLE_STRING_VALUE1");
+  s = db.Set("GP2_PKFIELDSCAN_CASE_SINGLE_STRING_KEY2", "GP2_PKFIELDSCAN_CASE_SINGLE_STRING_VALUE2");
+  s = db.Set("GP2_PKFIELDSCAN_CASE_SINGLE_STRING_KEY3", "GP2_PKFIELDSCAN_CASE_SINGLE_STRING_VALUE3");
+  delete_keys.push_back("GP2_PKFIELDSCAN_CASE_SINGLE_STRING_KEY1");
+  delete_keys.push_back("GP2_PKFIELDSCAN_CASE_SINGLE_STRING_KEY2");
+  delete_keys.push_back("GP2_PKFIELDSCAN_CASE_SINGLE_STRING_KEY3");
+
+  //Hash
+  hash_key = "GP2_PKFIELDSCAN_CASE_SINGLE_HASH_KEY";
+  hash_field = "GP2_PKFIELDSCAN_CASE_SINGLE_HASH_FIELD";
+  hash_value = "GP2_PKFIELDSCAN_CASE_SINGLE_HASH_VALUE";
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = hash_key + ch;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_field = hash_field + ch;
+      std::string tmp_value = hash_value + ch;
+      db.HSet(tmp_key, tmp_field, tmp_value, &int32_ret); 
+    } 
+    delete_keys.push_back(tmp_key);
+  }
+
+  //Set
+  set_key = "GP2_PKFIELDSCAN_CASE_SINGLE_SET_KEY"; 
+  set_member = "GP2_PKFIELDSCAN_CASE_SINGLE_SET_MEMBER"; 
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = set_key + ch;
+    std::vector<std::string> members;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_member = set_member + ch;
+      members.push_back(tmp_member);
+    }
+    db.SAdd(tmp_key, members, &int32_ret); 
+    delete_keys.push_back(tmp_key);
+  }
+  
+  //List
+  list_key = "GP2_PKFIELDSCAN_CASE_SINGLE_LIST_KEY";
+  list_node = "GP2_PKFIELDSCAN_CASE_SINGLE_LIST_NODE";
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = list_key + ch;
+    std::vector<std::string> members;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_member = list_node + ch;
+      members.push_back(tmp_member);
+    }
+    db.LPush(tmp_key, members, &uint64_ret); 
+    delete_keys.push_back(tmp_key);
+  }
+
+  //ZSet
+  zset_key = "GP2_PKFIELDSCAN_CASE_SINGLE_ZSET_KEY";
+  zset_member = "GP2_PKFIELDSCAN_CASE_SINGLE_LIST_MEMBER";
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = zset_key + ch;
+    std::vector<blackwidow::ScoreMember> scoremembers;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_member = zset_member + ch;
+      scoremembers.push_back({j, tmp_member});
+    }
+    db.ZAdd(tmp_key, scoremembers, &int32_ret); 
+    delete_keys.push_back(tmp_key);
+  }
+
+  cursor = 0;     
+  key_vec[1] = hash_key;
+  key_vec[2] = set_key;
+  key_vec[3] = list_key;
+  key_vec[4] = zset_key;
+  cursor = db.PKFieldScan(blackwidow::DataType::kSets, cursor, 0, 100, 5, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 10);
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string key = key_vec[2] + ch;
+    ASSERT_EQ(key, keys[2 * i - 2]);
+    ASSERT_EQ(str_num[i], keys[2 * i - 1]);   
+  }
+  cursor = 0;
+  cursor = db.PKFieldScan(blackwidow::DataType::kSets, cursor, 0, 100, 3, &keys);
+  ASSERT_EQ(cursor, 3);
+  ASSERT_EQ(keys.size(), 6);
+  for (int i = 1; i <= 3; i++) {
+    char ch = '0' + i;
+    std::string key = key_vec[2] + ch;
+    ASSERT_EQ(key, keys[2 * i - 2]);
+    ASSERT_EQ(str_num[i], keys[2 * i - 1]);   
+  }
+  cursor = db.PKFieldScan(blackwidow::DataType::kSets, cursor, 0, 100, 3, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 4);
+  for (int i = 4; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string key = key_vec[2] + ch;
+    ASSERT_EQ(key, keys[2 * (i - 3) - 2]);
+    ASSERT_EQ(str_num[i], keys[2 * (i - 3) - 1]);   
+  }
+  cursor = 0;
+  cursor = db.PKFieldScan(blackwidow::DataType::kSets, cursor, 0, 20, 3, &keys);
+  ASSERT_EQ(cursor, 3);
+  ASSERT_EQ(keys.size(), 6);
+  for (int i = 1; i <= 3; i++) {
+    char ch = '0' + i;
+    std::string key = key_vec[2] + ch;
+    ASSERT_EQ(key, keys[2 * i - 2]);
+    ASSERT_EQ(str_num[i], keys[2 * i - 1]);
+  }
+  cursor = db.PKFieldScan(blackwidow::DataType::kSets, cursor, 0, 20, cursor, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 0);
+  cursor = 0;
+  cursor = db.PKFieldScan(blackwidow::DataType::kSets, cursor, 15, 30, 1, &keys);
+  ASSERT_EQ(cursor, 1);
+  ASSERT_EQ(keys.size(), 2);
+  for (int i = 4; i <= 4; i++) {
+    char ch = '0' + i; 
+    std::string key = key_vec[2] + ch;
+    ASSERT_EQ(key, keys[2 * (i - 3) - 2]);
+    ASSERT_EQ(str_num[i], keys[2 * (i - 3) - 1]);
+  }
+  cursor = db.PKFieldScan(blackwidow::DataType::kSets, cursor, 15, 30, 1, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 2);
+  for (int i = 5; i <= 5; i++) {
+    char ch = '0' + i; 
+    std::string key = key_vec[2] + ch;
+    ASSERT_EQ(key, keys[2 * (i - 4) - 2]);
+    ASSERT_EQ(str_num[i], keys[2 * (i - 4) - 1]);
+  }
+
+  cursor = 0;
+  cursor = db.PKFieldScan(blackwidow::DataType::kSets, cursor, 10, 25, 2, &keys);
+  ASSERT_EQ(cursor, 2);
+  ASSERT_EQ(keys.size(), 4);
+  for (int i = 3; i <= 4; i++) {
+    char ch = '0' + i; 
+    std::string key = key_vec[2] + ch;
+    ASSERT_EQ(key, keys[2 * (i - 2) - 2]);
+    ASSERT_EQ(str_num[i], keys[2 * (i - 2) - 1]);
+  }
+
+  cursor = 0;
+  cursor = db.PKFieldScan(blackwidow::DataType::kSets, cursor, 10, 25, 1, &keys);
+  ASSERT_EQ(cursor, 1);
+  ASSERT_EQ(keys.size(), 2);
+  for (int i = 3; i <= 3; i++) {
+    char ch = '0' + i; 
+    std::string key = key_vec[2] + ch;
+    ASSERT_EQ(key, keys[2 * (i - 2) - 2]);
+    ASSERT_EQ(str_num[i], keys[2 * (i - 2) - 1]);
+  }
+  cursor = db.PKFieldScan(blackwidow::DataType::kSets, cursor, 10, 25, 1, &keys);
+  ASSERT_EQ(cursor, 2);
+  ASSERT_EQ(keys.size(), 2);
+  for (int i = 4; i <= 4; i++) {
+    char ch = '0' + i; 
+    std::string key = key_vec[2] + ch;
+    ASSERT_EQ(key, keys[2 * (i - 3) - 2]);
+    ASSERT_EQ(str_num[i], keys[2 * (i - 3) - 1]);
+  }
+
+  del_num = db.Del(delete_keys, &type_status);
+  ASSERT_EQ(del_num, 23);
+  sleep(2);
+  db.Compact(DataType::kAll, true);
+
+
+  // ***************** Group 3 Test *****************
+  delete_keys.clear();
+  //String
+  s = db.Set("GP3_PKFIELDSCAN_CASE_SINGLE_STRING_KEY1", "GP3_PKFIELDSCAN_CASE_SINGLE_STRING_VALUE1");
+  s = db.Set("GP3_PKFIELDSCAN_CASE_SINGLE_STRING_KEY2", "GP3_PKFIELDSCAN_CASE_SINGLE_STRING_VALUE2");
+  s = db.Set("GP3_PKFIELDSCAN_CASE_SINGLE_STRING_KEY3", "GP3_PKFIELDSCAN_CASE_SINGLE_STRING_VALUE3");
+  delete_keys.push_back("GP3_PKFIELDSCAN_CASE_SINGLE_STRING_KEY1");
+  delete_keys.push_back("GP3_PKFIELDSCAN_CASE_SINGLE_STRING_KEY2");
+  delete_keys.push_back("GP3_PKFIELDSCAN_CASE_SINGLE_STRING_KEY3");
+
+  //Hash
+  hash_key = "GP3_PKFIELDSCAN_CASE_SINGLE_HASH_KEY";
+  hash_field = "GP3_PKFIELDSCAN_CASE_SINGLE_HASH_FIELD";
+  hash_value = "GP3_PKFIELDSCAN_CASE_SINGLE_HASH_VALUE";
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = hash_key + ch;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_field = hash_field + ch;
+      std::string tmp_value = hash_value + ch;
+      db.HSet(tmp_key, tmp_field, tmp_value, &int32_ret); 
+    } 
+    delete_keys.push_back(tmp_key);
+  }
+
+  //Set
+  set_key = "GP3_PKFIELDSCAN_CASE_SINGLE_SET_KEY"; 
+  set_member = "GP3_PKFIELDSCAN_CASE_SINGLE_SET_MEMBER"; 
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = set_key + ch;
+    std::vector<std::string> members;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_member = set_member + ch;
+      members.push_back(tmp_member);
+    }
+    db.SAdd(tmp_key, members, &int32_ret); 
+    delete_keys.push_back(tmp_key);
+  }
+  
+  //List
+  list_key = "GP3_PKFIELDSCAN_CASE_SINGLE_LIST_KEY";
+  list_node = "GP3_PKFIELDSCAN_CASE_SINGLE_LIST_NODE";
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = list_key + ch;
+    std::vector<std::string> members;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_member = list_node + ch;
+      members.push_back(tmp_member);
+    }
+    db.LPush(tmp_key, members, &uint64_ret); 
+    delete_keys.push_back(tmp_key);
+  }
+
+  //ZSet
+  zset_key = "GP3_PKFIELDSCAN_CASE_SINGLE_ZSET_KEY";
+  zset_member = "GP3_PKFIELDSCAN_CASE_SINGLE_LIST_MEMBER";
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = zset_key + ch;
+    std::vector<blackwidow::ScoreMember> scoremembers;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_member = zset_member + ch;
+      scoremembers.push_back({j, tmp_member});
+    }
+    db.ZAdd(tmp_key, scoremembers, &int32_ret); 
+    delete_keys.push_back(tmp_key);
+  }
+
+  cursor = 0;     
+  key_vec[1] = hash_key;
+  key_vec[2] = set_key;
+  key_vec[3] = list_key;
+  key_vec[4] = zset_key;
+  cursor = db.PKFieldScan(blackwidow::DataType::kLists, cursor, 0, 100, 5, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 10);
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string key = key_vec[3] + ch;
+    ASSERT_EQ(key, keys[2 * i - 2]);
+    ASSERT_EQ(str_num[i], keys[2 * i - 1]);   
+  }
+  cursor = 0;
+  cursor = db.PKFieldScan(blackwidow::DataType::kLists, cursor, 0, 100, 3, &keys);
+  ASSERT_EQ(cursor, 3);
+  ASSERT_EQ(keys.size(), 6);
+  for (int i = 1; i <= 3; i++) {
+    char ch = '0' + i;
+    std::string key = key_vec[3] + ch;
+    ASSERT_EQ(key, keys[2 * i - 2]);
+    ASSERT_EQ(str_num[i], keys[2 * i - 1]);   
+  }
+  cursor = db.PKFieldScan(blackwidow::DataType::kLists, cursor, 0, 100, 3, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 4);
+  for (int i = 4; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string key = key_vec[3] + ch;
+    ASSERT_EQ(key, keys[2 * (i - 3) - 2]);
+    ASSERT_EQ(str_num[i], keys[2 * (i - 3) - 1]);   
+  }
+  cursor = 0;
+  cursor = db.PKFieldScan(blackwidow::DataType::kLists, cursor, 0, 20, 3, &keys);
+  ASSERT_EQ(cursor, 3);
+  ASSERT_EQ(keys.size(), 6);
+  for (int i = 1; i <= 3; i++) {
+    char ch = '0' + i;
+    std::string key = key_vec[3] + ch;
+    ASSERT_EQ(key, keys[2 * i - 2]);
+    ASSERT_EQ(str_num[i], keys[2 * i - 1]);
+  }
+  cursor = db.PKFieldScan(blackwidow::DataType::kLists, cursor, 0, 20, cursor, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 0);
+  cursor = 0;
+  cursor = db.PKFieldScan(blackwidow::DataType::kLists, cursor, 15, 30, 1, &keys);
+  ASSERT_EQ(cursor, 1);
+  ASSERT_EQ(keys.size(), 2);
+  for (int i = 4; i <= 4; i++) {
+    char ch = '0' + i; 
+    std::string key = key_vec[3] + ch;
+    ASSERT_EQ(key, keys[2 * (i - 3) - 2]);
+    ASSERT_EQ(str_num[i], keys[2 * (i - 3) - 1]);
+  }
+  cursor = db.PKFieldScan(blackwidow::DataType::kLists, cursor, 15, 30, 1, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 2);
+  for (int i = 5; i <= 5; i++) {
+    char ch = '0' + i; 
+    std::string key = key_vec[3] + ch;
+    ASSERT_EQ(key, keys[2 * (i - 4) - 2]);
+    ASSERT_EQ(str_num[i], keys[2 * (i - 4) - 1]);
+  }
+
+  cursor = 0;
+  cursor = db.PKFieldScan(blackwidow::DataType::kLists, cursor, 10, 25, 2, &keys);
+  ASSERT_EQ(cursor, 2);
+  ASSERT_EQ(keys.size(), 4);
+  for (int i = 3; i <= 4; i++) {
+    char ch = '0' + i; 
+    std::string key = key_vec[3] + ch;
+    ASSERT_EQ(key, keys[2 * (i - 2) - 2]);
+    ASSERT_EQ(str_num[i], keys[2 * (i - 2) - 1]);
+  }
+
+  cursor = 0;
+  cursor = db.PKFieldScan(blackwidow::DataType::kLists, cursor, 10, 25, 1, &keys);
+  ASSERT_EQ(cursor, 1);
+  ASSERT_EQ(keys.size(), 2);
+  for (int i = 3; i <= 3; i++) {
+    char ch = '0' + i; 
+    std::string key = key_vec[3] + ch;
+    ASSERT_EQ(key, keys[2 * (i - 2) - 2]);
+    ASSERT_EQ(str_num[i], keys[2 * (i - 2) - 1]);
+  }
+  cursor = db.PKFieldScan(blackwidow::DataType::kLists, cursor, 10, 25, 1, &keys);
+  ASSERT_EQ(cursor, 2);
+  ASSERT_EQ(keys.size(), 2);
+  for (int i = 4; i <= 4; i++) {
+    char ch = '0' + i; 
+    std::string key = key_vec[3] + ch;
+    ASSERT_EQ(key, keys[2 * (i - 3) - 2]);
+    ASSERT_EQ(str_num[i], keys[2 * (i - 3) - 1]);
+  }
+
+  del_num = db.Del(delete_keys, &type_status);
+  ASSERT_EQ(del_num, 23);
+  sleep(2);
+  db.Compact(DataType::kAll, true);
+
+
+  // ***************** Group 4 Test *****************
+  delete_keys.clear();
+  //String
+  s = db.Set("GP4_PKFIELDSCAN_CASE_SINGLE_STRING_KEY1", "GP4_PKFIELDSCAN_CASE_SINGLE_STRING_VALUE1");
+  s = db.Set("GP4_PKFIELDSCAN_CASE_SINGLE_STRING_KEY2", "GP4_PKFIELDSCAN_CASE_SINGLE_STRING_VALUE2");
+  s = db.Set("GP4_PKFIELDSCAN_CASE_SINGLE_STRING_KEY3", "GP4_PKFIELDSCAN_CASE_SINGLE_STRING_VALUE3");
+  delete_keys.push_back("GP4_PKFIELDSCAN_CASE_SINGLE_STRING_KEY1");
+  delete_keys.push_back("GP4_PKFIELDSCAN_CASE_SINGLE_STRING_KEY2");
+  delete_keys.push_back("GP4_PKFIELDSCAN_CASE_SINGLE_STRING_KEY3");
+
+  //Hash
+  hash_key = "GP4_PKFIELDSCAN_CASE_SINGLE_HASH_KEY";
+  hash_field = "GP4_PKFIELDSCAN_CASE_SINGLE_HASH_FIELD";
+  hash_value = "GP4_PKFIELDSCAN_CASE_SINGLE_HASH_VALUE";
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = hash_key + ch;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_field = hash_field + ch;
+      std::string tmp_value = hash_value + ch;
+      db.HSet(tmp_key, tmp_field, tmp_value, &int32_ret); 
+    } 
+    delete_keys.push_back(tmp_key);
+  }
+
+  //Set
+  set_key = "GP4_PKFIELDSCAN_CASE_SINGLE_SET_KEY"; 
+  set_member = "GP4_PKFIELDSCAN_CASE_SINGLE_SET_MEMBER"; 
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = set_key + ch;
+    std::vector<std::string> members;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_member = set_member + ch;
+      members.push_back(tmp_member);
+    }
+    db.SAdd(tmp_key, members, &int32_ret); 
+    delete_keys.push_back(tmp_key);
+  }
+  
+  //List
+  list_key = "GP4_PKFIELDSCAN_CASE_SINGLE_LIST_KEY";
+  list_node = "GP4_PKFIELDSCAN_CASE_SINGLE_LIST_NODE";
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = list_key + ch;
+    std::vector<std::string> members;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_member = list_node + ch;
+      members.push_back(tmp_member);
+    }
+    db.LPush(tmp_key, members, &uint64_ret); 
+    delete_keys.push_back(tmp_key);
+  }
+
+  //ZSet
+  zset_key = "GP4_PKFIELDSCAN_CASE_SINGLE_ZSET_KEY";
+  zset_member = "GP4_PKFIELDSCAN_CASE_SINGLE_LIST_MEMBER";
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string tmp_key = zset_key + ch;
+    std::vector<blackwidow::ScoreMember> scoremembers;
+    for (int j = 1; j <= nums[i]; j++) {
+      char ch = 'A' + j - 1;
+      std::string tmp_member = zset_member + ch;
+      scoremembers.push_back({j, tmp_member});
+    }
+    db.ZAdd(tmp_key, scoremembers, &int32_ret); 
+    delete_keys.push_back(tmp_key);
+  }
+
+  cursor = 0;     
+  key_vec[1] = hash_key;
+  key_vec[2] = set_key;
+  key_vec[3] = list_key;
+  key_vec[4] = zset_key;
+  cursor = db.PKFieldScan(blackwidow::DataType::kZSets, cursor, 0, 100, 5, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 10);
+  for (int i = 1; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string key = key_vec[4] + ch;
+    ASSERT_EQ(key, keys[2 * i - 2]);
+    ASSERT_EQ(str_num[i], keys[2 * i - 1]);   
+  }
+  cursor = 0;
+  cursor = db.PKFieldScan(blackwidow::DataType::kZSets, cursor, 0, 100, 3, &keys);
+  ASSERT_EQ(cursor, 3);
+  ASSERT_EQ(keys.size(), 6);
+  for (int i = 1; i <= 3; i++) {
+    char ch = '0' + i;
+    std::string key = key_vec[4] + ch;
+    ASSERT_EQ(key, keys[2 * i - 2]);
+    ASSERT_EQ(str_num[i], keys[2 * i - 1]);   
+  }
+  cursor = db.PKFieldScan(blackwidow::DataType::kZSets, cursor, 0, 100, 3, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 4);
+  for (int i = 4; i <= 5; i++) {
+    char ch = '0' + i;
+    std::string key = key_vec[4] + ch;
+    ASSERT_EQ(key, keys[2 * (i - 3) - 2]);
+    ASSERT_EQ(str_num[i], keys[2 * (i - 3) - 1]);   
+  }
+  cursor = 0;
+  cursor = db.PKFieldScan(blackwidow::DataType::kZSets, cursor, 0, 20, 3, &keys);
+  ASSERT_EQ(cursor, 3);
+  ASSERT_EQ(keys.size(), 6);
+  for (int i = 1; i <= 3; i++) {
+    char ch = '0' + i;
+    std::string key = key_vec[4] + ch;
+    ASSERT_EQ(key, keys[2 * i - 2]);
+    ASSERT_EQ(str_num[i], keys[2 * i - 1]);
+  }
+  cursor = db.PKFieldScan(blackwidow::DataType::kZSets, cursor, 0, 20, cursor, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 0);
+  cursor = 0;
+  cursor = db.PKFieldScan(blackwidow::DataType::kZSets, cursor, 15, 30, 1, &keys);
+  ASSERT_EQ(cursor, 1);
+  ASSERT_EQ(keys.size(), 2);
+  for (int i = 4; i <= 4; i++) {
+    char ch = '0' + i; 
+    std::string key = key_vec[4] + ch;
+    ASSERT_EQ(key, keys[2 * (i - 3) - 2]);
+    ASSERT_EQ(str_num[i], keys[2 * (i - 3) - 1]);
+  }
+  cursor = db.PKFieldScan(blackwidow::DataType::kZSets, cursor, 15, 30, 1, &keys);
+  ASSERT_EQ(cursor, 0);
+  ASSERT_EQ(keys.size(), 2);
+  for (int i = 5; i <= 5; i++) {
+    char ch = '0' + i; 
+    std::string key = key_vec[4] + ch;
+    ASSERT_EQ(key, keys[2 * (i - 4) - 2]);
+    ASSERT_EQ(str_num[i], keys[2 * (i - 4) - 1]);
+  }
+
+  cursor = 0;
+  cursor = db.PKFieldScan(blackwidow::DataType::kZSets, cursor, 10, 25, 2, &keys);
+  ASSERT_EQ(cursor, 2);
+  ASSERT_EQ(keys.size(), 4);
+  for (int i = 3; i <= 4; i++) {
+    char ch = '0' + i; 
+    std::string key = key_vec[4] + ch;
+    ASSERT_EQ(key, keys[2 * (i - 2) - 2]);
+    ASSERT_EQ(str_num[i], keys[2 * (i - 2) - 1]);
+  }
+
+  cursor = 0;
+  cursor = db.PKFieldScan(blackwidow::DataType::kZSets, cursor, 10, 25, 1, &keys);
+  ASSERT_EQ(cursor, 1);
+  ASSERT_EQ(keys.size(), 2);
+  for (int i = 3; i <= 3; i++) {
+    char ch = '0' + i; 
+    std::string key = key_vec[4] + ch;
+    ASSERT_EQ(key, keys[2 * (i - 2) - 2]);
+    ASSERT_EQ(str_num[i], keys[2 * (i - 2) - 1]);
+  }
+  cursor = db.PKFieldScan(blackwidow::DataType::kZSets, cursor, 10, 25, 1, &keys);
+  ASSERT_EQ(cursor, 2);
+  ASSERT_EQ(keys.size(), 2);
+  for (int i = 4; i <= 4; i++) {
+    char ch = '0' + i; 
+    std::string key = key_vec[4] + ch;
+    ASSERT_EQ(key, keys[2 * (i - 3) - 2]);
+    ASSERT_EQ(str_num[i], keys[2 * (i - 3) - 1]);
+  }
+
+  del_num = db.Del(delete_keys, &type_status);
+  ASSERT_EQ(del_num, 23);
   sleep(2);
   db.Compact(DataType::kAll, true);
 }

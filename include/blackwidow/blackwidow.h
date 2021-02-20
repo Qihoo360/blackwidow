@@ -1096,6 +1096,19 @@ class BlackWidow {
   int64_t PKExpireScan(const DataType& dtype, int64_t cursor,
                        int32_t min_ttl, int32_t max_ttl,
                        int64_t count, std::vector<std::string>* keys);
+  // Iterate over a collection of elements, obtaining the item which timeout
+  // conforms to the inequality (min_ttl < item_ttl < max_ttl) 
+  // and reset item_ttl to reset_ttl
+  Status PKExpireReset(const DataType& dtype, int32_t min_ttl, int32_t max_ttl, int32_t reset_ttl);
+
+  // Iterate over a collection of elements, obtaing the item which has 
+  // specified field. The number of the key's field should between  min_num and 
+  // max_num exclusively
+  // return an updated cursor that the user need to use as cursor argument
+  // in the next call
+  int64_t PKFieldScan(const DataType& dtype, int64_t cursor,
+                     int32_t min_num,  int32_t max_num, 
+                     int64_t count, std::vector<std::string>* keys);
 
   // Iterate over a collection of elements by specified range
   // return a next_key that the user need to use as the key_start argument

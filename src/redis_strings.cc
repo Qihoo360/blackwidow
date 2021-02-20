@@ -14,6 +14,7 @@
 #include "src/strings_filter.h"
 #include "src/scope_record_lock.h"
 #include "src/scope_snapshot.h"
+#include "slash/include/slash_string.h"
 
 namespace blackwidow {
 
@@ -1311,9 +1312,13 @@ bool RedisStrings::PKExpireScan(const std::string& start_key,
   iterator_options.snapshot = snapshot;
   iterator_options.fill_cache = false;
 
+  int64_t curtime;
+  rocksdb::Env::Default()->GetCurrentTime(&curtime);
+
   rocksdb::Iterator* it = db_->NewIterator(iterator_options);
 
   it->Seek(start_key);
+  char temp_ttl[20];
   while (it->Valid() && (*leftover_visits) > 0) {
     ParsedStringsValue parsed_strings_value(it->value());
     if (parsed_strings_value.IsStale()) {
@@ -1323,6 +1328,12 @@ bool RedisStrings::PKExpireScan(const std::string& start_key,
       if (min_timestamp < parsed_strings_value.timestamp()
         && parsed_strings_value.timestamp() < max_timestamp) {
         keys->push_back(it->key().ToString());
+        int len = slash::ll2string(temp_ttl, sizeof temp_ttl, parsed_strings_value.timestamp() - curtime);
+        if (!len) {  //won't happen
+          keys->push_back("0");
+        } else {
+          keys->push_back(std::string(temp_ttl, len));       
+        }
       }
       (*leftover_visits)--;
       it->Next();
@@ -1337,6 +1348,36 @@ bool RedisStrings::PKExpireScan(const std::string& start_key,
   }
   delete it;
   return is_finish;
+}
+
+Status RedisStrings::PKExpireReset(const int32_t min_timestamp, 
+                                 const int32_t max_timestamp, 
+                                 const int32_t reset_timestamp) {
+  rocksdb::ReadOptions iterator_options;
+  const rocksdb::Snapshot* snapshot;
+  ScopeSnapshot ss(db_, &snapshot);
+  iterator_options.snapshot = snapshot;
+  iterator_options.fill_cache = false;
+  
+  rocksdb::WriteBatch batch;
+  rocksdb::Iterator* it = db_->NewIterator(iterator_options);
+  std::string value;
+  it->SeekToFirst();
+  while (it->Valid()) {
+    value = it->value().ToString(); 
+    ParsedStringsValue parsed_strings_value(&value);
+    if (parsed_strings_value.IsStale()) {
+      it->Next();
+    } else {
+      if (min_timestamp < parsed_strings_value.timestamp()
+        && parsed_strings_value.timestamp() < max_timestamp) {
+        parsed_strings_value.set_timestamp(reset_timestamp);
+        batch.Put(it->key(), value);
+      }
+      it->Next();
+    }
+  }
+  return db_->Write(default_write_options_, &batch);  
 }
 
 Status RedisStrings::Expireat(const Slice& key, int32_t timestamp) {
