@@ -24,7 +24,7 @@ namespace blackwidow {
 class RedisSets : public Redis {
  public:
   RedisSets(BlackWidow* const bw, const DataType& type);
-  ~RedisSets() = default;
+  ~RedisSets();
 
   // Common Commands
   Status Open(const BlackwidowOptions& bw_options,
