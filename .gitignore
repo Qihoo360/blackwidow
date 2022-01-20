@@ -63,3 +63,5 @@ tests/gtest_hyperloglog
 tests/lock_mgr
 tests/gtest_custom_comparator
 tests/gtest_lru_cache
+
+.idea/

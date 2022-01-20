@@ -10,7 +10,6 @@
 #include <limits>
 #include <algorithm>
 
-#include "iostream"
 #include "blackwidow/util.h"
 #include "src/zsets_filter.h"
 #include "src/scope_record_lock.h"
