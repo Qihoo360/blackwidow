@@ -307,7 +307,9 @@ Status RedisHashes::HGetall(const Slice& key,
   rocksdb::ReadOptions read_options;
   const rocksdb::Snapshot* snapshot;
 
-  std::string meta_value;
+    std::string();
+    std::string();
+    std::string meta_value;
   int32_t version = 0;
   ScopeSnapshot ss(db_, &snapshot);
   read_options.snapshot = snapshot;
@@ -321,10 +323,16 @@ Status RedisHashes::HGetall(const Slice& key,
     } else {
       version = parsed_hashes_meta_value.version();
       HashesDataKey hashes_data_key(key, version, "");
-      Slice prefix = hashes_data_key.Encode();
+      HashesDataKey hashes_data_next_key(key, version + 1, "");
+      Slice prefix_key = hashes_data_key.Encode();
+      Slice next_version_prefix_key = hashes_data_next_key.Encode();
+      rocksdb::Slice upper_bound(next_version_prefix_key);
+      read_options.iterate_upper_bound = &upper_bound;
+      read_options.fill_cache = false;
+
       auto iter = db_->NewIterator(read_options, handles_[1]);
-      for (iter->Seek(prefix);
-           iter->Valid() && iter->key().starts_with(prefix);
+      for (iter->Seek(prefix_key);
+           iter->Valid() && iter->key().starts_with(prefix_key);
            iter->Next()) {
         ParsedHashesDataKey parsed_hashes_data_key(iter->key());
         fvs->push_back({parsed_hashes_data_key.field().ToString(),
