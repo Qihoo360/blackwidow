@@ -240,6 +240,7 @@ Status RedisZSets::ZPopMax(const Slice& key,
   uint32_t statistic = 0;
   score_members->clear();
   rocksdb::WriteBatch batch;
+  rocksdb::ReadOptions read_options;
   ScopeRecordLock l(lock_mgr_, key);
   std::string meta_value;
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
@@ -255,6 +256,16 @@ Status RedisZSets::ZPopMax(const Slice& key,
       int32_t version = parsed_zsets_meta_value.version();
       ZSetsScoreKey zsets_score_key(key, version,
           std::numeric_limits<double>::max(), Slice());
+      ZSetsScoreKey zsets_score_next_key(key, version + 1,
+          std::numeric_limits<double>::max(), Slice());
+      Slice zsets_next_version_key = zsets_score_next_key.Encode();
+      Slice zsets_prefix_key = zsets_score_key.Encode();
+      rocksdb::Slice upper_bound(zsets_next_version_key);
+      rocksdb::Slice lower_bound(zsets_prefix_key);
+      read_options.iterate_upper_bound = &upper_bound;
+      read_options.iterate_lower_bound = &lower_bound;
+      read_options.fill_cache = false;
+
       rocksdb::Iterator* iter = db_->NewIterator(default_read_options_, handles_[2]);
       int32_t del_cnt = 0;
       for (iter->SeekForPrev(zsets_score_key.Encode());
@@ -288,6 +299,7 @@ Status RedisZSets::ZPopMin(const Slice& key,
   uint32_t statistic = 0;
   score_members->clear();
   rocksdb::WriteBatch batch;
+  rocksdb::ReadOptions read_options;
   ScopeRecordLock l(lock_mgr_, key);
   std::string meta_value;
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
@@ -303,6 +315,16 @@ Status RedisZSets::ZPopMin(const Slice& key,
       int32_t version = parsed_zsets_meta_value.version();
       ZSetsScoreKey zsets_score_key(key, version,
                     std::numeric_limits<double>::lowest(), Slice());
+      ZSetsScoreKey zsets_score_next_key(key, version + 1,
+                                      std::numeric_limits<double>::lowest(), Slice());
+      Slice zsets_next_version_key = zsets_score_next_key.Encode();
+      Slice zsets_prefix_key = zsets_score_key.Encode();
+      rocksdb::Slice upper_bound(zsets_next_version_key);
+      rocksdb::Slice lower_bound(zsets_prefix_key);
+      read_options.iterate_upper_bound = &upper_bound;
+      read_options.iterate_lower_bound = &lower_bound;
+      read_options.fill_cache = false;
+
       rocksdb::Iterator* iter = db_->NewIterator(default_read_options_, handles_[2]);
       int32_t del_cnt = 0;
       for (iter->Seek(zsets_score_key.Encode());
@@ -612,6 +634,16 @@ Status RedisZSets::ZRange(const Slice& key,
       ScoreMember score_member;
       ZSetsScoreKey zsets_score_key(key, version,
           std::numeric_limits<double>::lowest(), Slice());
+      ZSetsScoreKey zsets_score_next_key(key, version + 1,
+                 std::numeric_limits<double>::lowest(), Slice());
+      Slice zsets_next_version_key = zsets_score_next_key.Encode();
+      Slice zsets_prefix_key = zsets_score_key.Encode();
+      rocksdb::Slice upper_bound(zsets_next_version_key);
+      rocksdb::Slice lower_bound(zsets_prefix_key);
+      read_options.iterate_upper_bound = &upper_bound;
+      read_options.iterate_lower_bound = &lower_bound;
+      read_options.fill_cache = false;
+
       rocksdb::Iterator* iter = db_->NewIterator(read_options, handles_[2]);
       for (iter->Seek(zsets_score_key.Encode());
            iter->Valid() && cur_index <= stop_index;
@@ -658,6 +690,15 @@ Status RedisZSets::ZRangebyscore(const Slice& key,
       int64_t skipped = 0;
       ScoreMember score_member;
       ZSetsScoreKey zsets_score_key(key, version, min, Slice());
+      ZSetsScoreKey zsets_score_next_key(key, version + 1,min, Slice());
+      Slice zsets_next_version_key = zsets_score_next_key.Encode();
+      Slice zsets_prefix_key = zsets_score_key.Encode();
+      rocksdb::Slice upper_bound(zsets_next_version_key);
+      rocksdb::Slice lower_bound(zsets_prefix_key);
+      read_options.iterate_upper_bound = &upper_bound;
+      read_options.iterate_lower_bound = &lower_bound;
+      read_options.fill_cache = false;
+
       rocksdb::Iterator* iter = db_->NewIterator(read_options, handles_[2]);
       for (iter->Seek(zsets_score_key.Encode());
            iter->Valid() && index <= stop_index;
@@ -727,6 +768,16 @@ Status RedisZSets::ZRank(const Slice& key,
       ScoreMember score_member;
       ZSetsScoreKey zsets_score_key(key, version,
           std::numeric_limits<double>::lowest(), Slice());
+      ZSetsScoreKey zsets_score_next_key(key, version + 1,
+                                         std::numeric_limits<double>::lowest(), Slice());
+      Slice zsets_next_version_key = zsets_score_next_key.Encode();
+      Slice zsets_prefix_key = zsets_score_key.Encode();
+      rocksdb::Slice upper_bound(zsets_next_version_key);
+      rocksdb::Slice lower_bound(zsets_prefix_key);
+      read_options.iterate_upper_bound = &upper_bound;
+      read_options.iterate_lower_bound = &lower_bound;
+      read_options.fill_cache = false;
+
       rocksdb::Iterator* iter = db_->NewIterator(read_options, handles_[2]);
       for (iter->Seek(zsets_score_key.Encode());
            iter->Valid() && index <= stop_index;
@@ -815,6 +866,7 @@ Status RedisZSets::ZRemrangebyrank(const Slice& key,
   uint32_t statistic = 0;
   std::string meta_value;
   rocksdb::WriteBatch batch;
+  rocksdb::ReadOptions read_options;
   ScopeRecordLock l(lock_mgr_, key);
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
@@ -838,8 +890,18 @@ Status RedisZSets::ZRemrangebyrank(const Slice& key,
       }
       ZSetsScoreKey zsets_score_key(key, version,
           std::numeric_limits<double>::lowest(), Slice());
+      ZSetsScoreKey zsets_score_next_key(key, version + 1,
+                                         std::numeric_limits<double>::lowest(), Slice());
+      Slice zsets_next_version_key = zsets_score_next_key.Encode();
+      Slice zsets_prefix_key = zsets_score_key.Encode();
+      rocksdb::Slice upper_bound(zsets_next_version_key);
+      rocksdb::Slice lower_bound(zsets_prefix_key);
+      read_options.iterate_upper_bound = &upper_bound;
+      read_options.iterate_lower_bound = &lower_bound;
+      read_options.fill_cache = false;
+
       rocksdb::Iterator* iter =
-        db_->NewIterator(default_read_options_, handles_[2]);
+      db_->NewIterator(default_read_options_, handles_[2]);
       for (iter->Seek(zsets_score_key.Encode());
            iter->Valid() && cur_index <= stop_index;
            iter->Next(), ++cur_index) {
@@ -876,6 +938,7 @@ Status RedisZSets::ZRemrangebyscore(const Slice& key,
   uint32_t statistic = 0;
   std::string meta_value;
   rocksdb::WriteBatch batch;
+  rocksdb::ReadOptions read_options;
   ScopeRecordLock l(lock_mgr_, key);
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
   if (s.ok()) {
@@ -891,6 +954,15 @@ Status RedisZSets::ZRemrangebyscore(const Slice& key,
       int32_t stop_index = parsed_zsets_meta_value.count() - 1;
       int32_t version = parsed_zsets_meta_value.version();
       ZSetsScoreKey zsets_score_key(key, version, min, Slice());
+      ZSetsScoreKey zsets_score_next_key(key, version + 1,min, Slice());
+      Slice zsets_next_version_key = zsets_score_next_key.Encode();
+      Slice zsets_prefix_key = zsets_score_key.Encode();
+      rocksdb::Slice upper_bound(zsets_next_version_key);
+      rocksdb::Slice lower_bound(zsets_prefix_key);
+      read_options.iterate_upper_bound = &upper_bound;
+      read_options.iterate_lower_bound = &lower_bound;
+      read_options.fill_cache = false;
+
       rocksdb::Iterator* iter =
         db_->NewIterator(default_read_options_, handles_[2]);
       for (iter->Seek(zsets_score_key.Encode());
@@ -973,6 +1045,15 @@ Status RedisZSets::ZRevrange(const Slice& key,
       ScoreMember score_member;
       ZSetsScoreKey zsets_score_key(key, version,
           std::numeric_limits<double>::max(), Slice());
+      ZSetsScoreKey zsets_score_next_key(key, version + 1,
+          std::numeric_limits<double>::max(), Slice());
+      Slice zsets_next_version_key = zsets_score_next_key.Encode();
+      Slice zsets_prefix_key = zsets_score_key.Encode();
+      rocksdb::Slice upper_bound(zsets_next_version_key);
+      rocksdb::Slice lower_bound(zsets_prefix_key);
+      read_options.iterate_upper_bound = &upper_bound;
+      read_options.iterate_lower_bound = &lower_bound;
+      read_options.fill_cache = false;
       rocksdb::Iterator* iter = db_->NewIterator(read_options, handles_[2]);
       for (iter->SeekForPrev(zsets_score_key.Encode());
            iter->Valid() && cur_index >= start_index;
@@ -1019,6 +1100,16 @@ Status RedisZSets::ZRevrangebyscore(const Slice& key,
       ScoreMember score_member;
       ZSetsScoreKey zsets_score_key(key, version,
           std::nextafter(max, std::numeric_limits<double>::max()), Slice());
+      ZSetsScoreKey zsets_score_next_key(key, version + 1,
+                              std::numeric_limits<double>::max(), Slice());
+      Slice zsets_next_version_key = zsets_score_next_key.Encode();
+      Slice zsets_prefix_key = zsets_score_key.Encode();
+      rocksdb::Slice upper_bound(zsets_next_version_key);
+      rocksdb::Slice lower_bound(zsets_prefix_key);
+      read_options.iterate_upper_bound = &upper_bound;
+      read_options.iterate_lower_bound = &lower_bound;
+      read_options.fill_cache = false;
+
       rocksdb::Iterator* iter = db_->NewIterator(read_options, handles_[2]);
       for (iter->SeekForPrev(zsets_score_key.Encode());
            iter->Valid() && left > 0;
@@ -1088,6 +1179,16 @@ Status RedisZSets::ZRevrank(const Slice& key,
       int32_t version = parsed_zsets_meta_value.version();
       ZSetsScoreKey zsets_score_key(key, version,
           std::numeric_limits<double>::max(), Slice());
+      ZSetsScoreKey zsets_score_next_key(key, version + 1,
+                 std::numeric_limits<double>::max(), Slice());
+      Slice zsets_next_version_key = zsets_score_next_key.Encode();
+      Slice zsets_prefix_key = zsets_score_key.Encode();
+      rocksdb::Slice upper_bound(zsets_next_version_key);
+      rocksdb::Slice lower_bound(zsets_prefix_key);
+      read_options.iterate_upper_bound = &upper_bound;
+      read_options.iterate_lower_bound = &lower_bound;
+      read_options.fill_cache = false;
+
       rocksdb::Iterator* iter = db_->NewIterator(read_options, handles_[2]);
       for (iter->SeekForPrev(zsets_score_key.Encode());
            iter->Valid() && left >= 0;
@@ -1180,6 +1281,16 @@ Status RedisZSets::ZUnionstore(const Slice& destination,
         version = parsed_zsets_meta_value.version();
         ZSetsScoreKey zsets_score_key(keys[idx], version,
             std::numeric_limits<double>::lowest(), Slice());
+        ZSetsScoreKey zsets_score_next_key(keys[idx], version + 1,
+                                           std::numeric_limits<double>::lowest(), Slice());
+        Slice zsets_next_version_key = zsets_score_next_key.Encode();
+        Slice zsets_prefix_key = zsets_score_key.Encode();
+        rocksdb::Slice upper_bound(zsets_next_version_key);
+        rocksdb::Slice lower_bound(zsets_prefix_key);
+        read_options.iterate_upper_bound = &upper_bound;
+        read_options.iterate_lower_bound = &lower_bound;
+        read_options.fill_cache = false;
+
         rocksdb::Iterator* iter = db_->NewIterator(read_options, handles_[2]);
         for (iter->Seek(zsets_score_key.Encode());
              iter->Valid() && cur_index <= stop_index;
@@ -1292,6 +1403,16 @@ Status RedisZSets::ZInterstore(const Slice& destination,
   if (!have_invalid_zsets) {
     ZSetsScoreKey zsets_score_key(vaild_zsets[0].key, vaild_zsets[0].version,
         std::numeric_limits<double>::lowest(), Slice());
+    ZSetsScoreKey zsets_score_next_key(vaild_zsets[0].key, vaild_zsets[0].version + 1,
+                                       std::numeric_limits<double>::lowest(), Slice());
+    Slice zsets_next_version_key = zsets_score_next_key.Encode();
+    Slice zsets_prefix_key = zsets_score_key.Encode();
+    rocksdb::Slice upper_bound(zsets_next_version_key);
+    rocksdb::Slice lower_bound(zsets_prefix_key);
+    read_options.iterate_upper_bound = &upper_bound;
+    read_options.iterate_lower_bound = &lower_bound;
+    read_options.fill_cache = false;
+
     rocksdb::Iterator* iter = db_->NewIterator(read_options, handles_[2]);
     for (iter->Seek(zsets_score_key.Encode());
          iter->Valid() && cur_index <= stop_index;
@@ -1396,6 +1517,15 @@ Status RedisZSets::ZRangebylex(const Slice& key,
       int32_t cur_index = 0;
       int32_t stop_index = parsed_zsets_meta_value.count() - 1;
       ZSetsMemberKey zsets_member_key(key, version, Slice());
+      ZSetsMemberKey zsets_member_next_key(key, version + 1, Slice());
+      Slice zsets_next_version_key = zsets_member_next_key.Encode();
+      Slice zsets_prefix_key = zsets_member_key.Encode();
+      rocksdb::Slice upper_bound(zsets_next_version_key);
+      rocksdb::Slice lower_bound(zsets_prefix_key);
+      read_options.iterate_upper_bound = &upper_bound;
+      read_options.iterate_lower_bound = &lower_bound;
+      read_options.fill_cache = false;
+
       rocksdb::Iterator* iter = db_->NewIterator(read_options, handles_[1]);
       for (iter->Seek(zsets_member_key.Encode());
            iter->Valid() && cur_index <= stop_index;
@@ -1471,6 +1601,15 @@ Status RedisZSets::ZRemrangebylex(const Slice& key,
       int32_t cur_index = 0;
       int32_t stop_index = parsed_zsets_meta_value.count() - 1;
       ZSetsMemberKey zsets_member_key(key, version, Slice());
+      ZSetsMemberKey zsets_member_next_key(key, version + 1, Slice());
+      Slice zsets_next_version_key = zsets_member_next_key.Encode();
+      Slice zsets_prefix_key = zsets_member_key.Encode();
+      rocksdb::Slice upper_bound(zsets_next_version_key);
+      rocksdb::Slice lower_bound(zsets_prefix_key);
+      read_options.iterate_upper_bound = &upper_bound;
+      read_options.iterate_lower_bound = &lower_bound;
+      read_options.fill_cache = false;
+
       rocksdb::Iterator* iter = db_->NewIterator(read_options, handles_[1]);
       for (iter->Seek(zsets_member_key.Encode());
            iter->Valid() && cur_index <= stop_index;
@@ -1716,6 +1855,14 @@ Status RedisZSets::ZScan(const Slice& key,
       ZSetsMemberKey zsets_member_prefix(key, version, sub_member);
       ZSetsMemberKey zsets_member_key(key, version, start_point);
       std::string prefix = zsets_member_prefix.Encode().ToString();
+      ZSetsMemberKey zsets_member_next_key(key, version + 1, Slice());
+      Slice zsets_next_version_key = zsets_member_next_key.Encode();
+      Slice zsets_prefix_key = zsets_member_prefix.Encode();
+      rocksdb::Slice upper_bound(zsets_next_version_key);
+      rocksdb::Slice lower_bound(zsets_prefix_key);
+      read_options.iterate_upper_bound = &upper_bound;
+      read_options.iterate_lower_bound = &lower_bound;
+      read_options.fill_cache = false;
       rocksdb::Iterator* iter = db_->NewIterator(read_options, handles_[1]);
       for (iter->Seek(zsets_member_key.Encode());
            iter->Valid() && rest > 0 && iter->key().starts_with(prefix);

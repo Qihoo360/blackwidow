@@ -723,7 +723,13 @@ Status RedisSets::SMembers(const Slice& key,
     } else {
       version = parsed_sets_meta_value.version();
       SetsMemberKey sets_member_key(key, version, Slice());
+      SetsMemberKey sets_member_next_key(key, version + 1, Slice());
       Slice prefix = sets_member_key.Encode();
+      Slice next_version_prefix = sets_member_next_key.Encode();
+      rocksdb::Slice upper_bound(next_version_prefix);
+      read_options.iterate_upper_bound = &upper_bound;
+      read_options.fill_cache = false;
+
       auto iter = db_->NewIterator(read_options, handles_[1]);
       for (iter->Seek(prefix);
            iter->Valid() && iter->key().starts_with(prefix);
