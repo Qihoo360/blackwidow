@@ -1092,16 +1092,7 @@ Status RedisZSets::ZRevrangebyscore(const Slice& key,
       ScoreMember score_member;
       ZSetsScoreKey zsets_score_key(key, version,
           std::nextafter(max, std::numeric_limits<double>::max()), Slice());
-      ZSetsScoreKey zsets_score_next_key(key, version + 1,
-          std::nextafter(max, std::numeric_limits<double>::max()), Slice());
-      Slice zsets_next_version_key = zsets_score_next_key.Encode();
-      Slice zsets_prefix_key = zsets_score_key.Encode();
-      rocksdb::Slice upper_bound(zsets_next_version_key);
-      rocksdb::Slice lower_bound(zsets_prefix_key);
-      read_options.iterate_upper_bound = &upper_bound;
-      read_options.iterate_lower_bound = &lower_bound;
-      read_options.fill_cache = false;
-
+      
       rocksdb::Iterator* iter = db_->NewIterator(read_options, handles_[2]);
       for (iter->SeekForPrev(zsets_score_key.Encode());
            iter->Valid() && left > 0;
