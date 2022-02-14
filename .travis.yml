@@ -19,3 +19,5 @@ script:
   - git submodule update
   - make
   - make test
+  - make benchmark
+
