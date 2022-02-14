@@ -6,6 +6,11 @@ CXXFLAGS=-O2 -std=c++11 -fno-builtin-memcmp -msse -msse4.2
 
 all: blackwidow_bench
 
+# Get processor numbers
+dummy := $(shell ("$(CURDIR)/../detect_environment" "$(CURDIR)/make_config.mk"))
+include make_config.mk
+LDFLAGS = -lpthread -lrt $(ROCKSDB_LDFLAGS)
+
 ifndef BLACKWIDOW_PATH
   $(warning Warning: missing blackwidow path, using default)
   BLACKWIDOW_PATH=..
@@ -20,10 +25,27 @@ endif
 ROCKSDB_INCLUDE_DIR=$(ROCKSDB_PATH)/include
 ROCKSDB_LIBRARY=$(ROCKSDB_PATH)/librocksdb.a
 
-CXXFLAGS+= -I$(BLACKWIDOW_INCLUDE_DIR) -I$(ROCKSDB_INCLUDE_DIR)
+ifndef SLASH_PATH
+  $(warning Warning: missing slash path, using default)
+	SLASH_PATH=../deps/slash
+endif
+SLASH_INCLUDE_DIR=$(SLASH_PATH)
+SLASH_LIBRARY=$(SLASH_PATH)/slash/lib/libslash.a
 
-DEP_LIBS = $(BLACKWIDOW_LIBRARY) $(ROCKSDB_LIBRARY)
+ifndef GOOGLETEST_PATH
+  $(warning Warning: missing googletest path, using default)
+	GOOGLETEST_PATH=../deps/googletest/googletest
+endif
+GOOGLETEST_INCLUDE_DIR=$(GOOGLETEST_PATH)/include
+GOOGLETEST_LIBRARY=$(GOOGLETEST_PATH)/libgtest.a
+
+CXXFLAGS+= -I$(BLACKWIDOW_PATH) -I$(BLACKWIDOW_INCLUDE_DIR) -I$(ROCKSDB_INCLUDE_DIR) -I$(SLASH_INCLUDE_DIR) -I$(GOOGLETEST_INCLUDE_DIR) $(OPT)
+
+DEP_LIBS = $(BLACKWIDOW_LIBRARY) $(ROCKSDB_LIBRARY) $(SLASH_LIBRARY) $(GOOGLETEST_LIBRARY)
 LDFLAGS := $(DEP_LIBS) $(LDFLAGS)
+
+OBJECTS= GOOGLETEST ROCKSDB SLASH main lock_mgr gtest_keys gtest_strings gtest_hashes gtest_lists gtest_sets gtest_zsets gtest_strings_filter gtest_hashes_filter gtest_hyperloglog gtest_lists_filter gtest_custom_comparator gtest_lru_cache gtest_options
+
 
 blackwidow_bench: blackwidow_bench.cc
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
