@@ -23,64 +23,64 @@ using namespace std::chrono;
 static const std::string key(KEYLENGTH, 'a');
 static const std::string value(VALUELENGTH, 'a');
 
-void BenchSet() {
-  printf("====== Set ======\n");
-  blackwidow::Options options;
-  options.create_if_missing = true;
-  blackwidow::BlackWidow db;
-  blackwidow::Status s = db.Open(options, "./db");
+// void BenchSet() {
+//   printf("====== Set ======\n");
+//   blackwidow::BlackwidowOptions options;
+//   options.create_if_missing = true;
+//   blackwidow::BlackWidow db;
+//   blackwidow::Status s = db.Open(options, "./db");
 
-  if (!s.ok()) {
-    printf("Open db failed, error: %s\n", s.ToString().c_str());
-    return;
-  }
+//   if (!s.ok()) {
+//     printf("Open db failed, error: %s\n", s.ToString().c_str());
+//     return;
+//   }
 
-  std::vector<std::thread> jobs;
-  size_t kv_num = 10000;
-  jobs.clear();
-  auto start = std::chrono::system_clock::now();
-  for (size_t i = 0; i < THREADNUM; ++i) {
-    jobs.emplace_back([&db](size_t kv_num) {
-      for (size_t j = 0; j < kv_num; ++j) {
-        db.Set(key, value);
-      }
-    }, kv_num);
-  }
+//   std::vector<std::thread> jobs;
+//   size_t kv_num = 10000;
+//   jobs.clear();
+//   auto start = std::chrono::system_clock::now();
+//   for (size_t i = 0; i < THREADNUM; ++i) {
+//     jobs.emplace_back([&db](size_t kv_num) {
+//       for (size_t j = 0; j < kv_num; ++j) {
+//         db.Set(key, value);
+//       }
+//     }, kv_num);
+//   }
 
-  for (auto& job : jobs) {
-    job.join();
-  }
-  auto end = system_clock::now();
-  duration<double> elapsed_seconds = end-start;
-  auto cost = duration_cast<std::chrono::seconds>(elapsed_seconds).count();
-  std::cout << "Test case 1, Set " << THREADNUM * kv_num << " Cost: "
-    << cost << "s QPS: " << (THREADNUM * kv_num) / cost << std::endl;
+//   for (auto& job : jobs) {
+//     job.join();
+//   }
+//   auto end = system_clock::now();
+//   duration<double> elapsed_seconds = end-start;
+//   auto cost = duration_cast<std::chrono::seconds>(elapsed_seconds).count();
+//   std::cout << "Test case 1, Set " << THREADNUM * kv_num << " Cost: "
+//     << cost << "s QPS: " << (THREADNUM * kv_num) / cost << std::endl;
 
-  kv_num = 100000;
-  jobs.clear();
-  start = system_clock::now();
-  for (size_t i = 0; i < THREADNUM; ++i) {
-    jobs.emplace_back([&db](size_t kv_num) {
-      for (size_t j = 0; j < kv_num; ++j) {
-        db.Set(key, value);
-      }
-    }, kv_num);
-  }
+//   kv_num = 100000;
+//   jobs.clear();
+//   start = system_clock::now();
+//   for (size_t i = 0; i < THREADNUM; ++i) {
+//     jobs.emplace_back([&db](size_t kv_num) {
+//       for (size_t j = 0; j < kv_num; ++j) {
+//         db.Set(key, value);
+//       }
+//     }, kv_num);
+//   }
 
-  for (auto& job : jobs) {
-    job.join();
-  }
-  end = system_clock::now();
-  elapsed_seconds = end - start;
-  cost = duration_cast<seconds>(elapsed_seconds).count();
-  std::cout << "Test case 2, Set " << THREADNUM * kv_num << " Cost: "
-    << cost << "s QPS: " << (THREADNUM * kv_num) / cost << std::endl;
-}
+//   for (auto& job : jobs) {
+//     job.join();
+//   }
+//   end = system_clock::now();
+//   elapsed_seconds = end - start;
+//   cost = duration_cast<seconds>(elapsed_seconds).count();
+//   std::cout << "Test case 2, Set " << THREADNUM * kv_num << " Cost: "
+//     << cost << "s QPS: " << (THREADNUM * kv_num) / cost << std::endl;
+// }
 
 void BenchHGetall() {
   printf("====== HGetall ======\n");
-  blackwidow::Options options;
-  options.create_if_missing = true;
+  blackwidow::BlackwidowOptions options;
+  options.options.create_if_missing = true;
   blackwidow::BlackWidow db;
   blackwidow::Status s = db.Open(options, "./db");
 
@@ -90,10 +90,10 @@ void BenchHGetall() {
   }
 
   int32_t ret = 0;
-  BlackWidow::FieldValue fv;
+  blackwidow::FieldValue fv;
   std::vector<std::string> fields;
-  std::vector<BlackWidow::FieldValue> fvs_in;
-  std::vector<BlackWidow::FieldValue> fvs_out;
+  std::vector<blackwidow::FieldValue> fvs_in;
+  std::vector<blackwidow::FieldValue> fvs_out;
 
   // 1. Create the hash table then insert hash table 10000 field
   // 2. HGetall the hash table 10000 field (statistics cost time)
@@ -126,8 +126,8 @@ void BenchHGetall() {
     fvs_in.push_back(fv);
   }
   db.HMSet("HGETALL_KEY2", fvs_in);
-  std::vector<Slice> del_keys({"HGETALL_KEY2"});
-  std::map<BlackWidow::DataType, Status> type_status;
+  std::vector<std::string> del_keys = {"HGETALL_KEY2"};
+  std::map<blackwidow::DataType, blackwidow::Status> type_status;
   db.Del(del_keys, &type_status);
   fvs_in.clear();
   for (size_t i = 0; i < 10000; ++i) {
@@ -172,69 +172,69 @@ void BenchHGetall() {
     << " Field HashTable Cost: "<< cost << "ms" << std::endl;
 }
 
-void BenchScan() {
-  printf("====== Scan ======\n");
-  blackwidow::Options options;
-  options.create_if_missing = true;
-  blackwidow::BlackWidow db;
-  blackwidow::Status s = db.Open(options, "./db");
+// void BenchScan() {
+//   printf("====== Scan ======\n");
+//   blackwidow::Options options;
+//   options.create_if_missing = true;
+//   blackwidow::BlackWidow db;
+//   blackwidow::Status s = db.Open(options, "./db");
 
-  if (!s.ok()) {
-    printf("Open db failed, error: %s\n", s.ToString().c_str());
-    return;
-  }
+//   if (!s.ok()) {
+//     printf("Open db failed, error: %s\n", s.ToString().c_str());
+//     return;
+//   }
 
-  std::vector<std::thread> jobs;
-  size_t kv_num = 10000000;
-  jobs.clear();
-  auto start = std::chrono::system_clock::now();
-  for (size_t i = 0; i < THREADNUM; ++i) {
-    jobs.emplace_back([&db](size_t kv_num) {
-      for (size_t j = 0; j < kv_num; ++j) {
-        std::string key_prefix = key + std::to_string(j);
-        db.Set(key_prefix, value);
-      }
-    }, kv_num);
-  }
+//   std::vector<std::thread> jobs;
+//   size_t kv_num = 10000000;
+//   jobs.clear();
+//   auto start = std::chrono::system_clock::now();
+//   for (size_t i = 0; i < THREADNUM; ++i) {
+//     jobs.emplace_back([&db](size_t kv_num) {
+//       for (size_t j = 0; j < kv_num; ++j) {
+//         std::string key_prefix = key + std::to_string(j);
+//         db.Set(key_prefix, value);
+//       }
+//     }, kv_num);
+//   }
 
-  for (auto& job : jobs) {
-    job.join();
-  }
-  auto end = system_clock::now();
-  duration<double> elapsed_seconds = end-start;
-  auto cost = duration_cast<std::chrono::seconds>(elapsed_seconds).count();
-  std::cout << "Test case 1, Set " << THREADNUM * kv_num << " Cost: "
-    << cost << "s QPS: " << (THREADNUM * kv_num) / cost << std::endl;
+//   for (auto& job : jobs) {
+//     job.join();
+//   }
+//   auto end = system_clock::now();
+//   duration<double> elapsed_seconds = end-start;
+//   auto cost = duration_cast<std::chrono::seconds>(elapsed_seconds).count();
+//   std::cout << "Test case 1, Set " << THREADNUM * kv_num << " Cost: "
+//     << cost << "s QPS: " << (THREADNUM * kv_num) / cost << std::endl;
 
-  // Scan 100000
-  std::vector<std::string> keys;
-  start = system_clock::now();
-  db.Scan(0, "*", 100000, &keys);
-  end = system_clock::now();
-  elapsed_seconds = end - start;
-  cost = duration_cast<seconds>(elapsed_seconds).count();
-  std::cout << "Test case 2, Scan " << 100000 << " Cost: "
-    << cost << "s" << std::endl;
+//   // Scan 100000
+//   std::vector<std::string> keys;
+//   start = system_clock::now();
+//   db.Scan(0, "*", 100000, &keys);
+//   end = system_clock::now();
+//   elapsed_seconds = end - start;
+//   cost = duration_cast<seconds>(elapsed_seconds).count();
+//   std::cout << "Test case 2, Scan " << 100000 << " Cost: "
+//     << cost << "s" << std::endl;
 
-  // Scan 10000000
-  keys.clear();
-  start = system_clock::now();
-  db.Scan(0, "*", kv_num, &keys);
-  end = system_clock::now();
-  elapsed_seconds = end - start;
-  cost = duration_cast<seconds>(elapsed_seconds).count();
-  std::cout << "Test case 3, Scan " << kv_num << " Cost: "
-    << cost << "s" << std::endl;
-}
+//   // Scan 10000000
+//   keys.clear();
+//   start = system_clock::now();
+//   db.Scan(0, "*", kv_num, &keys);
+//   end = system_clock::now();
+//   elapsed_seconds = end - start;
+//   cost = duration_cast<seconds>(elapsed_seconds).count();
+//   std::cout << "Test case 3, Scan " << kv_num << " Cost: "
+//     << cost << "s" << std::endl;
+// }
 
 
 int main(int argc, char** argv) {
   // keys
-  BenchSet();
+  // BenchSet();
 
   // hashes
   BenchHGetall();
 
   // Iterator
-  BenchScan();
+  // BenchScan();
 }
