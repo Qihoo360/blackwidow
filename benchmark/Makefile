@@ -52,4 +52,5 @@ blackwidow_bench: blackwidow_bench.cc
 
 clean:
 	find . -name "*.[oda]" -exec rm -f {} \;
+	rm -f ./make_config.mk
 	rm -rf ./blackwidow_bench

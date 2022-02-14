@@ -45,6 +45,7 @@ examples/sets_example
 # Benchmark
 benchmark/db
 benchmark/blackwidow_bench
+benchmark/make_config.mk
 
 # Tests
 tests/make_config.mk
@@ -65,3 +66,4 @@ tests/gtest_custom_comparator
 tests/gtest_lru_cache
 
 .idea/
+
