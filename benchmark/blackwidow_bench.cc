@@ -8,6 +8,8 @@
 #include <thread>
 #include <functional>
 
+#include "benchmark/benchmark.h"
+
 #include "blackwidow/blackwidow.h"
 
 const int KEYLENGTH = 1024 * 10;

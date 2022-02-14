@@ -67,3 +67,5 @@ tests/gtest_lru_cache
 
 .idea/
 
+# deps
+deps/build/
