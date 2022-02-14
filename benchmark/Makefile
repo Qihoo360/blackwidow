@@ -44,13 +44,18 @@ CXXFLAGS+= -I$(BLACKWIDOW_PATH) -I$(BLACKWIDOW_INCLUDE_DIR) -I$(ROCKSDB_INCLUDE_
 DEP_LIBS = $(BLACKWIDOW_LIBRARY) $(ROCKSDB_LIBRARY) $(SLASH_LIBRARY) $(GOOGLETEST_LIBRARY)
 LDFLAGS := $(DEP_LIBS) $(LDFLAGS)
 
-OBJECTS= GOOGLETEST ROCKSDB SLASH main lock_mgr gtest_keys gtest_strings gtest_hashes gtest_lists gtest_sets gtest_zsets gtest_strings_filter gtest_hashes_filter gtest_hyperloglog gtest_lists_filter gtest_custom_comparator gtest_lru_cache gtest_options
+OBJECTS= GOOGLETEST ROCKSDB SLASH blackwidow_bench
 
 
 blackwidow_bench: blackwidow_bench.cc
+	@rm -rf db
+	@mkdir -p db/keys db/strings db/hashes db/hash_meta db/sets db/hyperloglog db/list_meta db/lists db/zsets
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
+	@./blackwidow_bench
+	@rm -rf db
 
 clean:
 	find . -name "*.[oda]" -exec rm -f {} \;
 	rm -f ./make_config.mk
+	rm -rf ./db/
 	rm -rf ./blackwidow_bench
