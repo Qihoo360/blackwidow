@@ -77,7 +77,7 @@ static const std::string value(VALUELENGTH, 'a');
 //     << cost << "s QPS: " << (THREADNUM * kv_num) / cost << std::endl;
 // }
 
-void BenchHGetall() {
+static void BenchHGetall(benchmark::State& state) {
   printf("====== HGetall ======\n");
   blackwidow::BlackwidowOptions options;
   options.options.create_if_missing = true;
@@ -89,7 +89,7 @@ void BenchHGetall() {
     return;
   }
 
-  int32_t ret = 0;
+  // int32_t ret = 0;
   blackwidow::FieldValue fv;
   std::vector<std::string> fields;
   std::vector<blackwidow::FieldValue> fvs_in;
@@ -97,23 +97,37 @@ void BenchHGetall() {
 
   // 1. Create the hash table then insert hash table 10000 field
   // 2. HGetall the hash table 10000 field (statistics cost time)
+  // fvs_in.clear();
+  // for (size_t i = 0; i < 10000; ++i) {
+    // fv.field = "field_" + std::to_string(i);
+    // fv.value = "value_" + std::to_string(i);
+    // fvs_in.push_back(fv);
+  // }
+
   fvs_in.clear();
-  for (size_t i = 0; i < 10000; ++i) {
+
+  for (size_t i = 0; i < 1000000; ++i) {
     fv.field = "field_" + std::to_string(i);
     fv.value = "value_" + std::to_string(i);
     fvs_in.push_back(fv);
   }
-  db.HMSet("HGETALL_KEY1", fvs_in);
 
-  fvs_out.clear();
-  auto start = system_clock::now();
-  db.HGetall("HGETALL_KEY1", &fvs_out);
-  auto end = system_clock::now();
-  duration<double> elapsed_seconds = end - start;
-  auto cost = duration_cast<milliseconds>(elapsed_seconds).count();
-  std::cout << "Test case 1, HGetall " << fvs_out.size()
-    << " Field HashTable Cost: "<< cost << "ms" << std::endl;
+  for (auto _ : state) {
 
+  
+
+    db.HMSet("HGETALL_KEY1", fvs_in);
+
+    fvs_out.clear();
+    // auto start = system_clock::now();
+    db.HGetall("HGETALL_KEY1", &fvs_out);
+    // auto end = system_clock::now();
+    // duration<double> elapsed_seconds = end - start;
+    // auto cost = duration_cast<milliseconds>(elapsed_seconds).count();
+    // std::cout << "Test case 1, HGetall " << fvs_out.size()
+      // << " Field HashTable Cost: "<< cost << "ms" << std::endl;
+
+  }
   // 1. Create the hash table then insert hash table 10000000 field
   // 2. Delete the hash table
   // 3. Create the hash table whos key same as before,
@@ -137,40 +151,40 @@ void BenchHGetall() {
   }
   db.HMSet("HGETALL_KEY2", fvs_in);
 
-  fvs_out.clear();
-  start = system_clock::now();
-  db.HGetall("HGETALL_KEY2", &fvs_out);
-  end = system_clock::now();
-  elapsed_seconds = end - start;
-  cost = duration_cast<milliseconds>(elapsed_seconds).count();
-  std::cout << "Test case 2, HGetall " << fvs_out.size()
-    << " Field HashTable Cost: "<< cost << "ms" << std::endl;
+  //  fvs_out.clear();
+  //  start = system_clock::now();
+  //  db.HGetall("HGETALL_KEY2", &fvs_out);
+  //  end = system_clock::now();
+  //  elapsed_seconds = end - start;
+  //  cost = duration_cast<milliseconds>(elapsed_seconds).count();
+  //  std::cout << "Test case 2, HGetall " << fvs_out.size()
+  //    << " Field HashTable Cost: "<< cost << "ms" << std::endl;
 
-  // 1. Create the hash table then insert hash table 10000000 field
-  // 2. Delete hash table 9990000 field, the hash table remain 10000 field
-  // 3. HGetall the hash table 10000 field (statistics cost time)
-  fvs_in.clear();
-  for (size_t i = 0; i < HASH_TABLE_FIELD_SIZE; ++i) {
-    fv.field = "field_" + std::to_string(i);
-    fv.value = "value_" + std::to_string(i);
-    fvs_in.push_back(fv);
-  }
-  db.HMSet("HGETALL_KEY3", fvs_in);
-  fields.clear();
-  for (size_t i = 0; i < HASH_TABLE_FIELD_SIZE - 10000; ++i) {
-    fields.push_back("field_" + std::to_string(i));
-  }
-  db.HDel("HGETALL_KEY3", fields, &ret);
+  //  // 1. Create the hash table then insert hash table 10000000 field
+  //  // 2. Delete hash table 9990000 field, the hash table remain 10000 field
+  //  // 3. HGetall the hash table 10000 field (statistics cost time)
+  //  fvs_in.clear();
+  //  for (size_t i = 0; i < HASH_TABLE_FIELD_SIZE; ++i) {
+  //    fv.field = "field_" + std::to_string(i);
+  //    fv.value = "value_" + std::to_string(i);
+  //    fvs_in.push_back(fv);
+  //  }
+  //  db.HMSet("HGETALL_KEY3", fvs_in);
+  //  fields.clear();
+  //  for (size_t i = 0; i < HASH_TABLE_FIELD_SIZE - 10000; ++i) {
+  //    fields.push_back("field_" + std::to_string(i));
+  //  }
+  //  db.HDel("HGETALL_KEY3", fields, &ret);
 
-  fvs_out.clear();
-  start = system_clock::now();
-  db.HGetall("HGETALL_KEY3", &fvs_out);
-  end = system_clock::now();
-  elapsed_seconds = end - start;
-  cost = duration_cast<milliseconds>(elapsed_seconds).count();
-  std::cout << "Test case 3, HGetall " << fvs_out.size()
-    << " Field HashTable Cost: "<< cost << "ms" << std::endl;
-}
+  //  fvs_out.clear();
+  //  start = system_clock::now();
+  //  db.HGetall("HGETALL_KEY3", &fvs_out);
+  //  end = system_clock::now();
+  //  elapsed_seconds = end - start;
+  //  cost = duration_cast<milliseconds>(elapsed_seconds).count();
+  //  std::cout << "Test case 3, HGetall " << fvs_out.size()
+  //    << " Field HashTable Cost: "<< cost << "ms" << std::endl;
+};
 
 // void BenchScan() {
 //   printf("====== Scan ======\n");
@@ -228,13 +242,19 @@ void BenchHGetall() {
 // }
 
 
-int main(int argc, char** argv) {
-  // keys
-  // BenchSet();
+// int main(int argc, char** argv) {
+//   // keys
+//   // BenchSet();
+// 
+//   // hashes
+//   // BenchHGetall();
+//   BENCHMARK(BenchHGetall);
+// 
+//   BENCHMARK_MAIN();
+// 
+//   // Iterator
+//   // BenchScan();
+// }
+BENCHMARK(BenchHGetall);
 
-  // hashes
-  BenchHGetall();
-
-  // Iterator
-  // BenchScan();
-}
+BENCHMARK_MAIN();

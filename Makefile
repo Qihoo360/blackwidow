@@ -138,9 +138,6 @@ dbg: $(LIBRARY)
 test:
 	make test -C ./tests
 
-benchmark:
-	make benchmark -C ./benchmark
-
 example:
 	make -C ./examples
 
@@ -151,7 +148,6 @@ $(LIBRARY): $(LIBOBJECTS)
 clean:
 	make -C ./examples clean
 	make -C ./tests clean
-	make -C ./benchmark clean
 	rm -f $(LIBRARY)
 	rm -rf $(CLEAN_FILES)
 	rm -rf $(LIBOUTPUT)
