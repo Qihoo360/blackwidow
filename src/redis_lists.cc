@@ -261,6 +261,7 @@ Status RedisLists::LInsert(const Slice& key,
                            const std::string& value,
                            int64_t* ret) {
   *ret = 0;
+  rocksdb::ReadOptions read_options;
   rocksdb::WriteBatch batch;
   ScopeRecordLock l(lock_mgr_, key);
   std::string meta_value;
@@ -276,9 +277,15 @@ Status RedisLists::LInsert(const Slice& key,
       uint64_t pivot_index = 0;
       uint32_t version = parsed_lists_meta_value.version();
       uint64_t current_index = parsed_lists_meta_value.left_index() + 1;
+      uint64_t next_version_index = current_index - 1;
       rocksdb::Iterator* iter =
         db_->NewIterator(default_read_options_, handles_[1]);
       ListsDataKey start_data_key(key, version, current_index);
+      ListsDataKey start_next_data_key(key, version + 1, next_version_index);
+      Slice start_next_prefix_key = start_next_data_key.Encode();
+      rocksdb::Slice upper_bound(start_next_prefix_key);
+      read_options.iterate_upper_bound = &upper_bound;
+      read_options.fill_cache = false;
       for (iter->Seek(start_data_key.Encode());
            iter->Valid()
             && current_index < parsed_lists_meta_value.right_index();
@@ -303,10 +310,17 @@ Status RedisLists::LInsert(const Slice& key,
           target_index = (before_or_after == Before)
             ? pivot_index - 1 : pivot_index;
           current_index = parsed_lists_meta_value.left_index() + 1;
-          rocksdb::Iterator* first_half_iter =
-            db_->NewIterator(default_read_options_, handles_[1]);
+          next_version_index = current_index - 1;
+
+            rocksdb::Iterator* first_half_iter =
+                  db_->NewIterator(default_read_options_, handles_[1]);
           ListsDataKey start_data_key(key, version, current_index);
-          for (first_half_iter->Seek(start_data_key.Encode());
+          ListsDataKey start_next_data_key(key, version + 1, next_version_index);
+          Slice start_next_prefix_key = start_next_data_key.Encode();
+          rocksdb::Slice upper_bound(start_next_prefix_key);
+          read_options.iterate_upper_bound = &upper_bound;
+          read_options.fill_cache = false;
+            for (first_half_iter->Seek(start_data_key.Encode());
                first_half_iter->Valid() && current_index <= pivot_index;
                first_half_iter->Next(), current_index++) {
               if (current_index == pivot_index) {
@@ -329,9 +343,15 @@ Status RedisLists::LInsert(const Slice& key,
           target_index = (before_or_after == Before)
             ? pivot_index : pivot_index + 1;
           current_index = pivot_index;
-          rocksdb::Iterator* after_half_iter =
+          next_version_index = current_index - 1;
+            rocksdb::Iterator* after_half_iter =
             db_->NewIterator(default_read_options_, handles_[1]);
           ListsDataKey start_data_key(key, version, current_index);
+          ListsDataKey start_next_data_key(key, version + 1, next_version_index);
+          Slice start_next_prefix_key = start_next_data_key.Encode();
+          rocksdb::Slice upper_bound(start_next_prefix_key);
+          read_options.iterate_upper_bound = &upper_bound;
+          read_options.fill_cache = false;
           for (after_half_iter->Seek(start_data_key.Encode());
                after_half_iter->Valid()
                 && current_index < parsed_lists_meta_value.right_index();
@@ -535,7 +555,12 @@ Status RedisLists::LRange(const Slice& key, int64_t start, int64_t stop,
                 handles_[1]);
         uint64_t current_index = sublist_left_index;
         ListsDataKey start_data_key(key, version, current_index);
-        for (iter->Seek(start_data_key.Encode());
+        ListsDataKey start_data_next_key(key, version + 1, current_index);
+        Slice start_next_prefix_key = start_data_next_key.Encode();
+        rocksdb::Slice upper_bound(start_next_prefix_key);
+        read_options.iterate_upper_bound = &upper_bound;
+        read_options.fill_cache = false;
+          for (iter->Seek(start_data_key.Encode());
              iter->Valid() && current_index <= sublist_right_index;
              iter->Next(), current_index++) {
           ret->push_back(iter->value().ToString());
@@ -553,6 +578,7 @@ Status RedisLists::LRem(const Slice& key, int64_t count,
                         const Slice& value, uint64_t* ret) {
   *ret = 0;
   rocksdb::WriteBatch batch;
+  rocksdb::ReadOptions read_options;
   ScopeRecordLock l(lock_mgr_, key);
   std::string meta_value;
   Status s = db_->Get(default_read_options_, handles_[0], key, &meta_value);
@@ -570,12 +596,20 @@ Status RedisLists::LRem(const Slice& key, int64_t count,
       uint32_t version = parsed_lists_meta_value.version();
       uint64_t start_index = parsed_lists_meta_value.left_index() + 1;
       uint64_t stop_index = parsed_lists_meta_value.right_index() - 1;
+      uint64_t next_version_index = parsed_lists_meta_value.right_index();
       ListsDataKey start_data_key(key, version, start_index);
       ListsDataKey stop_data_key(key, version, stop_index);
+      ListsDataKey next_version_data_key(key, version + 1, next_version_index);
+      Slice next_version_prefix_key = next_version_data_key.Encode();
+      Slice stop_data_prefix_key = stop_data_key.Encode();
+      rocksdb::Slice upper_bound(next_version_prefix_key);
+      read_options.iterate_upper_bound = &upper_bound;
+      rocksdb::Slice lower_bound(stop_data_prefix_key);
+      read_options.fill_cache = false;
       if (count >= 0) {
         current_index = start_index;
         rocksdb::Iterator* iter =
-          db_->NewIterator(default_read_options_, handles_[1]);
+        db_->NewIterator(default_read_options_, handles_[1]);
         for (iter->Seek(start_data_key.Encode());
              iter->Valid()
               && current_index <= stop_index && (!count || rest != 0);
