@@ -73,6 +73,13 @@ class RedisLists : public Redis {
                     std::vector<std::string>* keys,
                     int64_t* leftover_visits,
                     std::string* next_key) override;
+  Status PKExpireReset(const int32_t min_timestamp,
+		       const int32_t max_timestamp,
+		       const int32_t reset_timestamp) override;
+  bool PKFieldScan(const std::string& start_key,
+                   int32_t min_num, int32_t max_num,
+                   int64_t* leftover_visits, std::string* next_key,
+                   std::vector<std::string>* keys);
   Status Expireat(const Slice& key, int32_t timestamp) override;
   Status Persist(const Slice& key) override;
   Status TTL(const Slice& key, int64_t* timestamp) override;
