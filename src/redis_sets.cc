@@ -23,6 +23,13 @@ RedisSets::RedisSets(BlackWidow* const bw, const DataType& type)
   spop_counts_store_->SetCapacity(1000);
 }
 
+RedisSets::~RedisSets() {
+  if (spop_counts_store_ != nullptr) {
+    delete spop_counts_store_;
+    spop_counts_store_ = nullptr;
+  }
+}
+
 Status RedisSets::Open(const BlackwidowOptions& bw_options,
                        const std::string& db_path) {
   statistics_store_->SetCapacity(bw_options.statistics_max_size);
